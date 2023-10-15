@@ -1,0 +1,32 @@
+{
+  "port": 8000,
+  "webAppUrl": "localhost:4200",
+  "serverUrl": "localhost:8000",
+  "cookieSecret": "very-well-kept-secret",
+  "jwt": {
+    "secret": "very-well-kept-token-secret",
+    "issuer": "ahaplay",
+    "accessTokenExpieryTime": "1h",
+    "refreshTokenExpieryTime": "1d"
+  },
+  "email": {
+    "disableEmails": true,
+    "sendgridApiKey": "",
+    "sendgridTemplateIds": {
+      "authorChallenge": "",
+      "emailConfirmation": ""
+    },
+    "defaults": {
+      "noReplyEmail": "noreply@ahaplay.com",
+      "requestsEmail": "requests@ahaplay.com"
+    }
+  },
+  "https": {
+    "cert": null,
+    "privKey": null
+  },
+  "authCookieName": "auth",
+  "authHeaderName": "access",
+  "refreshTokenName": "refresh",
+  "hashSaltRounds": 10
+}
