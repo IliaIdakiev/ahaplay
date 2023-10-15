@@ -1,10 +1,9 @@
-import { Server as HttpsServer } from "https";
-import { Server as HttpServer } from "http";
 import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { resolvers, typeDefs } from "./config";
+import { HttpOrHttpsServer } from "../types/server";
 
-export const createApolloServer = (httpServer: HttpServer | HttpsServer) =>
+export const createApolloServer = (httpServer: HttpOrHttpsServer) =>
   new ApolloServer({
     typeDefs,
     resolvers,
