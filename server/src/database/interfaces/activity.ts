@@ -1,12 +1,15 @@
 import {
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
+  HasManyGetAssociationsMixin,
+  HasManySetAssociationsMixin,
   Model,
   Optional,
 } from "sequelize";
 import { ActivityType } from "../enums";
 import { IBase, IBaseKeys } from "./base";
 import { WorkshopModelInstance } from "./workshop";
+import { AuthorChallengeModelInstance } from "./author-challenge";
 
 export interface ActivityAttributes extends IBase {
   description: string;
@@ -28,4 +31,15 @@ export interface ActivityModelInstance
     ActivityInstanceMethods {
   getWorkshop: BelongsToGetAssociationMixin<WorkshopModelInstance>;
   setWorkshop: BelongsToSetAssociationMixin<WorkshopModelInstance, string>;
+
+  getAuthorChallengeModel: HasManyGetAssociationsMixin<AuthorChallengeModelInstance>;
+  setAuthorChallengeModel: HasManySetAssociationsMixin<
+    AuthorChallengeModelInstance,
+    string
+  >;
+
+  // (benchmarkModel
+  // (conceptualizationModel
+  // (questionModel
+  // (theoryModel
 }

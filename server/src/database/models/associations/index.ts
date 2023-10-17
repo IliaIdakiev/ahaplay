@@ -1,5 +1,11 @@
-import "./profile";
-import "./workspace";
 import "./activity";
+import "./assignment";
 import "./author-challenge";
+import "./benchmark";
+import "./conceptualization";
+import "./profile";
+import "./question";
+import "./slot";
+import "./theory";
 import "./workshop";
+import "./workspace";

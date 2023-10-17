@@ -4,7 +4,7 @@ import {
   HasManyGetAssociationsMixin,
   HasManySetAssociationsMixin,
 } from "sequelize";
-import { WorkshopAvailability } from "../enums/workshop-availability";
+import { WorkshopAvailability } from "../enums";
 import { IBase, IBaseKeys } from "./base";
 import { ActivityModelInstance } from "./activity";
 

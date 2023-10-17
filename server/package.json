@@ -10,7 +10,6 @@
     "@apollo/server": "^4.9.4",
     "@graphql-tools/merge": "^9.0.0",
     "@sendgrid/mail": "^7.7.0",
-    "@types/nodemailer": "^6.4.11",
     "bcrypt": "^5.1.1",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.6",
@@ -18,8 +17,10 @@
     "graphql": "^16.8.1",
     "graphql-tag": "^2.12.6",
     "jsonwebtoken": "^9.0.2",
+    "lodash": "^4.17.21",
     "nodemailer": "^6.9.6",
     "pg": "^8.11.3",
+    "redux": "^4.2.1",
     "sequelize": "^6.33.0",
     "socket.io": "^4.7.2",
     "uuid": "^9.0.1"
@@ -33,6 +34,9 @@
     "@types/pg": "^8.10.5",
     "@types/sequelize": "^4.28.16",
     "@types/uuid": "^9.0.5",
+    "@types/lodash": "^4.14.199",
+    "@types/nodemailer": "^6.4.11",
+    "@types/redux": "^3.6.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.2.2"
   }

@@ -40,7 +40,12 @@ export interface IDatabaseConfig {
   port: number;
 }
 
+export interface IWorkshopConfig {
+  sessionOpeningTimeInMinutes: number;
+}
+
 export interface IConfig {
   app: IAppConfig;
   db: IDatabaseConfig;
+  workshop: IWorkshopConfig;
 }
