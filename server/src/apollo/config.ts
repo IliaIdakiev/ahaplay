@@ -2,40 +2,30 @@ import gql from "graphql-tag";
 import { customTypesResolvers, customTypesTypeDefs } from "./custom-types";
 import {
   workshopQueryDefs,
-  workshopResolvers,
+  workshopQueryResolvers,
   workshopTypeDefs,
   activityQueryDefs,
-  activityResolvers,
+  activityQueryResolvers,
   activityTypeDefs,
 } from "./resources";
 import { mergeTypeDefs } from "@graphql-tools/merge";
-import { extractQueries } from "./utils";
+import { extractQueries, extractType, getGqlDefBody } from "./utils";
 
 const queryTypeDef = gql`
-  type WorkshopQuery {
-    ${extractQueries(workshopQueryDefs)}
-  }
-  type ActivityQuery {
-    ${extractQueries(activityQueryDefs)}
-  }
-
   type Query {
-    workshop: WorkshopQuery
-    activity: ActivityQuery
+    # we must have at least one thing here before we can start extending the Query
+    # so we need to leave this one here for the other types we can put the 
+    # <entityQueryDefs> inside the array that is provided bellow in mergeTypeDefs 
+    # which will simply extend the Query
+    ${extractQueries(workshopQueryDefs)}
   }
 `;
 
 export const resolvers = {
   ...customTypesResolvers,
   Query: {
-    workshop: () => ({}),
-    activity: () => ({}),
-  },
-  WorkshopQuery: {
-    ...workshopResolvers,
-  },
-  ActivityQuery: {
-    ...activityResolvers,
+    ...workshopQueryResolvers,
+    ...activityQueryResolvers,
   },
 };
 
@@ -44,4 +34,5 @@ export const typeDefs = mergeTypeDefs([
   customTypesTypeDefs,
   workshopTypeDefs,
   activityTypeDefs,
+  activityQueryDefs,
 ]);

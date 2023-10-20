@@ -22,24 +22,22 @@ export const activityTypeDefs = gql`
 `;
 
 export const activityQueryDefs = gql`
-  type Query {
+  extend type Query {
     activity(id: String): Activity
   }
 `;
 
-export const activityResolvers = {
+export const activityQueryResolvers = {
   activity(_: undefined, data: { id: string }, contextValue: any, info: any) {
     const requestedFields = extractRequestedFieldsFromInfo(info);
     const includeWorkshop = requestedFields.includes("workshop");
-    return models.activity.findByPk(
-      data.id,
-      includeWorkshop
-        ? {
-            include: [
-              { model: models.workshop, as: workshopAssociationNames.singular },
-            ],
-          }
-        : undefined
-    );
+    const options = includeWorkshop
+      ? {
+          include: [
+            { model: models.workshop, as: workshopAssociationNames.singular },
+          ],
+        }
+      : undefined;
+    return models.activity.findByPk(data.id, options);
   },
 };

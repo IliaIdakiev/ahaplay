@@ -26,25 +26,23 @@ export const workshopTypeDefs = gql`
 `;
 
 export const workshopQueryDefs = gql`
-  type Query {
+  extend type Query {
     workshop(id: String!): Workshop
   }
 `;
 
-export const workshopResolvers = {
+export const workshopQueryResolvers = {
   workshop(_: undefined, data: { id: string }, contextValue: any, info: any) {
     const requestedFields = extractRequestedFieldsFromInfo(info);
     const includeActivities = requestedFields.includes("activities");
+    const options = includeActivities
+      ? {
+          include: [
+            { model: models.activity, as: activityAssociationNames.plural },
+          ],
+        }
+      : undefined;
 
-    return models.workshop.findByPk(
-      data.id,
-      includeActivities
-        ? {
-            include: [
-              { model: models.activity, as: activityAssociationNames.plural },
-            ],
-          }
-        : undefined
-    );
+    return models.workshop.findByPk(data.id, options);
   },
 };
