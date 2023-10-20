@@ -1,7 +1,9 @@
 import { DataTypes } from "sequelize";
 import { SlotModelInstance, SlotCreationAttributes } from "../interfaces/slot";
 import { baseFields, baseModelConfig } from "./base";
+import config from "../../config";
 import { sequelize } from "../sequelize";
+import { getUnixTime, subMinutes } from "date-fns";
 
 export const slotModel = sequelize.define<
   SlotModelInstance,
@@ -53,3 +55,11 @@ export const slotModel = sequelize.define<
     tableName: "slots",
   }
 );
+
+slotModel.prototype.isOpenForSession = function () {
+  const openingTime = subMinutes(
+    this.schedule_date,
+    config.workshop.sessionOpeningTimeInMinutes
+  );
+  return getUnixTime(openingTime) <= getUnixTime(new Date());
+};

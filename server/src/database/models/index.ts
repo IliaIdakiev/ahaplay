@@ -11,6 +11,7 @@ import { questionModel } from "./question";
 import { benchmarkModel } from "./benchmark";
 import { conceptualizationModel } from "./conceptualization";
 import { theoryModel } from "./theory";
+import { sessionModel } from "./session";
 
 export const models = {
   profile: profileModel,
@@ -25,4 +26,5 @@ export const models = {
   benchmark: benchmarkModel,
   conceptualization: conceptualizationModel,
   theory: theoryModel,
+  session: sessionModel,
 };

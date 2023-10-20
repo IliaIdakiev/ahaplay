@@ -29,7 +29,9 @@ export interface SlotAttributes extends IBase {
 export interface SlotCreationAttributes
   extends Optional<SlotAttributes, IBaseKeys> {}
 
-export interface SlotInstanceMethods {}
+export interface SlotInstanceMethods {
+  isOpenForSession(): boolean;
+}
 
 export interface SlotModelInstance
   extends Model<SlotAttributes, SlotCreationAttributes>,

@@ -9,3 +9,4 @@ import "./slot";
 import "./theory";
 import "./workshop";
 import "./workspace";
+import "./session";

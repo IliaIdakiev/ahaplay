@@ -4,9 +4,11 @@ import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import config from "./config";
 import { expressMiddleware } from "@apollo/server/express4";
-import { connect } from "./database";
+import { connectSequelize } from "./database";
+import { connectReakdis } from "./redis";
 import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
+import { generateRequestContext } from "./apollo";
 
 const cookieSecret = config.app.cookieSecret;
 
@@ -14,16 +16,23 @@ const app = express();
 const httpServer = http.createServer(app);
 const apolloServer = createApolloServer(httpServer);
 
-Promise.all([connect(), apolloServer.start()]).then(() => {
-  console.log("Database connected and apollo server started.");
+Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
+  () => {
+    console.log("Database connected, Redis connected and apollo is running.");
 
-  app.use(bodyParser.json());
-  app.use(cookieParser(cookieSecret));
-  app.use("/graphql", expressMiddleware(apolloServer));
+    app.use(bodyParser.json());
+    app.use(cookieParser(cookieSecret));
+    app.use(
+      "/graphql",
+      expressMiddleware(apolloServer, {
+        context: generateRequestContext,
+      })
+    );
 
-  app.use(globalErrorHandler);
+    app.use(globalErrorHandler);
 
-  httpServer.listen({ port: config.app.port }, () => {
-    console.log(`Server working on port ${config.app.port}`);
-  });
-});
+    httpServer.listen({ port: config.app.port }, () => {
+      console.log(`Server working on port ${config.app.port}`);
+    });
+  }
+);

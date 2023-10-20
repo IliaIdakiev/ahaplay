@@ -1,5 +1,5 @@
 import * as url from "url";
-import { RegistrationModelInstance } from "src/database";
+import { RegistrationModelInstance } from "../../../database";
 import { createEmail, sgMail } from "./main";
 import config from "../../../config";
 

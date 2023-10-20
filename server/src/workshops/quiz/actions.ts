@@ -1,4 +1,3 @@
-import { ProfileModelInstance } from "src/database";
 import { QuizPhase } from "./typings";
 
 export enum ActionTypes {

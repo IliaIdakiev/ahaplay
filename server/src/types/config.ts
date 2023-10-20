@@ -44,8 +44,15 @@ export interface IWorkshopConfig {
   sessionOpeningTimeInMinutes: number;
 }
 
+export interface IRedisConfig {
+  url: string;
+  prefix: string;
+  enableInitSync: boolean;
+}
+
 export interface IConfig {
   app: IAppConfig;
   db: IDatabaseConfig;
   workshop: IWorkshopConfig;
+  redis: IRedisConfig;
 }

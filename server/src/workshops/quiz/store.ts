@@ -1,7 +1,7 @@
 import { legacy_createStore as createStore } from "redux";
 import { QuizPhase } from "./typings";
 import { ActionTypes, QuizActions } from "./actions";
-import { ActivityType, WorkshopModelInstance } from "src/database";
+import { ActivityType, WorkshopModelInstance } from "../../database";
 
 export interface QuizSessionState {
   readonly phase: QuizPhase;

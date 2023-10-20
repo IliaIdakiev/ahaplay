@@ -1,4 +1,5 @@
 import { DocumentNode } from "graphql";
+import { AppContext } from "./typings";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
@@ -20,4 +21,13 @@ export function extractRequestedFieldsFromInfo(info: any) {
   return info.fieldNodes[0].selectionSet.selections.map(
     (field: any) => field.name.value
   );
+}
+
+export function generateRequestContext(req: any) {
+  // TODO: Replace this with proper values when auth is ready
+  const context: AppContext = {
+    profileId: "3cca6408-ecdb-43d5-865b-77c4798b5c36",
+    workspaceId: "30b8e6ce-cf20-4d7c-8836-31e244745ffd",
+  };
+  return Promise.resolve(context);
 }
