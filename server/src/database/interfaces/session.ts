@@ -12,15 +12,15 @@ import { WorkspaceModelInstance } from "./workspace";
 import { SessionStatus } from "../enums";
 
 export interface SessionAttributes extends IBase {
-  complete_date?: Date;
+  complete_date: Date;
   session_key: string;
   completed_activities?: number;
-  state?: string;
-  team_name?: string;
-  team_play_time?: number;
-  team_points?: number;
-  total_activities?: number;
-  winner_points?: number;
+  state: string;
+  team_name: string;
+  team_play_time: number;
+  team_points: number;
+  total_activities: number;
+  winner_points: number;
   status: SessionStatus;
 
   slot_id: string;
@@ -34,7 +34,17 @@ export interface SessionAttributes extends IBase {
   workspace?: WorkspaceModelInstance;
 }
 export interface SessionCreationAttributes
-  extends Optional<SessionAttributes, IBaseKeys> {}
+  extends Optional<
+    SessionAttributes,
+    | IBaseKeys
+    | "state"
+    | "team_name"
+    | "team_play_time"
+    | "team_points"
+    | "total_activities"
+    | "winner_points"
+    | "complete_date"
+  > {}
 
 export interface SessionInstanceMethods {
   isOpenForSession(): boolean;

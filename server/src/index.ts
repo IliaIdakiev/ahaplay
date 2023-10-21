@@ -5,7 +5,7 @@ import cookieParser from "cookie-parser";
 import config from "./config";
 import { expressMiddleware } from "@apollo/server/express4";
 import { connectSequelize } from "./database";
-import { connectReakdis } from "./redis";
+import { connectRedis } from "./redis";
 import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
 import { generateRequestContext } from "./apollo";

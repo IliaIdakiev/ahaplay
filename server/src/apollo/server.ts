@@ -2,17 +2,16 @@ import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { resolvers, typeDefs } from "./config";
 import { HttpOrHttpsServer } from "../types/server";
-import { AppContext } from "./typings";
+import { AppContext } from "./typings/context";
 
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
 
 export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
-  
   const wsServer = new WebSocketServer({
     server: httpServer,
-    path: "/subscriptions",
+    path: "/graphql",
   });
 
   const schema = makeExecutableSchema({

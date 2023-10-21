@@ -7,9 +7,12 @@ import {
   activityQueryDefs,
   activityQueryResolvers,
   activityTypeDefs,
+  sessionSubscriptionResolvers,
+  sessionSubscriptionDefs,
+  sessionTypeDefs,
 } from "./resources";
 import { mergeTypeDefs } from "@graphql-tools/merge";
-import { extractQueries, extractType, getGqlDefBody } from "./utils";
+import { extractQuery, extractSubscription } from "./utils";
 
 const queryTypeDef = gql`
   type Query {
@@ -17,7 +20,14 @@ const queryTypeDef = gql`
     # so we need to leave this one here for the other types we can put the 
     # <entityQueryDefs> inside the array that is provided bellow in mergeTypeDefs 
     # which will simply extend the Query
-    ${extractQueries(workshopQueryDefs)}
+    ${extractQuery(workshopQueryDefs)}
+  }
+  type Subscription {
+    # we must have at least one thing here before we can start extending the Subscription
+    # so we need to leave this one here for the other types we can put the 
+    # <entitySubscriptionDefs> inside the array that is provided bellow in mergeTypeDefs 
+    # which will simply extend the Subscription
+    ${extractSubscription(sessionSubscriptionDefs)}
   }
 `;
 
@@ -27,6 +37,9 @@ export const resolvers = {
     ...workshopQueryResolvers,
     ...activityQueryResolvers,
   },
+  Subscription: {
+    ...sessionSubscriptionResolvers,
+  },
 };
 
 export const typeDefs = mergeTypeDefs([
@@ -35,4 +48,5 @@ export const typeDefs = mergeTypeDefs([
   workshopTypeDefs,
   activityTypeDefs,
   activityQueryDefs,
+  sessionTypeDefs,
 ]);
