@@ -8,7 +8,7 @@ import { IBase, IBaseKeys } from "./base";
 import { WorkspaceModelInstance } from "./workspace";
 import { WorkshopModelInstance } from "./workshop";
 import { ProfileModelInstance } from "./profile";
-import { SlotStatus } from "../enums";
+import { SlotStatus, SlotType } from "../enums";
 
 export interface SlotAttributes extends IBase {
   ics: string; // TODO: Ask?
@@ -20,6 +20,7 @@ export interface SlotAttributes extends IBase {
   creator_id: string;
   workshop_id: string;
   workspace_id: string;
+  type: SlotType;
 
   workspace?: WorkspaceModelInstance;
   workshop?: WorkshopModelInstance;

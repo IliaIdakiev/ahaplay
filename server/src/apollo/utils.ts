@@ -35,7 +35,6 @@ export function generateRequestContext(req: any) {
       profileId: "3cca6408-ecdb-43d5-865b-77c4798b5c36",
       workspaceId: "30b8e6ce-cf20-4d7c-8836-31e244745ffd",
     },
-
     pubSub,
   };
   return Promise.resolve(context);

@@ -7,6 +7,7 @@ import { AppContext } from "./typings/context";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
+import { generateRequestContext } from "./utils";
 
 export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
   const wsServer = new WebSocketServer({
@@ -19,7 +20,10 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
     resolvers,
   });
 
-  const serverCleanup = useServer({ schema }, wsServer);
+  const serverCleanup = useServer(
+    { schema, context: generateRequestContext },
+    wsServer
+  );
 
   return new ApolloServer<AppContext>({
     typeDefs,

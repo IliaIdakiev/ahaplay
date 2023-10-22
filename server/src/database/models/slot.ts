@@ -15,7 +15,6 @@ export const slotModel = sequelize.define<
     ics: {
       type: DataTypes.STRING,
       allowNull: false,
-      unique: "uc_email_domain",
     },
     ics_uid: {
       type: DataTypes.STRING,
@@ -46,6 +45,10 @@ export const slotModel = sequelize.define<
       allowNull: false,
     },
     workspace_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    type: {
       type: DataTypes.STRING,
       allowNull: false,
     },
