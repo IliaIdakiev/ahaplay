@@ -4,9 +4,7 @@ export interface InMemorySessionMetadata {
   stage: InMemorySessionStage;
   sessionId: string;
   lastUpdateTimestamp: number;
-  connectedProfileMetadata: {
-    profileId: string;
-    isActive: boolean;
-    isConnected: boolean;
-  }[];
+  teamName: string | null;
+  state: string;
+  profileIds: string[];
 }
