@@ -9,4 +9,5 @@ export interface InMemorySessionMetadata {
   profileIds: string[];
   activeProfileIds: string[];
   connectedProfileIds: string[];
+  groupCount: number;
 }

@@ -1,14 +1,24 @@
 import gql from "graphql-tag";
-import { AppContext } from "../../types";
+import {
+  AppContext,
+  InMemoryProfileMetadataError,
+  InMemorySessionError,
+} from "../../types";
 import { withCancel } from "../utils";
 import {
   generateProfileUpdateSubscriptionEvent,
   generateSessionUpdateSubscriptionEvent,
+  readAndParseState,
+  publishInMemorySessionMetadata,
   readInMemorySessionAndProfileMetadata,
+  publishInMemoryProfileMetadata,
+  readInMemorySession,
+  readInMemoryProfile,
+  getNextStage,
 } from "./helpers";
 import * as controller from "./controller";
 
-import { InMemorySessionMetadata } from "../../../redis";
+import { InMemorySessionMetadata, InMemorySessionStage } from "../../../redis";
 
 export const sessionAndProfileMetadataTypeDefs = gql`
   enum InMemorySessionStage {
@@ -25,6 +35,9 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     isActive: Boolean!
     state: String
     timestamp: Int!
+    startEmotion: Int
+    endEmotion: Int
+    lastUpdateTimestamp: Int
   }
 
   type InMemorySessionMetadata {
@@ -37,16 +50,16 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     profileIds: [String]
     activeProfileIds: [String]
     connectedProfileIds: [String]
+    groupCount: Int!
   }
 `;
 
 export const sessionMutationDefs = gql`
   type Mutation {
-    setTeamName(sessionId: Int!, teamName: String!): String
-    markActivityAsReady(
-      profileId: Int!
-      sessionId: String!
-    ): InMemorySessionMetadata
+    setTeamName(sessionId: Int!, teamName: String!): String!
+    setPersonalValue(sessionId: String!, questionId: String!): String!
+    setGroupValue(sessionId: String!, questionId: String!): String!
+    progressForward(profileId: Int!, sessionId: String!): String
   }
 `;
 
@@ -79,25 +92,146 @@ export const mutationResolvers = {
         return inMemorySession;
       })
       .then((inMemorySession) => {
-        return controller
-          .sendInMemorySessionMetadata(
-            inMemorySession.sessionId,
-            context.pubSub
-          )
-          .then((inMemorySession) => inMemorySession?.teamName || null);
+        publishInMemorySessionMetadata(context.pubSub, inMemorySession);
+        return inMemorySession?.teamName || null;
       });
   },
-  markActivityAsReady(
+  progressForward(
     _: undefined,
-    data: { sessionId: string; activityId: string },
+    data: { sessionId: string; activityId?: string },
     context: AppContext,
     info: any
   ): Promise<InMemorySessionMetadata | null> {
+    // TODO: Finish this
+    readInMemorySessionAndProfileMetadata(
+      data.sessionId,
+      context.authenticatedUser.profileId
+    ).then(([inMemorySessionMetadata, inMemoryProfileMetadata]) => {
+      const sessionState = readAndParseState(inMemorySessionMetadata);
+      const profileState = readAndParseState(inMemoryProfileMetadata);
+      let stage = inMemorySessionMetadata.stage;
+
+      const isStartEmotionCheck =
+        stage === InMemorySessionStage.START_EMOTION_CHECK;
+      const isEndEmotionCheck =
+        stage === InMemorySessionStage.END_EMOTION_CHECK;
+      const isOnGoing = stage === InMemorySessionStage.ON_GOING;
+      if (
+        (isStartEmotionCheck &&
+          typeof inMemoryProfileMetadata.startEmotion !== "number") ||
+        (isEndEmotionCheck &&
+          typeof inMemoryProfileMetadata.endEmotion !== "number") ||
+        !data.activityId ||
+        sessionState[data.activityId].includes(
+          context.authenticatedUser.profileId
+        )
+      ) {
+        return inMemorySessionMetadata;
+      }
+
+      if (
+        stage !== InMemorySessionStage.ON_GOING &&
+        !sessionState.stages[stage].includes(
+          context.authenticatedUser.profileId
+        )
+      ) {
+        sessionState.stages[stage] = sessionState.stages[stage].concat(
+          context.authenticatedUser.profileId
+        );
+        if (
+          sessionState.stages[stage].length ===
+          inMemorySessionMetadata.groupCount
+        ) {
+          stage = getNextStage(stage);
+        }
+        inMemorySessionMetadata.stage = stage;
+        inMemorySessionMetadata.state = JSON.stringify(sessionState);
+      }
+
+      if (
+        stage === InMemorySessionStage.ON_GOING &&
+        sessionState[data.activityId]
+      ) {
+      }
+    });
     return Promise.resolve(null);
   },
-  setProfileValueForActivity(
+  setPersonalValue(
     _: undefined,
-    data: { sessionId: string; activityId: string; answerId: string },
+    data: {
+      sessionId: string;
+      activityId?: string;
+      questionId?: string;
+      emotion?: number;
+    },
+    context: AppContext,
+    info: any
+  ) {
+    return readInMemorySession(data.sessionId).then(
+      (inMemorySessionMetadata) => {
+        const stage = inMemorySessionMetadata.stage;
+        const isStartEmotionCheck =
+          stage === InMemorySessionStage.START_EMOTION_CHECK;
+        const isEndEmotionCheck =
+          stage === InMemorySessionStage.END_EMOTION_CHECK;
+        if (isStartEmotionCheck || isEndEmotionCheck) {
+          if (typeof data.emotion !== "number") {
+            throw new Error(InMemoryProfileMetadataError.MISSING_VALUE);
+          }
+          return controller
+            .updateInMemoryProfile(
+              data.sessionId,
+              context.authenticatedUser.profileId,
+              (inMemoryProfileMetadata) => {
+                if (isStartEmotionCheck) {
+                  inMemoryProfileMetadata.startEmotion = data.emotion!;
+                } else {
+                  inMemoryProfileMetadata.endEmotion = data.emotion!;
+                }
+                return inMemoryProfileMetadata;
+              }
+            )
+            .then((inMemoryProfileMetadata) =>
+              publishInMemoryProfileMetadata(
+                context.pubSub,
+                data.sessionId,
+                inMemoryProfileMetadata
+              )
+            );
+        }
+        if (stage === InMemorySessionStage.ON_GOING) {
+          if (data.sessionId || !data.questionId || data.activityId) {
+            throw new Error(InMemoryProfileMetadataError.MISSING_VALUE);
+          }
+          return controller
+            .updateInMemoryProfile(
+              data.sessionId,
+              context.authenticatedUser.profileId,
+              (inMemoryProfileMetadata) => {
+                const state = readAndParseState(inMemoryProfileMetadata);
+                state[data.activityId!] = data.questionId!;
+                inMemoryProfileMetadata.state = state;
+                return inMemoryProfileMetadata;
+              }
+            )
+            .then((inMemoryProfileMetadata) =>
+              publishInMemoryProfileMetadata(
+                context.pubSub,
+                data.sessionId,
+                inMemoryProfileMetadata
+              )
+            );
+        }
+        return readInMemoryProfile(
+          data.sessionId,
+          context.authenticatedUser.profileId
+        );
+      }
+    );
+  },
+  setGroupValue(
+    _: undefined,
+    data: { sessionId: string; questionId: string },
     context: AppContext,
     info: any
   ): Promise<null> {
@@ -136,7 +270,7 @@ export const subscriptionResolvers = {
           const asyncIterator = context.pubSub.asyncIterator(eventName);
 
           controller
-            .sendInMemorySessionMetadata(
+            .readSendInMemorySessionMetadata(
               inMemorySession.sessionId,
               context.pubSub
             )
@@ -144,7 +278,7 @@ export const subscriptionResolvers = {
               console.error(err);
             });
 
-          controller.sendInMemoryProfileMetadata(
+          controller.readSendInMemoryProfileMetadata(
             inMemorySession.sessionId,
             inMemoryProfile.profileId,
             context.pubSub
@@ -174,7 +308,7 @@ export const subscriptionResolvers = {
       const asyncIterator = context.pubSub.asyncIterator(eventName);
 
       controller
-        .sendInMemoryProfileMetadata(
+        .readSendInMemoryProfileMetadata(
           data.sessionId,
           context.authenticatedUser.profileId,
           context.pubSub

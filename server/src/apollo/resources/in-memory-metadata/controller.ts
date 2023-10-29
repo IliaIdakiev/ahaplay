@@ -1,6 +1,10 @@
 import { getUnixTime } from "date-fns";
 import { UniqueConstraintError } from "sequelize";
-import { AppContext, InMemorySessionError } from "../../types";
+import {
+  AppContext,
+  InMemoryProfileMetadataError,
+  InMemorySessionError,
+} from "../../types";
 import { models, SessionStatus } from "../../../database";
 import {
   InMemorySessionMetadata,
@@ -12,47 +16,30 @@ import {
   generateSessionKey,
   readInMemoryProfile,
   readInMemorySession,
-  generateSessionUpdateSubscriptionEvent,
-  generateProfileUpdateSubscriptionEvent,
   saveInMemoryProfile,
   saveInMemorySession,
+  publishInMemorySessionMetadata,
+  publishInMemoryProfileMetadata,
 } from "./helpers";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 
-export function sendInMemorySessionMetadata(
+export function readSendInMemorySessionMetadata(
   sessionId: string,
   pubSub: RedisPubSub
 ) {
-  const eventName = generateSessionUpdateSubscriptionEvent({ sessionId });
-  return readInMemorySession(sessionId).then((inMemorySession) => {
-    pubSub.publish(eventName, {
-      inMemorySessionMetadata: {
-        ...inMemorySession,
-        timestamp: getUnixTime(new Date()),
-      },
-    });
-    return inMemorySession;
-  });
+  return readInMemorySession(sessionId).then((inMemorySession) =>
+    publishInMemorySessionMetadata(pubSub, inMemorySession)
+  );
 }
 
-export function sendInMemoryProfileMetadata(
+export function readSendInMemoryProfileMetadata(
   sessionId: string,
   profileId: string,
   pubSub: RedisPubSub
 ) {
-  const eventName = generateProfileUpdateSubscriptionEvent({
-    profileId,
-    sessionId,
-  });
-  return readInMemoryProfile(sessionId, profileId).then((inMemoryProfile) => {
-    pubSub.publish(eventName, {
-      inMemoryProfileMetadata: {
-        ...inMemoryProfile,
-        timestamp: getUnixTime(new Date()),
-      },
-    });
-    return inMemoryProfile;
-  });
+  return readInMemoryProfile(sessionId, profileId).then((inMemoryProfile) =>
+    publishInMemoryProfileMetadata(pubSub, sessionId, inMemoryProfile)
+  );
 }
 
 export function createInMemorySession(slotId: string, context: AppContext) {
@@ -99,9 +86,19 @@ export function createInMemorySession(slotId: string, context: AppContext) {
               readInMemorySession(session.id),
             ]);
           }
-          const state: Record<string, string | null> = {};
+          //TODO: Create interface for the states
+          const state: Record<string, any> = {
+            stages: {
+              [InMemorySessionStage.WAITING]: [], // ids only because this is only for profile
+              [InMemorySessionStage.START_EMOTION_CHECK]: [], // ids only because this is only for profile
+              [InMemorySessionStage.TEAM_NAME]: [], // ids only because this is only for profile
+              [InMemorySessionStage.ON_GOING]: [], // ids only because this only used when all activities are filled for all profiles
+              [InMemorySessionStage.END_EMOTION_CHECK]: [], // ids only because this is only for profile
+              [InMemorySessionStage.VIEW_RESULTS]: [], // ids only because this is only for profile (not sure that we need this)
+            },
+          };
           for (const activity of slot.workshop!.activities!) {
-            state[activity.id] = null;
+            state[activity.id] = []; // { profileId: string, questionId: string }[]
           }
           return Promise.all([
             session,
@@ -117,6 +114,7 @@ export function createInMemorySession(slotId: string, context: AppContext) {
             if (session === null || stateString === null) {
               throw new Error(InMemorySessionError.SESSION_NOT_FOUND);
             }
+
             const currentInMemorySession: InMemorySessionMetadata =
               inMemorySession || {
                 sessionId: session!.id,
@@ -127,6 +125,7 @@ export function createInMemorySession(slotId: string, context: AppContext) {
                 teamName: null,
                 state: stateString,
                 lastUpdateTimestamp: getUnixTime(new Date()),
+                groupCount: 2,
               };
 
             if (!currentInMemorySession.profileIds.includes(profileId)) {
@@ -141,11 +140,26 @@ export function createInMemorySession(slotId: string, context: AppContext) {
               currentInMemorySession.connectedProfileIds.push(profileId);
             }
 
+            let stateWithoutStagesString;
+            if (!inMemoryProfile) {
+              try {
+                const { stages, ...stateWithoutStages } = JSON.parse(
+                  session.state
+                );
+                stateWithoutStagesString = JSON.stringify(stateWithoutStages);
+              } catch (e) {
+                console.error(e);
+                throw new Error(InMemorySessionError.SESSION_STATE_MALFORMED);
+              }
+            }
             const currentInMemoryProfile: InMemoryProfileMetadata =
               inMemoryProfile || {
-                state: stateString,
+                state: stateWithoutStagesString!,
                 profileId,
                 isActive: true,
+                startEmotion: null,
+                endEmotion: null,
+                lastUpdateTimestamp: getUnixTime(new Date()),
               };
 
             return Promise.all([
@@ -155,7 +169,6 @@ export function createInMemorySession(slotId: string, context: AppContext) {
               ),
               saveInMemoryProfile(
                 currentInMemorySession.sessionId,
-                currentInMemoryProfile.profileId,
                 currentInMemoryProfile
               ),
             ]);
@@ -184,6 +197,26 @@ export function updateInMemorySession(
   });
 }
 
+export function updateInMemoryProfile(
+  sessionId: string,
+  profileId: string,
+  updateFunction: (
+    inMemoryProfile: InMemoryProfileMetadata
+  ) => InMemoryProfileMetadata
+) {
+  const handleRequestTimestamp = getUnixTime(new Date());
+  return readInMemoryProfile(sessionId, profileId).then((inMemoryProfile) => {
+    if (handleRequestTimestamp < inMemoryProfile.lastUpdateTimestamp) {
+      throw new ErrorWithData(
+        InMemoryProfileMetadataError.PROFILE_OUTDATED,
+        inMemoryProfile
+      );
+    }
+    inMemoryProfile = updateFunction(inMemoryProfile);
+    return saveInMemoryProfile(sessionId, inMemoryProfile);
+  });
+}
+
 export function createSessionAndProfileMetadata(
   inMemorySession: InMemorySessionMetadata,
   inMemoryProfile: InMemoryProfileMetadata | null,
@@ -194,17 +227,16 @@ export function createSessionAndProfileMetadata(
       isActive: true,
       profileId: context.authenticatedUser.profileId,
       state: inMemorySession.state,
+      startEmotion: null,
+      endEmotion: null,
+      lastUpdateTimestamp: getUnixTime(new Date()),
     };
   } else {
     throw new Error(InMemorySessionError.SESSION_ALREADY_STARTED);
   }
   return Promise.all([
     saveInMemorySession(inMemorySession.sessionId, inMemorySession),
-    saveInMemoryProfile(
-      inMemorySession.sessionId,
-      inMemoryProfile.profileId,
-      inMemoryProfile
-    ),
+    saveInMemoryProfile(inMemorySession.sessionId, inMemoryProfile),
   ]);
 }
 
@@ -224,34 +256,14 @@ export function handleSessionUnsubscribe(
   }
 
   return Promise.all([
-    saveInMemoryProfile(
-      inMemorySession.sessionId,
-      inMemoryProfile.profileId,
-      inMemoryProfile
-    ),
+    saveInMemoryProfile(inMemorySession.sessionId, inMemoryProfile),
     saveInMemorySession(inMemorySession.sessionId, inMemorySession),
   ]).then(([inMemoryProfileMetadata, inMemorySession]) => {
-    const profileEventName = generateProfileUpdateSubscriptionEvent({
-      profileId: inMemoryProfile.profileId,
-      sessionId: inMemorySession.sessionId,
-    });
-
-    pubSub.publish(profileEventName, {
-      inMemoryProfileMetadata: {
-        ...inMemoryProfileMetadata,
-        timestamp: getUnixTime(new Date()),
-      },
-    });
-
-    const sessionEventName = generateSessionUpdateSubscriptionEvent({
-      sessionId: inMemorySession.sessionId,
-    });
-
-    pubSub.publish(sessionEventName, {
-      inMemorySessionMetadata: {
-        ...inMemorySession,
-        timestamp: getUnixTime(new Date()),
-      },
-    });
+    publishInMemoryProfileMetadata(
+      pubSub,
+      inMemorySession.sessionId,
+      inMemoryProfileMetadata
+    );
+    publishInMemorySessionMetadata(pubSub, inMemorySession);
   });
 }

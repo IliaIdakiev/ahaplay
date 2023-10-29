@@ -13,8 +13,78 @@ import {
 import {
   InMemorySessionMetadata,
   InMemoryProfileMetadata,
+  InMemorySessionStage,
 } from "../../../redis";
 import { readFromRedis, saveInRedis } from "../utils";
+import { RedisPubSub } from "graphql-redis-subscriptions";
+import { getUnixTime } from "date-fns";
+
+export function getNextStage(currentStage: InMemorySessionStage) {
+  if (currentStage === InMemorySessionStage.WAITING) {
+    return InMemorySessionStage.START_EMOTION_CHECK;
+  }
+  if (currentStage === InMemorySessionStage.START_EMOTION_CHECK) {
+    return InMemorySessionStage.TEAM_NAME;
+  }
+  if (currentStage === InMemorySessionStage.TEAM_NAME) {
+    return InMemorySessionStage.ON_GOING;
+  }
+  if (currentStage === InMemorySessionStage.ON_GOING) {
+    return InMemorySessionStage.END_EMOTION_CHECK;
+  }
+  return InMemorySessionStage.VIEW_RESULTS;
+}
+
+export function publishInMemorySessionMetadata(
+  pubSub: RedisPubSub,
+  inMemorySession: InMemorySessionMetadata
+) {
+  const eventName = generateSessionUpdateSubscriptionEvent({
+    sessionId: inMemorySession.sessionId,
+  });
+  pubSub.publish(eventName, {
+    inMemorySessionMetadata: {
+      ...inMemorySession,
+      timestamp: getUnixTime(new Date()),
+    },
+  });
+  return inMemorySession;
+}
+
+export function publishInMemoryProfileMetadata(
+  pubSub: RedisPubSub,
+  sessionId: string,
+  inMemoryProfile: InMemoryProfileMetadata
+) {
+  const eventName = generateProfileUpdateSubscriptionEvent({
+    profileId: inMemoryProfile.profileId,
+    sessionId,
+  });
+
+  pubSub.publish(eventName, {
+    inMemoryProfileMetadata: {
+      ...inMemoryProfile,
+      timestamp: getUnixTime(new Date()),
+    },
+  });
+  return inMemoryProfile;
+}
+
+export function readAndParseState(
+  entry: InMemorySessionMetadata | InMemoryProfileMetadata
+) {
+  try {
+    return JSON.parse(entry.state);
+  } catch (e) {
+    console.error(e);
+    const isSession = "sessionId" in entry;
+    throw new Error(
+      isSession
+        ? InMemorySessionError.SESSION_STATE_MALFORMED
+        : InMemoryProfileMetadataError.PROFILE_STATE_MALFORMED
+    );
+  }
+}
 
 export function saveInMemorySession(
   sessionId: string,
@@ -29,11 +99,10 @@ export function saveInMemorySession(
 
 export function saveInMemoryProfile(
   sessionId: string,
-  profileId: string,
   profileMetadata: InMemoryProfileMetadata
 ) {
   const inMemoryProfileStateKey = generateProfileMetadataRedisKey({
-    profileId,
+    profileId: profileMetadata.profileId,
     sessionId,
   });
   return saveInRedis<InMemoryProfileMetadata>(
