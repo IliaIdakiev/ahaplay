@@ -1,7 +1,7 @@
 import { SessionStatus, models } from "../database";
 import { redisClient } from "./client";
 import { getUnixTime } from "date-fns";
-import { InMemorySessionMetadata } from "./typings";
+import { InMemorySessionMetadata } from "./types";
 import config from "../config";
 
 export function generateRedisKey(key: string) {

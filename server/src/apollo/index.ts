@@ -1,3 +1,3 @@
 export * from "./server";
-export * from "./typings/context";
+export * from "./types/context";
 export * from "./utils";

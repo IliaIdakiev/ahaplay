@@ -1,5 +1,5 @@
 import { legacy_createStore as createStore } from "redux";
-import { QuizPhase } from "./typings";
+import { QuizPhase } from "./types";
 import { ActionTypes, QuizActions } from "./actions";
 import { ActivityType, WorkshopModelInstance } from "../../database";
 

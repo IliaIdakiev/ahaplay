@@ -2,12 +2,24 @@ import { ApolloServer } from "@apollo/server";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { resolvers, typeDefs } from "./config";
 import { HttpOrHttpsServer } from "../types/server";
-import { AppContext } from "./typings/context";
+import { AppContext } from "./types/context";
 
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
 import { generateRequestContext } from "./utils";
+import { Context, OperationResult, SubscribeMessage } from "graphql-ws";
+import { ExecutionArgs, ExecutionResult } from "graphql";
+
+function formatError(error: any) {
+  console.error(error);
+  return {
+    message: error.message,
+    code: error.extensions?.code,
+    locations: error.locations,
+    path: error.path,
+  };
+}
 
 export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
   const wsServer = new WebSocketServer({
@@ -21,7 +33,22 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
   });
 
   const serverCleanup = useServer(
-    { schema, context: generateRequestContext },
+    {
+      schema,
+      context: generateRequestContext,
+      onOperation(
+        ctx: Context<any, any>,
+        message: SubscribeMessage,
+        args: ExecutionArgs,
+        result: OperationResult
+      ) {
+        if ("errors" in (result as ExecutionResult)) {
+          (result as any).errors = (result as ExecutionResult).errors!.map(
+            (e) => formatError(e)
+          );
+        }
+      },
+    },
     wsServer
   );
 
@@ -40,14 +67,6 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
         },
       },
     ],
-    formatError: (error) => {
-      console.error(error);
-      return {
-        message: error.message,
-        code: error.extensions?.code,
-        locations: error.locations,
-        path: error.path,
-      };
-    },
+    formatError,
   });
 };

@@ -13,7 +13,7 @@ import { QuizSessionState } from "../workshops/quiz/store";
 import { Store } from "redux";
 import { createNewQuizSessionStore } from "../workshops/quiz/store";
 import { QuizActions } from "../workshops/quiz/actions";
-import { HandlersContext, SessionConnections } from "./typings";
+import { HandlersContext, SessionConnections } from "./types";
 
 function initializeNewSession(
   connections: SessionConnections,

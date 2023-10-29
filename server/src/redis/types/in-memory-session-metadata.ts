@@ -7,4 +7,6 @@ export interface InMemorySessionMetadata {
   teamName: string | null;
   state: string;
   profileIds: string[];
+  activeProfileIds: string[];
+  connectedProfileIds: string[];
 }

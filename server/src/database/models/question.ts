@@ -26,6 +26,7 @@ export const questionModel = sequelize.define<
     activity_id: {
       type: DataTypes.STRING,
       allowNull: false,
+      primaryKey: true,
     },
     assignment_id: {
       type: DataTypes.STRING,

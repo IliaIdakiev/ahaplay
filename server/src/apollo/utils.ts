@@ -1,5 +1,5 @@
 import { DocumentNode } from "graphql";
-import { AppContext } from "./typings/context";
+import { AppContext } from "./types/context";
 import { pubSub } from "./pub-sub";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {

@@ -1,4 +1,4 @@
-import { QuizPhase } from "./typings";
+import { QuizPhase } from "./types";
 
 export enum ActionTypes {
   SetQuizPhase = "SetQuizPhase",

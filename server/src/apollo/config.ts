@@ -7,9 +7,9 @@ import {
   activityQueryDefs,
   activityQueryResolvers,
   activityTypeDefs,
-  sessionSubscriptionResolvers,
+  subscriptionResolvers,
   sessionSubscriptionDefs,
-  sessionTypeDefs,
+  sessionAndProfileMetadataTypeDefs,
 } from "./resources";
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { extractQuery, extractSubscription } from "./utils";
@@ -38,7 +38,7 @@ export const resolvers = {
     ...activityQueryResolvers,
   },
   Subscription: {
-    ...sessionSubscriptionResolvers,
+    ...subscriptionResolvers,
   },
 };
 
@@ -48,5 +48,5 @@ export const typeDefs = mergeTypeDefs([
   workshopTypeDefs,
   activityTypeDefs,
   activityQueryDefs,
-  sessionTypeDefs,
+  sessionAndProfileMetadataTypeDefs,
 ]);

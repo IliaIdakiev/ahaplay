@@ -1,14 +1,5 @@
 import { redisClient } from "../../redis";
 
-export function generateSessionKey(slotId: string) {
-  // TODO: Improve this because I'm not sure what exactly it should be
-  return slotId;
-}
-
-export function generateProfileStateKey(profileId: string, sessionId: string) {
-  return `profile:${profileId}:sessionId${sessionId}`;
-}
-
 export function withCancel<T>(
   asyncIterator: AsyncIterator<T | undefined>,
   onCancel: Function

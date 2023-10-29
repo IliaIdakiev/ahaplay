@@ -8,6 +8,9 @@
       "runtimeExecutable": "node",
       "program": "${workspaceFolder}/index.js",
       "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "dev"
+      },
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "runtimeArgs": ["-r", "tsconfig-paths/register"],
       "preLaunchTask": "tsc: build",

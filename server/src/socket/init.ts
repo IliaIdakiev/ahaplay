@@ -1,6 +1,6 @@
 import { Server, Socket } from "socket.io";
 import { HttpOrHttpsServer } from "../types/server";
-import { AuthenticationData, SessionConnections } from "./typings";
+import { AuthenticationData, SessionConnections } from "./types";
 import { verifyToken } from "../api/modules/jwt";
 import { AuthJwtPayload } from "../api/interfaces";
 import { createWorkshopHandlersForSocket } from "./handlers";

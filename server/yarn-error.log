@@ -1,5 +1,5 @@
 Arguments: 
-  /Users/iliaidakiev/.nvm/versions/node/v16.14.2/bin/node /Users/iliaidakiev/.yarn/bin/yarn.js add @types/graphql-redis-subscriptions
+  /Users/iliaidakiev/.nvm/versions/node/v16.14.2/bin/node /Users/iliaidakiev/.yarn/bin/yarn.js add @types/graphql-subscriptions -D
 
 PATH: 
   /opt/homebrew/opt/openjdk@17/bin:/usr/local/apache-maven-3.8.8/bin:/Users/iliaidakiev/.yarn/bin:/Users/iliaidakiev/.config/yarn/global/node_modules/.bin:/Users/iliaidakiev/.nvm/versions/node/v16.14.2/bin:/opt/homebrew/bin:/usr/local/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
@@ -14,7 +14,7 @@ Platform:
   darwin arm64
 
 Trace: 
-  Error: https://registry.yarnpkg.com/@types%2fgraphql-redis-subscriptions: Not found
+  Error: https://registry.yarnpkg.com/@types%2fgraphql-subscriptions: Not found
       at Request.params.callback [as _callback] (/Users/iliaidakiev/.yarn/lib/cli.js:66145:18)
       at Request.self.callback (/Users/iliaidakiev/.yarn/lib/cli.js:140890:22)
       at Request.emit (node:events:526:28)
@@ -40,13 +40,13 @@ npm manifest:
       "@graphql-tools/merge": "^9.0.0",
       "@graphql-tools/schema": "^10.0.0",
       "@sendgrid/mail": "^7.7.0",
-      "@types/redis": "^4.0.11",
       "bcrypt": "^5.1.1",
       "body-parser": "^1.20.2",
       "cookie-parser": "^1.4.6",
       "express": "^4.18.2",
       "graphql": "^16.8.1",
       "graphql-redis-subscriptions": "^2.6.0",
+      "graphql-subscriptions": "^2.0.0",
       "graphql-tag": "^2.12.6",
       "graphql-ws": "^5.14.1",
       "jsonwebtoken": "^9.0.2",
@@ -69,6 +69,7 @@ npm manifest:
       "@types/node": "^20.8.5",
       "@types/nodemailer": "^6.4.11",
       "@types/pg": "^8.10.5",
+      "@types/redis": "^4.0.11",
       "@types/redux": "^3.6.0",
       "@types/sequelize": "^4.28.16",
       "@types/uuid": "^9.0.5",
@@ -1140,6 +1141,13 @@ Lockfile:
     optionalDependencies:
       ioredis "^5.2.4"
   
+  graphql-subscriptions@^2.0.0:
+    version "2.0.0"
+    resolved "https://registry.yarnpkg.com/graphql-subscriptions/-/graphql-subscriptions-2.0.0.tgz#11ec181d475852d8aec879183e8e1eb94f2eb79a"
+    integrity sha512-s6k2b8mmt9gF9pEfkxsaO1lTxaySfKoEJzEfmwguBbQ//Oq23hIXCfR1hm4kdh5hnR20RdwB+s3BCb+0duHSZA==
+    dependencies:
+      iterall "^1.3.0"
+  
   graphql-tag@^2.12.6:
     version "2.12.6"
     resolved "https://registry.yarnpkg.com/graphql-tag/-/graphql-tag-2.12.6.tgz#d441a569c1d2537ef10ca3d1633b48725329b5f1"
@@ -1245,6 +1253,11 @@ Lockfile:
     version "3.0.0"
     resolved "https://registry.yarnpkg.com/is-fullwidth-code-point/-/is-fullwidth-code-point-3.0.0.tgz#f116f8064fe90b3f7844a38997c0b75051269f1d"
     integrity sha512-zymm5+u+sCsSWyD9qNaejV3DFvhCKclKdizYaJUuHA83RLjb7nSuGnddCHGv0hk+KY7BMAlsWeK4Ueg6EV6XQg==
+  
+  iterall@^1.3.0:
+    version "1.3.0"
+    resolved "https://registry.yarnpkg.com/iterall/-/iterall-1.3.0.tgz#afcb08492e2915cbd8a0884eb93a8c94d0d72fea"
+    integrity sha512-QZ9qOMdF+QLHxy1QIpUHUU1D5pS2CG2P69LF6L6CPjPYA/XMOmKV3PZpawHoAjHNyB0swdVTRxdYT4tbBbxqwg==
   
   json5@^2.2.2:
     version "2.2.3"
