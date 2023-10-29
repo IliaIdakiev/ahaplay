@@ -5,10 +5,13 @@ const authCookieName = config.app.authCookieName;
 const authHeaderName = config.app.authHeaderName;
 const refreshTokenName = config.app.refreshTokenName;
 
-export function readAuthToken(req: Request): string | null {
-  const accessToken =
-    req.headers[authHeaderName] || req.cookies[authCookieName];
-  return accessToken || null;
+export function readAuthToken(req: {
+  headers?: any;
+  cookies?: any;
+}): string | null {
+  const accessToken: string =
+    req.headers?.[authHeaderName] || req.cookies?.[authCookieName] || "";
+  return accessToken.replace(/Bearer\s?/g, "") || null;
 }
 
 export function readRefreshToken(req: Request): string | null {

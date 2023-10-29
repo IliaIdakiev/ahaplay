@@ -1,6 +1,9 @@
 import { DocumentNode } from "graphql";
 import { AppContext } from "./types/context";
 import { pubSub } from "./pub-sub";
+import { readAuthToken, verifyToken } from "../api";
+import { AuthError } from "./types";
+import { AuthenticatedUserData } from "src/types";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
@@ -29,13 +32,20 @@ export function extractRequestedFieldsFromInfo(info: any) {
 }
 
 export function generateRequestContext(req: any) {
-  // TODO: Replace this with proper values when auth is ready
-  const context: AppContext = {
-    authenticatedUser: {
-      profileId: "3cca6408-ecdb-43d5-865b-77c4798b5c36",
-      workspaceId: "30b8e6ce-cf20-4d7c-8836-31e244745ffd",
-    },
-    pubSub,
-  };
-  return Promise.resolve(context);
+  const { connectionParams = null, headers = null } = req;
+  const token = readAuthToken({ headers: headers || connectionParams });
+  if (!token) {
+    return Promise.reject(AuthError.INVALID_CREDENTIALS);
+  }
+
+  return verifyToken<AuthenticatedUserData>(token).then((userData) => {
+    const context: AppContext = {
+      authenticatedUser: {
+        profileId: userData.id,
+        workspaceId: userData.active_workspace_id,
+      },
+      pubSub,
+    };
+    return context;
+  });
 }

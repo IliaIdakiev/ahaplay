@@ -26,7 +26,7 @@
     "privKey": null
   },
   "authCookieName": "auth",
-  "authHeaderName": "access",
+  "authHeaderName": "Authorization",
   "refreshTokenName": "refresh",
   "hashSaltRounds": 10
 }

@@ -1,10 +1,6 @@
-export interface AuthJwtPayload {
-  id: string;
-  name: string;
-  email: string;
-  image: string;
-  active_workspace_id: string;
-}
+import { AuthenticatedUserData } from "../../types";
+
+export type AuthJwtPayload = AuthenticatedUserData;
 
 export interface RefreshJwtPayload {
   clientId: string;

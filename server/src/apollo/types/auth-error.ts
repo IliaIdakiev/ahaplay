@@ -1,0 +1,3 @@
+export enum AuthError {
+  INVALID_CREDENTIALS = "INVALID_CREDENTIALS",
+}
