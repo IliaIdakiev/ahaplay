@@ -1,9 +1,9 @@
 import { DocumentNode } from "graphql";
 import { AppContext } from "./types/context";
 import { pubSub } from "./pub-sub";
-import { readAuthToken, verifyToken } from "../api";
+import { readAuthToken, verifyToken } from "../modules";
 import { AuthError } from "./types";
-import { AuthenticatedUserData } from "src/types";
+import { AuthenticatedUserData } from "../types";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(

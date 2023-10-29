@@ -1,14 +1,14 @@
 import { Server, Socket } from "socket.io";
 import { HttpOrHttpsServer } from "../types/server";
 import { AuthenticationData, SessionConnections } from "./types";
-import { verifyToken } from "../api/modules/jwt";
+import { verifyToken } from "../modules/jwt";
 import { AuthJwtPayload } from "../api/interfaces";
 import { createWorkshopHandlersForSocket } from "./handlers";
 import { AuthSocketServerEvents, AuthSocketClientEvents } from "./event-names";
 import { ProfileModelInstance } from "../database";
 import { QuizSessionState } from "../workshops/quiz/store";
 import { Store } from "redux";
-import { QuizActions } from "src/workshops/quiz/actions";
+import { QuizActions } from "../workshops/quiz/actions";
 
 export function init(server: HttpOrHttpsServer) {
   const io = new Server(server);

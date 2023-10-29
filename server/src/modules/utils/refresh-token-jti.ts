@@ -1,4 +1,4 @@
-import { RefreshJwtPayload } from "src/api/interfaces";
+import { RefreshJwtPayload } from "../../api/interfaces";
 
 export function checkRefreshTokenJti(
   refreshTokenData: RefreshJwtPayload,

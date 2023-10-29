@@ -1,7 +1,7 @@
 import * as url from "url";
-import { RegistrationModelInstance } from "../../../database";
+import { RegistrationModelInstance } from "../../database";
 import { createEmail, sgMail } from "./main";
-import config from "../../../config";
+import config from "../../config";
 
 const noReplyEmail = config.app.email.defaults.noReplyEmail;
 const emailConfirmationTemplateId =

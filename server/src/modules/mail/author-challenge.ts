@@ -1,6 +1,6 @@
-import config from "../../../config";
-import { AuthorChallengeModelInstance } from "../../../database";
-import { MakeKeysRequired } from "../../../types/helpers";
+import config from "../../config";
+import { AuthorChallengeModelInstance } from "../../database";
+import { MakeKeysRequired } from "../../types/helpers";
 import { createEmail, sgMail } from "./main";
 
 const noReplyEmail = config.app.email.defaults.noReplyEmail;

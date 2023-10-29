@@ -3,8 +3,8 @@ import {
   BelongsToSetAssociationMixin,
   Model,
 } from "sequelize";
-import { ActivityModelInstance } from ".";
 import { ConceptualizationModelInstance } from "./conceptualization";
+import { ActivityModelInstance } from "./activity";
 
 export interface TheoryAttributes {
   duration: number;

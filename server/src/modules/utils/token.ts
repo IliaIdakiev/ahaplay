@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import config from "../../../config";
+import config from "../../config";
 
 const authCookieName = config.app.authCookieName;
 const authHeaderName = config.app.authHeaderName;

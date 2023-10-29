@@ -2,7 +2,7 @@ import { Store } from "redux";
 import { Server, Socket } from "socket.io";
 import { HttpOrHttpsServer } from "../types/server";
 import { AuthenticationData, SessionConnections } from "./types";
-import { verifyToken } from "../api/modules/jwt";
+import { verifyToken } from "../modules/jwt";
 import { AuthJwtPayload } from "../api/interfaces";
 import { createWorkshopHandlersForSocket } from "./handlers";
 import { AuthSocketServerEvents, AuthSocketClientEvents } from "./event-names";

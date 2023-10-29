@@ -1,5 +1,5 @@
 import sgMail, { MailDataRequired } from "@sendgrid/mail";
-import config from "../../../config";
+import config from "../../config";
 
 const sendgridApKey = config.app.email.sendgridApiKey;
 sgMail.setApiKey(sendgridApKey);

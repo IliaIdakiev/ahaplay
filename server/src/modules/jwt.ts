@@ -1,6 +1,6 @@
 import { sign, verify, decode } from "jsonwebtoken";
 import { SignOptions } from "jsonwebtoken";
-import config from "../../config";
+import config from "../config";
 
 const jwtSecret = config.app.jwt.secret;
 const issuer = config.app.jwt.issuer;

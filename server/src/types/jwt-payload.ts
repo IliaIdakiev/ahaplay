@@ -1,4 +1,4 @@
-import { AuthenticatedUserData } from "../../types";
+import { AuthenticatedUserData } from "./authenticated-user-data";
 
 export type AuthJwtPayload = AuthenticatedUserData;
 

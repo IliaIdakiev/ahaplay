@@ -1,4 +1,4 @@
-import { models, profileAssociationNames } from "../../../database";
+import { models, profileAssociationNames } from "../../database";
 import { Op } from "sequelize";
 
 export function getWorkspaceWithProfiles({

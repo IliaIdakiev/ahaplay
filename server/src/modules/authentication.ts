@@ -1,8 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { AuthenticationError, LoginError, RefreshTokenError } from "../errors";
+import {
+  AuthenticationError,
+  LoginError,
+  RefreshTokenError,
+} from "../api/errors";
 import { getWorkspaceWithProfiles } from "./utils/get-workspace-with-profiles";
 import { decodeToken, verifyToken } from "./jwt";
-import { AuthJwtPayload, RefreshJwtPayload } from "../interfaces";
+import { AuthJwtPayload, RefreshJwtPayload } from "../api/interfaces";
 import { readAuthToken, readRefreshToken, setAuthToken } from "./utils/token";
 import { checkRefreshTokenJti } from "./utils/refresh-token-jti";
 import { generateTokenPair } from "./utils/generate-token-pair";
