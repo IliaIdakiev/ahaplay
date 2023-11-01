@@ -10,7 +10,7 @@ import {
   InMemorySessionMetadata,
   InMemoryProfileMetadata,
   InMemorySessionStage,
-} from "../../../redis";
+} from "../../../redis/types";
 import {
   readSlotWithWorkshopActivitiesAndRelatedQuestions,
   generateSessionKey,

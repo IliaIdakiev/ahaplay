@@ -15,6 +15,28 @@
       "runtimeArgs": ["-r", "tsconfig-paths/register"],
       "preLaunchTask": "tsc: build",
       "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Tests",
+      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+      "args": [
+        "--config", "mocha.config.js",
+        "--timeout", "0"
+      ],
+      "preLaunchTask": "tsc: build",
+      "runtimeArgs": ["--nolazy"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "sourceMaps": true,
+      "skipFiles": ["<node_internals>/**"],
+      "outFiles": ["${workspaceFolder}/dist"],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/dist/**",
+        "!**/node_modules/**"
+      ]
     }
   ]
 }

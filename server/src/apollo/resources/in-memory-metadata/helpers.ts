@@ -14,7 +14,7 @@ import {
   InMemorySessionMetadata,
   InMemoryProfileMetadata,
   InMemorySessionStage,
-} from "../../../redis";
+} from "../../../redis/types";
 import { readFromRedis, saveInRedis } from "../utils";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 import { getUnixTime } from "date-fns";

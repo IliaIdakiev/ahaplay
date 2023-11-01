@@ -18,7 +18,10 @@ import {
 } from "./helpers";
 import * as controller from "./controller";
 
-import { InMemorySessionMetadata, InMemorySessionStage } from "../../../redis";
+import {
+  InMemorySessionMetadata,
+  InMemorySessionStage,
+} from "../../../redis/types";
 
 export const sessionAndProfileMetadataTypeDefs = gql`
   enum InMemorySessionStage {

@@ -4,7 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node -r tsconfig-paths/register dist/index.js"
+    "start": "node -r tsconfig-paths/register dist/index.js",
+    "build": "tsc",
+    "test": "yarn build && mocha --config mocha.config.js"
   },
   "dependencies": {
     "@apollo/server": "^4.9.4",
@@ -34,10 +36,12 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
+    "@types/chai": "^4.3.9",
     "@types/cookie-parser": "^1.4.4",
     "@types/express": "^4.17.19",
     "@types/jsonwebtoken": "^9.0.3",
     "@types/lodash": "^4.14.199",
+    "@types/mocha": "^10.0.3",
     "@types/node": "^20.8.5",
     "@types/nodemailer": "^6.4.11",
     "@types/pg": "^8.10.5",
@@ -46,6 +50,8 @@
     "@types/sequelize": "^4.28.16",
     "@types/uuid": "^9.0.5",
     "@types/ws": "^8.5.8",
+    "chai": "^4.3.10",
+    "mocha": "^10.2.0",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.2.2"
   }

@@ -1,8 +1,4 @@
-import {
-  moveToNextActivity,
-  profileActivityReady,
-  setProfileActivityValue,
-} from "../actions";
+import { profileActivityReady, setProfileActivityValue } from "../actions";
 import { ActivityEntry } from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
 
@@ -12,63 +8,85 @@ export interface InMemoryProfileMetadataState {
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly currentActivityId: string | null;
-  readonly isCurrentActivityReady: boolean;
   readonly isFinished: boolean;
 }
 
 export function createProfileReducerInitialState({
+  profileIds,
   activityIds,
-  currentActivityId,
   activityMap,
 }: {
+  profileIds: string[];
   activityIds: string[];
-  currentActivityId: string;
   activityMap?: InMemoryProfileMetadataState["activityMap"];
 }) {
+  let currentActivityId = activityIds[0];
+  if (activityMap) {
+    let counter = -1;
+    for (const activityId of activityIds) {
+      counter = counter + 1;
+      const isActivityReady = activityMap[activityId].every((a) => a.ready);
+      if (!isActivityReady) {
+        break;
+      }
+    }
+    currentActivityId = activityIds[counter];
+  }
+
   activityMap =
     activityMap ||
-    activityIds.reduce((acc, activityId) => ({ ...acc, [activityId]: [] }), {});
+    activityIds.reduce(
+      (acc, activityId) => ({
+        ...acc,
+        [activityId]: profileIds.map((profileId) => ({
+          profileId,
+          questionId: null,
+          ready: false,
+        })),
+      }),
+      {}
+    );
 
-  const isCurrentActivityReady = activityMap[currentActivityId].every(
-    (a) => a.ready
-  );
   const currentActivityIndex = activityIds.indexOf(currentActivityId);
   const nextActivityIndex = currentActivityIndex + 1;
   const isFinished =
-    isCurrentActivityReady && nextActivityIndex > activityIds.length;
+    nextActivityIndex >= activityIds.length - 1 &&
+    activityMap[nextActivityIndex].every((a) => a.ready);
 
   const initialState: InMemoryProfileMetadataState = {
     currentActivityId,
     activityIds,
     activityMap,
-    isCurrentActivityReady,
     isFinished,
   };
   return initialState;
 }
 
 export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
-  return createReducer(
+  const reducer = createReducer(
     initialState,
-    on(
-      setProfileActivityValue,
-      (state, { profileId, questionId, activityId }) => {
-        const { activityMap: activities } = state;
-        const valueForCurrentActivity = activities[activityId];
-        return {
-          ...state,
-          activityMap: {
-            ...activities,
-            [activityId]: valueForCurrentActivity
-              .filter(({ profileId: pId }) => profileId !== pId)
-              .concat([{ profileId, questionId, ready: false }]),
-          },
-        };
-      }
-    ),
-    on(profileActivityReady, (state, { profileId, activityId }) => {
+    on(setProfileActivityValue, (state, { profileId, questionId }) => {
       const { activityMap: activities } = state;
-      const valuesForCurrentActivity = activities[activityId];
+      const valueForCurrentActivity = activities[state.currentActivityId!];
+      return {
+        ...state,
+        activityMap: {
+          ...activities,
+          [state.currentActivityId!]: valueForCurrentActivity
+            .filter(({ profileId: pId }) => profileId !== pId)
+            .concat([{ profileId, questionId, ready: false }]),
+        },
+      };
+    }),
+    on(profileActivityReady, (state, { profileId }) => {
+      const { activityMap: activities } = state;
+      const valuesForCurrentActivity = activities[state.currentActivityId!];
+      if (
+        !valuesForCurrentActivity.find((a) => a.profileId === profileId)
+          ?.questionId
+      ) {
+        return state;
+      }
       const valueForCurrentActivityIndex = valuesForCurrentActivity.findIndex(
         ({ profileId: pId }) => pId === profileId
       );
@@ -88,35 +106,35 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         (a) => a.ready
       );
 
+      let currentActivityId = state.currentActivityId;
+      let isFinished = state.isFinished;
+
+      if (isCurrentActivityReady) {
+        const currentActivityIndex = state.activityIds.indexOf(
+          currentActivityId!
+        );
+        const nextActivityIndex = currentActivityIndex + 1;
+        currentActivityId =
+          nextActivityIndex === state.activityIds.length
+            ? null
+            : state.activityIds[nextActivityIndex];
+        isFinished = currentActivityId === null;
+      }
+
       return {
         ...state,
+        currentActivityId,
+        isFinished,
         activityMap: {
           ...activities,
-          [activityId]: updatedValuesForCurrentActivity,
+          [state.currentActivityId!]: updatedValuesForCurrentActivity,
         },
-        isCurrentActivityReady,
-      };
-    }),
-    on(moveToNextActivity, (state) => {
-      if (!state.isCurrentActivityReady) {
-        return state;
-      }
-      const currentActivityIndex = state.activityIds.indexOf(
-        state.currentActivityId!
-      );
-      const nextActivityIndex = currentActivityIndex + 1;
-      if (nextActivityIndex > state.activityIds.length) {
-        return {
-          ...state,
-          currentActivityId: null,
-          isFinished: true,
-        };
-      }
-      const nextActivityId = state.activityIds[nextActivityIndex];
-      return {
-        ...state,
-        currentActivityId: nextActivityId,
       };
     })
   );
+  type Action = Parameters<typeof reducer>[1];
+  type State = Parameters<typeof reducer>[0];
+  return function dispatchAction(action: Action, currentState?: State) {
+    return reducer(currentState || initialState, action);
+  };
 }

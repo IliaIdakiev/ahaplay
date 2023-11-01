@@ -1,3 +1,4 @@
+import { ActivityEntry } from "./types";
 import { createAction, props } from "./utils/action-creator";
 
 export const readyToStart = createAction(
@@ -47,24 +48,27 @@ export const endEmotionReady = createAction(
 
 export const setProfileActivityValue = createAction(
   "SET_PROFILE_ACTIVITY_VALUE",
-  props<{ questionId: string; activityId: string; profileId: string }>()
+  props<{ questionId: string; profileId: string }>()
 );
 
 export const setGroupActivityValue = createAction(
   "SET_GROUP_ACTIVITY_VALUE",
-  props<{ questionId: string; activityId: string; profileId: string }>()
+  props<{ questionId: string; profileId: string }>()
+);
+
+export const addGroupActivityEntry = createAction(
+  "ADD_GROUP_ACTIVITY_ENTRY",
+  props<{ entry: ActivityEntry }>()
 );
 
 export const profileActivityReady = createAction(
   "PROFILE_ACTIVITY_READY",
-  props<{ activityId: string; profileId: string }>()
+  props<{ profileId: string }>()
 );
 
 export const groupActivityReady = createAction(
   "GROUP_ACTIVITY_READY",
-  props<{ activityId: string; profileId: string }>()
+  props<{ profileId: string }>()
 );
-
-export const moveToNextActivity = createAction("MOVE_TO_NEXT_ACTIVITY");
 
 export const finish = createAction("FINISH");
