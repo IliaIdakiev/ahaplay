@@ -1,0 +1,70 @@
+import { createAction, props } from "./utils/action-creator";
+
+export const readyToStart = createAction(
+  "READY_TO_START",
+  props<{ profileId: string }>()
+);
+
+export const addParticipant = createAction(
+  "ADD_PARTICIPANT",
+  props<{ ids: string[] | string }>()
+);
+
+export const removeParticipant = createAction(
+  "REMOVE_PARTICIPANT",
+  props<{ ids: string[] | string }>()
+);
+
+export const setTeamName = createAction(
+  "SET_TEAM",
+  props<{ teamName: string }>()
+);
+
+export const teamNameReady = createAction(
+  "TEAM_NAME_READY",
+  props<{ profileId: string }>()
+);
+
+export const setStartEmotion = createAction(
+  "SET_START_EMOTION",
+  props<{ profileId: string; emotion: number }>()
+);
+
+export const startEmotionReady = createAction(
+  "START_EMOTION_READY",
+  props<{ profileId: string }>()
+);
+
+export const setEndEmotion = createAction(
+  "SET_END_EMOTION",
+  props<{ emotion: number; profileId: string }>()
+);
+
+export const endEmotionReady = createAction(
+  "END_EMOTION_READY",
+  props<{ profileId: string }>()
+);
+
+export const setProfileActivityValue = createAction(
+  "SET_PROFILE_ACTIVITY_VALUE",
+  props<{ questionId: string; activityId: string; profileId: string }>()
+);
+
+export const setGroupActivityValue = createAction(
+  "SET_GROUP_ACTIVITY_VALUE",
+  props<{ questionId: string; activityId: string; profileId: string }>()
+);
+
+export const profileActivityReady = createAction(
+  "PROFILE_ACTIVITY_READY",
+  props<{ activityId: string; profileId: string }>()
+);
+
+export const groupActivityReady = createAction(
+  "GROUP_ACTIVITY_READY",
+  props<{ activityId: string; profileId: string }>()
+);
+
+export const moveToNextActivity = createAction("MOVE_TO_NEXT_ACTIVITY");
+
+export const finish = createAction("FINISH");
