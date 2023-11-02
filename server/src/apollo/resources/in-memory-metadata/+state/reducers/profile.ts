@@ -1,4 +1,10 @@
-import { profileActivityReady, setProfileActivityValue } from "../actions";
+import { getUnixTime } from "date-fns";
+import {
+  profileActivityReady,
+  setEndEmotion,
+  setProfileActivityValue,
+  setStartEmotion,
+} from "../actions";
 import { ActivityEntry } from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
 
@@ -9,16 +15,25 @@ export interface InMemoryProfileMetadataState {
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly currentActivityId: string | null;
   readonly isFinished: boolean;
+  readonly startEmotions: { emotion: number; profileId: string }[];
+  readonly endEmotions: { emotion: number; profileId: string }[];
+  readonly lastUpdateTimestamp: number | null;
 }
 
 export function createProfileReducerInitialState({
   profileIds,
   activityIds,
   activityMap,
+  startEmotions,
+  endEmotions,
+  lastUpdateTimestamp,
 }: {
   profileIds: string[];
   activityIds: string[];
   activityMap?: InMemoryProfileMetadataState["activityMap"];
+  startEmotions?: { emotion: number; profileId: string }[];
+  endEmotions?: { emotion: number; profileId: string }[];
+  lastUpdateTimestamp?: number | null;
 }) {
   let currentActivityId = activityIds[0];
   if (activityMap) {
@@ -58,6 +73,9 @@ export function createProfileReducerInitialState({
     activityIds,
     activityMap,
     isFinished,
+    startEmotions: startEmotions || [],
+    endEmotions: endEmotions || [],
+    lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
   };
   return initialState;
 }
@@ -76,6 +94,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
             .filter(({ profileId: pId }) => profileId !== pId)
             .concat([{ profileId, questionId, ready: false }]),
         },
+        lastUpdateTimestamp: getUnixTime(new Date()),
       };
     }),
     on(profileActivityReady, (state, { profileId }) => {
@@ -125,10 +144,33 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         ...state,
         currentActivityId,
         isFinished,
+        lastUpdateTimestamp: getUnixTime(new Date()),
         activityMap: {
           ...activities,
           [state.currentActivityId!]: updatedValuesForCurrentActivity,
         },
+      };
+    }),
+    on(setStartEmotion, (state, { profileId, emotion }) => {
+      let { startEmotions } = state;
+      startEmotions = startEmotions
+        .filter((e) => e.profileId !== profileId)
+        .concat({ profileId, emotion });
+      return {
+        ...state,
+        lastUpdateTimestamp: getUnixTime(new Date()),
+        startEmotions,
+      };
+    }),
+    on(setEndEmotion, (state, { profileId, emotion }) => {
+      let { endEmotions } = state;
+      endEmotions = endEmotions
+        .filter((e) => e.profileId !== profileId)
+        .concat({ profileId, emotion });
+      return {
+        ...state,
+        lastUpdateTimestamp: getUnixTime(new Date()),
+        endEmotions,
       };
     })
   );
