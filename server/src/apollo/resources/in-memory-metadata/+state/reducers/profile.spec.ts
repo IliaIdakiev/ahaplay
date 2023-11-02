@@ -5,19 +5,30 @@ import {
   getProfileReducer,
 } from "./profile";
 import { profileActivityReady, setProfileActivityValue } from "../actions";
+import { getUnixTime } from "date-fns";
 
-describe("Apollo > Resources > In Memory Metadata", () => {
+describe("Apollo > Resources > In Memory Profile Metadata", () => {
   const activityIds = ["1", "2", "3"];
   const profileIds = ["profile1", "profile2", "profile3"];
   const questionIds = ["question1", "question2", "question3"];
+  const startEmotions = profileIds.map((profileId) => ({
+    profileId,
+    emotion: 1,
+  }));
+  const endEmotions = profileIds.map((profileId) => ({
+    profileId,
+    emotion: 4,
+  }));
   let initialState: InMemoryProfileMetadataState;
   let dispatch: ReturnType<typeof getProfileReducer>;
+  let initialTimestamp: number;
 
   beforeEach(() => {
     initialState = createProfileReducerInitialState({
       activityIds,
       profileIds,
     });
+    initialTimestamp = getUnixTime(new Date());
     dispatch = getProfileReducer(initialState);
   });
 
@@ -42,7 +53,10 @@ describe("Apollo > Resources > In Memory Metadata", () => {
           ready: false,
         })),
       });
-      expect(initialState.isFinished).to.deep.equal(false);
+      expect(initialState.finished).to.deep.equal(false);
+      expect(initialState.lastUpdateTimestamp).to.equal(initialTimestamp);
+      expect(initialState.startEmotions).to.deep.equal([]);
+      expect(initialState.endEmotions).to.deep.equal([]);
       done();
     });
 
@@ -58,11 +72,15 @@ describe("Apollo > Resources > In Memory Metadata", () => {
         }),
         {}
       );
+      const timestamp = getUnixTime(new Date());
 
       initialState = createProfileReducerInitialState({
         activityIds,
         profileIds,
         activityMap,
+        lastUpdateTimestamp: timestamp,
+        startEmotions,
+        endEmotions,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
@@ -84,7 +102,10 @@ describe("Apollo > Resources > In Memory Metadata", () => {
           ready: true,
         })),
       });
-      expect(initialState.isFinished).to.deep.equal(true);
+      expect(initialState.finished).to.deep.equal(true);
+      expect(initialState.lastUpdateTimestamp).to.equal(timestamp);
+      expect(initialState.startEmotions).to.deep.equal(startEmotions);
+      expect(initialState.endEmotions).to.deep.equal(endEmotions);
       done();
     });
 
@@ -100,11 +121,14 @@ describe("Apollo > Resources > In Memory Metadata", () => {
         }),
         {}
       );
-
+      const timestamp = getUnixTime(new Date());
       initialState = createProfileReducerInitialState({
         activityIds,
         profileIds,
         activityMap,
+        lastUpdateTimestamp: timestamp,
+        startEmotions,
+        endEmotions,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
@@ -126,7 +150,10 @@ describe("Apollo > Resources > In Memory Metadata", () => {
           ready: false,
         })),
       });
-      expect(initialState.isFinished).to.deep.equal(false);
+      expect(initialState.finished).to.deep.equal(false);
+      expect(initialState.lastUpdateTimestamp).to.equal(timestamp);
+      expect(initialState.startEmotions).to.deep.equal(startEmotions);
+      expect(initialState.endEmotions).to.deep.equal(endEmotions);
       done();
     });
 
@@ -146,10 +173,14 @@ describe("Apollo > Resources > In Memory Metadata", () => {
         {}
       );
 
+      const timestamp = getUnixTime(new Date());
       initialState = createProfileReducerInitialState({
         activityIds,
         profileIds,
         activityMap,
+        lastUpdateTimestamp: timestamp,
+        startEmotions,
+        endEmotions,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
@@ -171,7 +202,10 @@ describe("Apollo > Resources > In Memory Metadata", () => {
           ready: false,
         })),
       });
-      expect(initialState.isFinished).to.deep.equal(false);
+      expect(initialState.finished).to.deep.equal(false);
+      expect(initialState.lastUpdateTimestamp).to.equal(timestamp);
+      expect(initialState.startEmotions).to.deep.equal(startEmotions);
+      expect(initialState.endEmotions).to.deep.equal(endEmotions);
       done();
     });
   });
@@ -179,6 +213,7 @@ describe("Apollo > Resources > In Memory Metadata", () => {
   describe("actions dispatch", () => {
     it("should setProfileActivityValue for currentActivity for a given player", (done) => {
       const currentActivityId = initialState.currentActivityId;
+      const timestamp = getUnixTime(new Date());
       const action = setProfileActivityValue({
         questionId: questionIds[2],
         profileId: profileIds[1],
@@ -193,10 +228,12 @@ describe("Apollo > Resources > In Memory Metadata", () => {
         profileId: profileIds[1],
         ready: false,
       });
+      expect(updatedState.lastUpdateTimestamp).to.equal(timestamp);
       done();
     });
 
     it("should setProfileActivityValue for currentActivity for all players", (done) => {
+      const timestamp = getUnixTime(new Date());
       const action1 = setProfileActivityValue({
         questionId: questionIds[2],
         profileId: profileIds[0],
@@ -214,6 +251,7 @@ describe("Apollo > Resources > In Memory Metadata", () => {
       const updatedState2 = dispatch(action2, updatedState1);
       const updatedState3 = dispatch(action3, updatedState2);
 
+      expect(updatedState3.lastUpdateTimestamp).to.equal(timestamp);
       expect(updatedState3.activityMap).to.deep.equal({
         "1": profileIds.map((profileId, index) => ({
           profileId,
@@ -278,6 +316,7 @@ describe("Apollo > Resources > In Memory Metadata", () => {
         questionId: questionIds[1],
         profileId: profileIds[2],
       });
+      const timestamp = getUnixTime(new Date());
 
       const action4 = profileActivityReady({ profileId: profileIds[1] });
       const action5 = profileActivityReady({ profileId: profileIds[2] });
@@ -310,10 +349,12 @@ describe("Apollo > Resources > In Memory Metadata", () => {
           ready: false,
         })),
       });
+      expect(updatedState5.lastUpdateTimestamp).to.equal(timestamp);
       done();
     });
 
     it("should setProfileActivityValue for currentActivity for all players and all should be ready and we should move to next activity", (done) => {
+      const timestamp = getUnixTime(new Date());
       const action1 = setProfileActivityValue({
         questionId: questionIds[2],
         profileId: profileIds[0],
@@ -363,10 +404,12 @@ describe("Apollo > Resources > In Memory Metadata", () => {
 
       expect(updatedState5.currentActivityId).to.equal("1");
       expect(updatedState6.currentActivityId).to.equal("2");
+      expect(updatedState6.lastUpdateTimestamp).to.equal(timestamp);
       done();
     });
 
     it("should setProfileActivityValue for all activities for all players and all should be finished", (done) => {
+      const timestamp = getUnixTime(new Date());
       const action1 = setProfileActivityValue({
         questionId: questionIds[2],
         profileId: profileIds[0],
@@ -499,7 +542,8 @@ describe("Apollo > Resources > In Memory Metadata", () => {
 
       expect(updatedState17.currentActivityId).to.equal("3");
       expect(updatedState18.currentActivityId).to.equal(null);
-      expect(updatedState18.isFinished).to.equal(true);
+      expect(updatedState18.finished).to.equal(true);
+      expect(updatedState18.lastUpdateTimestamp).to.equal(timestamp);
       done();
     });
   });

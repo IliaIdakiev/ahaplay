@@ -1,5 +1,5 @@
-import { InMemorySessionStage } from "../../redis/types";
 import { GraphQLActivityMap } from "./graphql-activity-map";
+import { InMemorySessionStage } from "./in-memory-session-stage";
 
 export interface InMemorySessionMetadataGraphQLState {
   participantProfileIds: string[];

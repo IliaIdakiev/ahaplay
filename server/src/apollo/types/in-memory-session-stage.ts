@@ -1,3 +1,5 @@
+// WARNING: Changing those values might result in broken workshops
+// (check in-memory-metadata.ts graphql schema)
 export enum InMemorySessionStage {
   WAITING = "WAITING",
   START_EMOTION_CHECK = "START_EMOTION_CHECK",

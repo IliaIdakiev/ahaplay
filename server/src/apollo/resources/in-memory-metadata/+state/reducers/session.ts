@@ -1,4 +1,3 @@
-import { InMemorySessionStage } from "../../../../../redis/types";
 import { getNextStage } from "../helpers";
 import {
   addGroupActivityEntry,
@@ -15,11 +14,14 @@ import {
 } from "../actions";
 import { createReducer, on } from "../utils/reducer-creator";
 import { ActivityEntry } from "../types";
+import { InMemorySessionStage } from "../../../../types";
+import { getUnixTime } from "date-fns";
 
 export interface InMemorySessionMetadataState {
   // INFO:
   // stages: { [InMemorySessionStage]: profileIds[] }
   // activities: { [activityId]: { profileId: string, questionId: string, ready: boolean } }
+  readonly sessionId: string;
   readonly participantProfileIds: string[];
   readonly teamName: string | null;
   readonly currentStage: InMemorySessionStage;
@@ -35,20 +37,25 @@ export interface InMemorySessionMetadataState {
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly currentActivityId: string | null;
   readonly allActivitiesFinished: boolean;
+  readonly lastUpdateTimestamp: number | null;
 }
 
 export function createSessionReducerInitialState({
+  sessionId,
   participantProfileIds,
   activityIds,
   teamName,
   stages,
   activityMap,
+  lastUpdateTimestamp,
 }: {
+  sessionId: string;
   participantProfileIds: string[];
   activityIds: string[];
-  teamName?: string;
+  teamName?: string | null;
   stages?: InMemorySessionMetadataState["stages"];
   activityMap?: InMemorySessionMetadataState["activityMap"];
+  lastUpdateTimestamp?: number | null;
 }) {
   let currentStage = InMemorySessionStage.WAITING;
   let currentActivityId = activityIds[0];
@@ -96,6 +103,7 @@ export function createSessionReducerInitialState({
     currentStage = InMemorySessionStage.END_EMOTION_CHECK;
   }
   const initialState: InMemorySessionMetadataState = {
+    sessionId,
     participantProfileIds,
     activityIds,
     teamName: teamName || null,
@@ -111,6 +119,7 @@ export function createSessionReducerInitialState({
     activityMap,
     currentActivityId: allActivitiesFinished ? null : currentActivityId,
     allActivitiesFinished,
+    lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
   };
   return initialState;
 }

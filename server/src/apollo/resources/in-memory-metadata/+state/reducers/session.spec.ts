@@ -19,7 +19,7 @@ import {
   teamNameReady,
 } from "../actions";
 
-describe("Apollo > Resources > In Memory Metadata", () => {
+describe("Apollo > Resources > In Memory Session Metadata", () => {
   const activityIds = ["1", "2", "3"];
   const profileIds = ["profile1", "profile2", "profile3"];
   const questionIds = ["question1", "question2", "question3"];

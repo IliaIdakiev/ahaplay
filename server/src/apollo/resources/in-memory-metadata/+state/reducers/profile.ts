@@ -1,6 +1,8 @@
 import { getUnixTime } from "date-fns";
 import {
+  addParticipant,
   profileActivityReady,
+  removeParticipant,
   setEndEmotion,
   setProfileActivityValue,
   setStartEmotion,
@@ -11,16 +13,18 @@ import { createReducer, on } from "../utils/reducer-creator";
 export interface InMemoryProfileMetadataState {
   // INFO:
   // activities: { [activityId]: { profileId: string, questionId: string } }
+  readonly sessionId: string;
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly currentActivityId: string | null;
-  readonly isFinished: boolean;
+  readonly finished: boolean;
   readonly startEmotions: { emotion: number; profileId: string }[];
   readonly endEmotions: { emotion: number; profileId: string }[];
   readonly lastUpdateTimestamp: number | null;
 }
 
 export function createProfileReducerInitialState({
+  sessionId,
   profileIds,
   activityIds,
   activityMap,
@@ -28,6 +32,7 @@ export function createProfileReducerInitialState({
   endEmotions,
   lastUpdateTimestamp,
 }: {
+  sessionId: string;
   profileIds: string[];
   activityIds: string[];
   activityMap?: InMemoryProfileMetadataState["activityMap"];
@@ -64,15 +69,16 @@ export function createProfileReducerInitialState({
 
   const currentActivityIndex = activityIds.indexOf(currentActivityId);
   const nextActivityIndex = currentActivityIndex + 1;
-  const isFinished =
+  const finished =
     nextActivityIndex >= activityIds.length - 1 &&
     activityMap[nextActivityIndex].every((a) => a.ready);
 
   const initialState: InMemoryProfileMetadataState = {
+    sessionId,
     currentActivityId,
     activityIds,
     activityMap,
-    isFinished,
+    finished,
     startEmotions: startEmotions || [],
     endEmotions: endEmotions || [],
     lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
@@ -83,6 +89,35 @@ export function createProfileReducerInitialState({
 export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
   const reducer = createReducer(
     initialState,
+    on(addParticipant, (state, { ids }) => {
+      const { activityIds, activityMap } = state;
+      const idArray = ([] as string[]).concat(ids);
+      const updatedActivities: Record<string, ActivityEntry[]> = {};
+      for (const activityId of activityIds) {
+        updatedActivities[activityId] = [...activityMap[activityId]];
+        for (const id of idArray) {
+          updatedActivities[activityId] = [
+            ...updatedActivities[activityId],
+            { profileId: id, questionId: null, ready: false },
+          ];
+        }
+      }
+      return { ...state, activityMap: updatedActivities };
+    }),
+    on(removeParticipant, (state, { ids }) => {
+      const { activityIds, activityMap } = state;
+      const idArray = ([] as string[]).concat(ids);
+      const updatedActivities: Record<string, ActivityEntry[]> = {};
+      for (const activityId of activityIds) {
+        updatedActivities[activityId] = [...activityMap[activityId]];
+        for (const id of idArray) {
+          updatedActivities[activityId] = updatedActivities[activityId].filter(
+            (p) => p.profileId !== id
+          );
+        }
+      }
+      return { ...state, activityMap: updatedActivities };
+    }),
     on(setProfileActivityValue, (state, { profileId, questionId }) => {
       const { activityMap: activities } = state;
       const valueForCurrentActivity = activities[state.currentActivityId!];
@@ -126,7 +161,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       );
 
       let currentActivityId = state.currentActivityId;
-      let isFinished = state.isFinished;
+      let finished = state.finished;
 
       if (isCurrentActivityReady) {
         const currentActivityIndex = state.activityIds.indexOf(
@@ -137,13 +172,13 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
           nextActivityIndex === state.activityIds.length
             ? null
             : state.activityIds[nextActivityIndex];
-        isFinished = currentActivityId === null;
+        finished = currentActivityId === null;
       }
 
       return {
         ...state,
         currentActivityId,
-        isFinished,
+        finished,
         lastUpdateTimestamp: getUnixTime(new Date()),
         activityMap: {
           ...activities,

@@ -4,5 +4,5 @@ export interface InMemoryProfileMetadataGraphQLState {
   activityIds: string[];
   activityMap: GraphQLActivityMap;
   currentActivityId: string | null;
-  isFinished: boolean;
+  finished: boolean;
 }

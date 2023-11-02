@@ -1,6 +1,6 @@
 import {
   SubscriptionAction,
-  InMemorySessionError,
+  InMemorySessionMetadataError,
   InMemoryProfileMetadataError,
   ProfileAction,
 } from "../../types";
@@ -10,14 +10,8 @@ import {
   questionAssociationNames,
   workshopAssociationNames,
 } from "../../../database";
-import {
-  InMemorySessionMetadata,
-  InMemoryProfileMetadata,
-  InMemorySessionStage,
-} from "../../../redis/types";
 import { readFromRedis, saveInRedis } from "../utils";
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import { getUnixTime } from "date-fns";
 import {
   InMemoryProfileMetadataState,
   InMemorySessionMetadataState,
@@ -56,145 +50,129 @@ export function graphqlInMemoryProfileStateSerializer(
   };
 }
 
-export function getNextStage(currentStage: InMemorySessionStage) {
-  if (currentStage === InMemorySessionStage.WAITING) {
-    return InMemorySessionStage.START_EMOTION_CHECK;
-  }
-  if (currentStage === InMemorySessionStage.START_EMOTION_CHECK) {
-    return InMemorySessionStage.TEAM_NAME;
-  }
-  if (currentStage === InMemorySessionStage.TEAM_NAME) {
-    return InMemorySessionStage.ON_GOING;
-  }
-  if (currentStage === InMemorySessionStage.ON_GOING) {
-    return InMemorySessionStage.END_EMOTION_CHECK;
-  }
-  return InMemorySessionStage.VIEW_RESULTS;
-}
-
-export function publishInMemorySessionMetadata(
+export function publishInMemorySessionMetadataState(
   pubSub: RedisPubSub,
-  inMemorySession: InMemorySessionMetadata
+  inMemorySessionMetadataState: InMemorySessionMetadataState
 ) {
+  const { sessionId } = inMemorySessionMetadataState;
   const eventName = generateSessionUpdateSubscriptionEvent({
-    sessionId: inMemorySession.sessionId,
+    sessionId,
   });
+  const inMemorySessionMetadataStateForGraphQL =
+    graphqlInMemorySessionStateSerializer(inMemorySessionMetadataState);
+
   pubSub.publish(eventName, {
-    inMemorySessionMetadata: {
-      ...inMemorySession,
-      timestamp: getUnixTime(new Date()),
+    inMemorySessionMetadataState: {
+      ...inMemorySessionMetadataStateForGraphQL,
     },
   });
-  return inMemorySession;
+  return inMemorySessionMetadataState;
 }
 
-export function publishInMemoryProfileMetadata(
+export function publishInMemoryProfileMetadataState(
   pubSub: RedisPubSub,
-  sessionId: string,
-  inMemoryProfile: InMemoryProfileMetadata
+  inMemoryProfileMetadataState: InMemoryProfileMetadataState
 ) {
+  const { sessionId } = inMemoryProfileMetadataState;
   const eventName = generateProfileUpdateSubscriptionEvent({
-    profileId: inMemoryProfile.profileId,
     sessionId,
   });
+  const inMemoryProfileMetadataStateForGraphQL =
+    graphqlInMemoryProfileStateSerializer(inMemoryProfileMetadataState);
 
   pubSub.publish(eventName, {
-    inMemoryProfileMetadata: {
-      ...inMemoryProfile,
-      timestamp: getUnixTime(new Date()),
+    inMemoryProfileMetadataState: {
+      ...inMemoryProfileMetadataStateForGraphQL,
     },
   });
-  return inMemoryProfile;
+  return inMemoryProfileMetadataStateForGraphQL;
 }
 
-export function readAndParseState(
-  entry: InMemorySessionMetadata | InMemoryProfileMetadata
-) {
-  try {
-    return JSON.parse(entry.state);
-  } catch (e) {
-    console.error(e);
-    const isSession = "sessionId" in entry;
-    throw new Error(
-      isSession
-        ? InMemorySessionError.SESSION_STATE_MALFORMED
-        : InMemoryProfileMetadataError.PROFILE_STATE_MALFORMED
-    );
-  }
-}
+// export function readAndParseState(
+//   entry: InMemorySessionMetadata | InMemoryProfileMetadata
+// ) {
+//   try {
+//     return JSON.parse(entry.state);
+//   } catch (e) {
+//     console.error(e);
+//     const isSession = "sessionId" in entry;
+//     throw new Error(
+//       isSession
+//         ? InMemorySessionError.SESSION_STATE_MALFORMED
+//         : InMemoryProfileMetadataError.PROFILE_STATE_MALFORMED
+//     );
+//   }
+// }
 
-export function saveInMemorySession(
-  sessionId: string,
-  sessionMetadata: InMemorySessionMetadata
+export function saveInMemorySessionMetadataState(
+  inMemorySessionMetadataState: InMemorySessionMetadataState
 ) {
+  const { sessionId } = inMemorySessionMetadataState;
   const inMemorySessionKey = generateSessionMetadataRedisKey({ sessionId });
-  return saveInRedis<InMemorySessionMetadata>(
+  return saveInRedis<InMemorySessionMetadataState>(
     inMemorySessionKey,
-    sessionMetadata
+    inMemorySessionMetadataState
   );
 }
 
-export function saveInMemoryProfile(
-  sessionId: string,
-  profileMetadata: InMemoryProfileMetadata
+export function saveInMemoryProfileMetadataState(
+  inMemoryProfileMetadataState: InMemoryProfileMetadataState
 ) {
+  const { sessionId } = inMemoryProfileMetadataState;
   const inMemoryProfileStateKey = generateProfileMetadataRedisKey({
-    profileId: profileMetadata.profileId,
     sessionId,
   });
-  return saveInRedis<InMemoryProfileMetadata>(
+  return saveInRedis<InMemoryProfileMetadataState>(
     inMemoryProfileStateKey,
-    profileMetadata
+    inMemoryProfileMetadataState
   );
 }
 
-export function readInMemorySession(
+export function readInMemorySessionMetadataState(
   sessionId: string,
   allowNull: true
-): Promise<InMemorySessionMetadata | null>;
-export function readInMemorySession(
+): Promise<InMemorySessionMetadataState | null>;
+export function readInMemorySessionMetadataState(
   sessionId: string,
   allowNull: false
-): Promise<InMemorySessionMetadata>;
-export function readInMemorySession(
+): Promise<InMemorySessionMetadataState>;
+export function readInMemorySessionMetadataState(
   sessionId: string
-): Promise<InMemorySessionMetadata>;
-export function readInMemorySession(sessionId: string, allowNull = false) {
+): Promise<InMemorySessionMetadataState>;
+export function readInMemorySessionMetadataState(
+  sessionId: string,
+  allowNull = false
+) {
   const inMemorySessionKey = generateSessionMetadataRedisKey({ sessionId });
-  return readFromRedis<InMemorySessionMetadata>(inMemorySessionKey).then(
+  return readFromRedis<InMemorySessionMetadataState>(inMemorySessionKey).then(
     (session) => {
       if (allowNull === false && session === null) {
-        throw new Error(InMemorySessionError.SESSION_NOT_FOUND);
+        throw new Error(InMemorySessionMetadataError.SESSION_NOT_FOUND);
       }
       return session;
     }
   );
 }
 
-export function readInMemoryProfile(
+export function readInMemoryProfileMetadataState(
   sessionId: string,
-  profileId: string,
   allowNull: true
-): Promise<InMemoryProfileMetadata | null>;
-export function readInMemoryProfile(
+): Promise<InMemoryProfileMetadataState | null>;
+export function readInMemoryProfileMetadataState(
   sessionId: string,
-  profileId: string,
   allowNull: false
-): Promise<InMemoryProfileMetadata>;
-export function readInMemoryProfile(
+): Promise<InMemoryProfileMetadataState>;
+export function readInMemoryProfileMetadataState(
+  sessionId: string
+): Promise<InMemoryProfileMetadataState>;
+export function readInMemoryProfileMetadataState(
   sessionId: string,
-  profileId: string
-): Promise<InMemoryProfileMetadata>;
-export function readInMemoryProfile(
-  sessionId: string,
-  profileId: string,
   allowNull = false
 ) {
   const profileStateKey = generateProfileMetadataRedisKey({
-    profileId,
     sessionId,
   });
-  return readFromRedis<InMemoryProfileMetadata>(profileStateKey).then(
+  return readFromRedis<InMemoryProfileMetadataState>(profileStateKey).then(
     (profile) => {
       if (allowNull === false && profile === null) {
         throw new Error(InMemoryProfileMetadataError.PROFILE_NOT_FOUND);
@@ -202,56 +180,6 @@ export function readInMemoryProfile(
       return profile;
     }
   );
-}
-
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: false,
-  allowNullForProfile: true
-): Promise<[InMemorySessionMetadata, InMemoryProfileMetadata | null]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: true,
-  allowNullForProfile: false
-): Promise<[InMemorySessionMetadata | null, InMemoryProfileMetadata]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: false,
-  allowNullForProfile: false
-): Promise<[InMemorySessionMetadata, InMemoryProfileMetadata]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: true,
-  allowNullForProfile: true
-): Promise<[InMemorySessionMetadata | null, InMemoryProfileMetadata | null]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: true
-): Promise<[InMemorySessionMetadata | null, InMemoryProfileMetadata | null]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: false
-): Promise<[InMemorySessionMetadata, InMemoryProfileMetadata | null]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string
-): Promise<[InMemorySessionMetadata, InMemoryProfileMetadata]>;
-export function readInMemorySessionAndProfileMetadata(
-  sessionId: string,
-  profileId: string,
-  allowNullForSession: any = false,
-  allowNullForProfile: any = false
-) {
-  return Promise.all([
-    readInMemorySession(sessionId, allowNullForSession),
-    readInMemoryProfile(sessionId, profileId, allowNullForProfile),
-  ]);
 }
 
 export function generateSessionUpdateSubscriptionEvent(config: {
@@ -262,9 +190,8 @@ export function generateSessionUpdateSubscriptionEvent(config: {
 
 export function generateProfileUpdateSubscriptionEvent(config: {
   sessionId: string;
-  profileId: string;
 }) {
-  return `${ProfileAction.PROFILE_UPDATE}::${config.sessionId}>${config.profileId}`;
+  return `${ProfileAction.PROFILE_UPDATE}::${config.sessionId}`;
 }
 
 export function generateSessionKey(config: { slotId: string }) {
@@ -273,14 +200,11 @@ export function generateSessionKey(config: { slotId: string }) {
 }
 
 export function generateSessionMetadataRedisKey(config: { sessionId: string }) {
-  return `sessionId:${config.sessionId}`;
+  return `sessionId:${config.sessionId}::session`;
 }
 
-export function generateProfileMetadataRedisKey(config: {
-  sessionId: string;
-  profileId: string;
-}) {
-  return `sessionId:${config.sessionId}>profile:${config.profileId}`;
+export function generateProfileMetadataRedisKey(config: { sessionId: string }) {
+  return `sessionId:${config.sessionId}::profile`;
 }
 
 export function readSlotWithWorkshopActivitiesAndRelatedQuestions(

@@ -1,4 +1,4 @@
-export enum InMemorySessionError {
+export enum InMemorySessionMetadataError {
   SESSION_NOT_FOUND = "SESSION_NOT_FOUND",
   SESSION_OUTDATED = "SESSION_OUTDATED",
   SESSION_STATE_MALFORMED = "SESSION_STATE_MALFORMED",

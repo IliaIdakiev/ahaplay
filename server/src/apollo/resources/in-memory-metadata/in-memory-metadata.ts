@@ -2,7 +2,7 @@ import gql from "graphql-tag";
 import {
   AppContext,
   InMemoryProfileMetadataError,
-  InMemorySessionError,
+  InMemorySessionMetadataError,
 } from "../../types";
 import { withCancel } from "../utils";
 import {
@@ -32,28 +32,52 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     END_EMOTION_CHECK
     VIEW_RESULTS
   }
-
-  type InMemoryProfileMetadata {
+  
+  type ActivityEntry {
+    profileId: String
+    questionId: String
+    ready: Boolean
+  }
+  
+  type ActivityMapArrayItem {
+    key: String
+    value: ActivityEntry
+  }
+  
+  type EmotionEntry { 
+    emotion: Int!
     profileId: String!
-    isActive: Boolean!
-    state: String
-    timestamp: Int!
-    startEmotion: Int
-    endEmotion: Int
-    lastUpdateTimestamp: Int
   }
 
-  type InMemorySessionMetadata {
-    stage: InMemorySessionStage!
+  type InMemoryProfileMetadataStages {
+    ${InMemorySessionStage.WAITING}: [String]!
+    ${InMemorySessionStage.START_EMOTION_CHECK}: [String]!
+    ${InMemorySessionStage.TEAM_NAME}: [String]!
+    ${InMemorySessionStage.ON_GOING}: [String]!
+    ${InMemorySessionStage.END_EMOTION_CHECK}: [String]!
+    ${InMemorySessionStage.VIEW_RESULTS}: [String]!
+  }
+
+  type InMemorySessionMetadataState {
+    participantProfileIds: [String]!
     teamName: String
-    sessionId: String!
-    lastUpdateTimestamp: Int
-    timestamp: Int!
-    state: String!
-    profileIds: [String]
-    activeProfileIds: [String]
-    connectedProfileIds: [String]
-    groupCount: Int!
+    currentStage: InMemorySessionStage!
+    activityIds: [String]!
+    stages: InMemoryProfileMetadataStages!
+    activityMap: [ActivityMapArrayItem]!
+    currentActivityId: String
+    allActivitiesFinished: Boolean!
+    lastUpdateTimestamp: Int!
+  }
+
+  type InMemoryProfileMetadataState {
+    activityIds: [String]!
+    activityMap: [ActivityMapArrayItem]!
+    currentActivityId: String
+    finished: Boolean
+    startEmotions: [EmotionEntry]!
+    endEmotions: [EmotionEntry]!
+    lastUpdateTimestamp: Int!
   }
 `;
 
@@ -273,7 +297,7 @@ export const subscriptionResolvers = {
           const asyncIterator = context.pubSub.asyncIterator(eventName);
 
           controller
-            .readSendInMemorySessionMetadata(
+            .publishSendInMemorySessionMetadata(
               inMemorySession.sessionId,
               context.pubSub
             )
@@ -281,7 +305,7 @@ export const subscriptionResolvers = {
               console.error(err);
             });
 
-          controller.readSendInMemoryProfileMetadata(
+          controller.publishSendInMemoryProfileMetadata(
             inMemorySession.sessionId,
             inMemoryProfile.profileId,
             context.pubSub
@@ -311,7 +335,7 @@ export const subscriptionResolvers = {
       const asyncIterator = context.pubSub.asyncIterator(eventName);
 
       controller
-        .readSendInMemoryProfileMetadata(
+        .publishSendInMemoryProfileMetadata(
           data.sessionId,
           context.authenticatedUser.profileId,
           context.pubSub
