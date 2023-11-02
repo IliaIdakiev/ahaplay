@@ -58,7 +58,7 @@ export const setGroupActivityValue = createAction(
 
 export const addGroupActivityEntry = createAction(
   "ADD_GROUP_ACTIVITY_ENTRY",
-  props<{ entry: ActivityEntry }>()
+  props<{ entry: ActivityEntry; forceUpdate?: boolean }>()
 );
 
 export const profileActivityReady = createAction(

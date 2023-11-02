@@ -23,6 +23,7 @@ export interface InMemorySessionMetadataState {
   readonly participantProfileIds: string[];
   readonly teamName: string | null;
   readonly currentStage: InMemorySessionStage;
+  readonly activityIds: string[];
   readonly stages: {
     [InMemorySessionStage.WAITING]: string[];
     [InMemorySessionStage.START_EMOTION_CHECK]: string[];
@@ -90,8 +91,13 @@ export function createSessionReducerInitialState({
   const allActivitiesFinished =
     isCurrentActivityReady && nextActivityIndex === activityIds.length;
 
+  if (allActivitiesFinished && currentStage === InMemorySessionStage.ON_GOING) {
+    stages![InMemorySessionStage.ON_GOING] = participantProfileIds.slice();
+    currentStage = InMemorySessionStage.END_EMOTION_CHECK;
+  }
   const initialState: InMemorySessionMetadataState = {
     participantProfileIds,
+    activityIds,
     teamName: teamName || null,
     currentStage: currentStage || InMemorySessionStage.WAITING,
     stages: stages || {
@@ -138,7 +144,7 @@ function applyStageReadyForProfile(
 }
 
 export function getSessionReducer(initialState: InMemorySessionMetadataState) {
-  return createReducer(
+  const reducer = createReducer(
     initialState,
     on(addParticipant, (state, { ids }) => {
       if (state.currentStage !== InMemorySessionStage.WAITING) {
@@ -232,19 +238,47 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
         ...valuesForCurrentActivity.slice(valueForCurrentActivityIndex + 1),
       ];
 
+      let currentActivityId = state.currentActivityId;
+      let allActivitiesFinished = state.allActivitiesFinished;
+      if (updatedValuesForCurrentActivity.every((a) => a.ready)) {
+        const currentActivityIndex = state.activityIds.indexOf(
+          currentActivityId!
+        );
+        const nextActivityId = currentActivityIndex + 1;
+        if (nextActivityId < state.activityIds.length) {
+          currentActivityId = state.activityIds[nextActivityId];
+        } else {
+          allActivitiesFinished = true;
+        }
+      }
+
       return {
         ...state,
         activityMap: {
           ...activities,
           [state.currentActivityId!]: updatedValuesForCurrentActivity,
         },
+        currentActivityId,
+        allActivitiesFinished,
       };
     }),
-    on(addGroupActivityEntry, (state, { entry }) => {
-      const currentActivity = state.activityMap[state.currentActivityId!];
-      if (currentActivity.find((a) => a.profileId === entry.profileId)) {
+    on(addGroupActivityEntry, (state, { entry, forceUpdate }) => {
+      let currentActivity = state.activityMap[state.currentActivityId!];
+      const alreadyExistingActivity = currentActivity.find(
+        (a) => a.profileId === entry.profileId
+      );
+      if (alreadyExistingActivity && forceUpdate) {
+        const alreadyExistingActivityIndex = currentActivity.indexOf(
+          alreadyExistingActivity
+        );
+        currentActivity = [
+          ...currentActivity.slice(0, alreadyExistingActivityIndex),
+          ...currentActivity.slice(alreadyExistingActivityIndex + 1),
+        ];
+      } else if (alreadyExistingActivity) {
         return state;
       }
+
       const notReadyEntry: ActivityEntry = {
         ...entry,
         ready: false,
@@ -257,10 +291,31 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
         [state.currentActivityId!]: updatedCurrentActivity,
       };
 
+      let currentActivityId = state.currentActivityId;
+      let allActivitiesFinished = state.allActivitiesFinished;
+      if (updatedCurrentActivity.every((a) => a.ready)) {
+        const currentActivityIndex = state.activityIds.indexOf(
+          currentActivityId!
+        );
+        const nextActivityId = currentActivityIndex + 1;
+        if (nextActivityId < state.activityIds.length) {
+          currentActivityId = state.activityIds[nextActivityId];
+        } else {
+          allActivitiesFinished = true;
+        }
+      }
+
       return {
         ...state,
         activityMap: updatedActivityMap,
+        currentActivityId,
+        allActivitiesFinished,
       };
     })
   );
+  type Action = Parameters<typeof reducer>[1];
+  type State = Parameters<typeof reducer>[0];
+  return function dispatchAction(action: Action, currentState?: State) {
+    return reducer(currentState || initialState, action);
+  };
 }
