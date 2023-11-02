@@ -1,0 +1,20 @@
+import { InMemorySessionStage } from "../../redis/types";
+import { GraphQLActivityMap } from "./graphql-activity-map";
+
+export interface InMemorySessionMetadataGraphQLState {
+  participantProfileIds: string[];
+  teamName: string | null;
+  currentStage: InMemorySessionStage;
+  activityIds: string[];
+  stages: {
+    [InMemorySessionStage.WAITING]: string[];
+    [InMemorySessionStage.START_EMOTION_CHECK]: string[];
+    [InMemorySessionStage.TEAM_NAME]: string[];
+    [InMemorySessionStage.ON_GOING]: string[];
+    [InMemorySessionStage.END_EMOTION_CHECK]: string[];
+    [InMemorySessionStage.VIEW_RESULTS]: string[];
+  };
+  activityMap: GraphQLActivityMap;
+  currentActivityId: string | null;
+  allActivitiesFinished: boolean;
+}

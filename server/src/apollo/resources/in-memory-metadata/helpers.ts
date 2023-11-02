@@ -18,6 +18,43 @@ import {
 import { readFromRedis, saveInRedis } from "../utils";
 import { RedisPubSub } from "graphql-redis-subscriptions";
 import { getUnixTime } from "date-fns";
+import {
+  InMemoryProfileMetadataState,
+  InMemorySessionMetadataState,
+} from "./+state/reducers";
+import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
+import { MakeAllKeysRequired } from "../../../types";
+import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
+
+export function graphqlInMemorySessionStateSerializer(
+  state: MakeAllKeysRequired<InMemorySessionMetadataState>
+): InMemorySessionMetadataGraphQLState {
+  let { activityMap, ...other } = state;
+  const activityMapArray = Object.entries(activityMap).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
+  return {
+    ...other,
+    activityMap: activityMapArray,
+  };
+}
+
+export function graphqlInMemoryProfileStateSerializer(
+  state: MakeAllKeysRequired<InMemoryProfileMetadataState>
+): InMemoryProfileMetadataGraphQLState {
+  let { activityMap, ...other } = state;
+  const activityMapArray = Object.entries(activityMap).map(([key, value]) => ({
+    key,
+    value,
+  }));
+
+  return {
+    ...other,
+    activityMap: activityMapArray,
+  };
+}
 
 export function getNextStage(currentStage: InMemorySessionStage) {
   if (currentStage === InMemorySessionStage.WAITING) {
