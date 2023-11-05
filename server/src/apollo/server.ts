@@ -7,7 +7,6 @@ import { AppContext } from "./types/context";
 import { makeExecutableSchema } from "@graphql-tools/schema";
 import { WebSocketServer } from "ws";
 import { useServer } from "graphql-ws/lib/use/ws";
-import { generateRequestContext } from "./utils";
 import { Context, OperationResult, SubscribeMessage } from "graphql-ws";
 import { ExecutionArgs, ExecutionResult } from "graphql";
 import { AuthError } from "./types";

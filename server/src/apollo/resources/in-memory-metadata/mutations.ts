@@ -1,13 +1,8 @@
-import gql from "graphql-tag";
-import { AuthenticatedAppContext, InMemorySessionStage } from "../../types";
-import { withCancel } from "../utils";
+import { AuthenticatedAppContext } from "../../types";
 import {
-  generateProfileUpdateSubscriptionEvent,
-  generateSessionUpdateSubscriptionEvent,
   publishInMemoryProfileMetadataState,
   publishInMemorySessionMetadataState,
 } from "./helpers";
-import * as controller from "./controller";
 import { createInMemoryDispatcher } from "./+state";
 import {
   addParticipant,
@@ -26,118 +21,6 @@ import {
 } from "./+state/actions";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
 import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
-
-export const sessionAndProfileMetadataTypeDefs = gql`
-  enum InMemorySessionStage {
-    WAITING
-    START_EMOTION_CHECK
-    TEAM_NAME
-    ON_GOING
-    END_EMOTION_CHECK
-    VIEW_RESULTS
-  }
-  
-  type ActivityEntry {
-    profileId: String
-    questionId: String
-    ready: Boolean
-  }
-  
-  type ActivityMapArrayItem {
-    key: String
-    value: [ActivityEntry]
-  }
-  
-  type EmotionEntry { 
-    emotion: Int!
-    profileId: String!
-  }
-
-  type InMemoryProfileMetadataStages {
-    ${InMemorySessionStage.WAITING}: [String]!
-    ${InMemorySessionStage.START_EMOTION_CHECK}: [String]!
-    ${InMemorySessionStage.TEAM_NAME}: [String]!
-    ${InMemorySessionStage.ON_GOING}: [String]!
-    ${InMemorySessionStage.END_EMOTION_CHECK}: [String]!
-    ${InMemorySessionStage.VIEW_RESULTS}: [String]!
-  }
-
-  type InMemorySessionMetadataState {
-    sessionId: String!
-    profileIds: [String]!
-    connectedProfileIds: [String]!
-    participantProfileIds: [String]!
-    teamName: String
-    currentStage: InMemorySessionStage!
-    activityIds: [String]!
-    stages: InMemoryProfileMetadataStages!
-    activityMap: [ActivityMapArrayItem]!
-    currentActivityId: String
-    allActivitiesFinished: Boolean!
-    lastUpdateTimestamp: Int!
-  }
-
-  type InMemoryProfileMetadataState {
-    sessionId: String!
-    activityIds: [String]!
-    activityMap: [ActivityMapArrayItem]!
-    currentActivityId: String
-    finished: Boolean
-    startEmotions: [EmotionEntry]!
-    endEmotions: [EmotionEntry]!
-    lastUpdateTimestamp: Int!
-  }
-`;
-
-export const sessionMutationDefs = gql`
-  type Mutation {
-    setProfileAsSessionParticipant(
-      sessionId: Int!
-    ): InMemorySessionMetadataState!
-    unsetProfileAsSessionParticipant(
-      sessionId: Int!
-    ): InMemorySessionMetadataState!
-    readyToStart(sessionId: Int!): InMemorySessionMetadataState!
-    setTeamName(
-      sessionId: Int!
-      teamName: String!
-    ): InMemorySessionMetadataState!
-    setTeamNameAsReady(sessionId: Int!): InMemorySessionMetadataState!
-    setStartEmotion(
-      sessionId: String!
-      emotion: Int!
-    ): InMemoryProfileMetadataState!
-    setStartEmotionAsReady(sessionId: String!): InMemoryProfileMetadataState!
-    setEndEmotion(
-      sessionId: String!
-      emotion: Int!
-    ): InMemoryProfileMetadataState!
-    setEndEmotionAsReady(sessionId: String!): InMemoryProfileMetadataState!
-
-    setProfileActivityValue(
-      sessionId: String!
-      questionId: String!
-    ): InMemoryProfileMetadataState!
-    setProfileActivityAsReady(sessionId: String!): InMemoryProfileMetadataState!
-    setGroupActivityValue(
-      sessionId: String!
-      questionId: String!
-    ): InMemorySessionMetadataState!
-    setGroupActivityAsReady(sessionId: String!): InMemorySessionMetadataState!
-  }
-`;
-
-export const sessionSubscriptionDefs = gql`
-  type Subscription {
-    inMemorySessionMetadataState(
-      slotId: String!
-      sessionId: String
-    ): InMemorySessionMetadataState
-    inMemoryProfileMetadataState(
-      sessionId: String!
-    ): InMemoryProfileMetadataState
-  }
-`;
 
 export const mutationResolvers = {
   setProfileAsSessionParticipant(
@@ -462,59 +345,5 @@ export const mutationResolvers = {
         ([, inMemorySessionMetadataStateForGraphQL]) =>
           inMemorySessionMetadataStateForGraphQL
       );
-  },
-};
-
-export const subscriptionResolvers = {
-  inMemorySessionMetadataState: {
-    subscribe(
-      _: undefined,
-      data: { slotId: string; sessionId?: string },
-      context: AuthenticatedAppContext,
-      info: any
-    ) {
-      const { pubSub } = context;
-      const { profileId } = context.authenticatedProfile;
-      const { sessionId, slotId } = data;
-      const handler = sessionId
-        ? controller.handleSessionSubscriptionForSessionId(profileId, sessionId)
-        : controller.handleSessionSubscriptionWithSlotId(profileId, slotId);
-
-      return handler.then((inMemorySessionMetadataState) => {
-        const eventName = generateSessionUpdateSubscriptionEvent({
-          sessionId: inMemorySessionMetadataState.sessionId,
-        });
-        controller.readAndPublishInMemorySessionMetadataState(
-          inMemorySessionMetadataState.sessionId,
-          pubSub
-        );
-        const asyncIterator = context.pubSub.asyncIterator(eventName);
-        return withCancel(asyncIterator, () => {
-          controller.handleSessionUnsubscribe(
-            profileId,
-            inMemorySessionMetadataState.sessionId,
-            pubSub
-          );
-        });
-      });
-    },
-  },
-  inMemoryProfileMetadataState: {
-    subscribe(
-      _: undefined,
-      data: { sessionId: string },
-      context: AuthenticatedAppContext,
-      info: any
-    ) {
-      const eventName = generateProfileUpdateSubscriptionEvent({
-        sessionId: data.sessionId,
-      });
-      const asyncIterator = context.pubSub.asyncIterator(eventName);
-      controller.readAndPublishInMemoryProfileMetadataState(
-        data.sessionId,
-        context.pubSub
-      );
-      return asyncIterator;
-    },
   },
 };

@@ -22,6 +22,10 @@ export function extractSubscription(gqlDef: DocumentNode) {
   return extractType("Subscription", gqlDef);
 }
 
+export function extractMutation(gqlDef: DocumentNode) {
+  return extractType("Mutation", gqlDef);
+}
+
 export function getGqlDefBody(gqlDef: DocumentNode) {
   return gqlDef.loc!.source.body;
 }

@@ -10,9 +10,11 @@ import {
   subscriptionResolvers,
   sessionSubscriptionDefs,
   sessionAndProfileMetadataTypeDefs,
+  sessionMutationDefs,
+  mutationResolvers,
 } from "./resources";
 import { mergeTypeDefs } from "@graphql-tools/merge";
-import { extractQuery, extractSubscription } from "./utils";
+import { extractMutation, extractQuery, extractSubscription } from "./utils";
 
 const queryTypeDef = gql`
   type Query {
@@ -29,6 +31,14 @@ const queryTypeDef = gql`
     # which will simply extend the Subscription
     ${extractSubscription(sessionSubscriptionDefs)}
   }
+  
+  type Mutation {
+    # we must have at least one thing here before we can start extending the Mutation
+    # so we need to leave this one here for the other types we can put the 
+    # <entityMutationDefs> inside the array that is provided bellow in mergeTypeDefs 
+    # which will simply extend the Mutation
+    ${extractMutation(sessionMutationDefs)}
+  }
 `;
 
 export const resolvers = {
@@ -39,6 +49,9 @@ export const resolvers = {
   },
   Subscription: {
     ...subscriptionResolvers,
+  },
+  Mutation: {
+    ...mutationResolvers,
   },
 };
 
