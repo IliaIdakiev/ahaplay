@@ -78,6 +78,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
   }
 
   type InMemoryProfileMetadataState {
+    sessionId: String!
     activityIds: [String]!
     activityMap: [ActivityMapArrayItem]!
     currentActivityId: String
