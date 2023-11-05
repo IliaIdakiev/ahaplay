@@ -5,12 +5,23 @@ const authCookieName = config.app.authCookieName;
 const authHeaderName = config.app.authHeaderName;
 const refreshTokenName = config.app.refreshTokenName;
 
+function capitalizeFirstLetter(string: string) {
+  return `${string.charAt(0).toUpperCase()}${string.slice(1)}`;
+}
+function lowercaseFirstLetter(string: string) {
+  return `${string.charAt(0).toLowerCase()}${string.slice(1)}`;
+}
+
 export function readAuthToken(req: {
   headers?: any;
   cookies?: any;
 }): string | null {
   const accessToken: string =
-    req.headers?.[authHeaderName] || req.cookies?.[authCookieName] || "";
+    req.headers?.[lowercaseFirstLetter(authHeaderName)] ||
+    req.cookies?.[lowercaseFirstLetter(authCookieName)] ||
+    req.headers?.[capitalizeFirstLetter(authHeaderName)] ||
+    req.cookies?.[capitalizeFirstLetter(authCookieName)] ||
+    "";
   return accessToken.replace(/Bearer\s?/g, "") || null;
 }
 

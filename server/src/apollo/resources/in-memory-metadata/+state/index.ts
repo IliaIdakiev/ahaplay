@@ -15,6 +15,8 @@ import {
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
+  profileIds: string[],
+  connectedProfileIds: string[],
   participantProfileIds: string[],
   activityIds: string[]
 ) {
@@ -31,6 +33,8 @@ export function setupSessionAndProfileMetadataInMemoryStates(
         sessionId: sessionId,
         participantProfileIds: participantProfileIds,
         activityIds: activityIds,
+        profileIds,
+        connectedProfileIds,
       });
 
       ops[0] = saveInMemorySessionMetadataState(sessionState);
@@ -50,10 +54,16 @@ export function setupSessionAndProfileMetadataInMemoryStates(
   });
 }
 
-export function createInMemoryDispatcher(sessionId: string) {
+export function createInMemoryDispatcher(
+  sessionId: string,
+  config?: { allowNullProfile: boolean }
+) {
   return Promise.all([
     readInMemorySessionMetadataState(sessionId),
-    readInMemoryProfileMetadataState(sessionId),
+    readInMemoryProfileMetadataState(
+      sessionId,
+      config?.allowNullProfile || false
+    ),
   ]).then(([sessionMetadataState, profileMetadataState]) => {
     const sessionState = createSessionReducerInitialState({
       sessionId: sessionId,
@@ -63,30 +73,41 @@ export function createInMemoryDispatcher(sessionId: string) {
       stages: sessionMetadataState.stages,
       activityMap: sessionMetadataState.activityMap,
       lastUpdateTimestamp: sessionMetadataState.lastUpdateTimestamp,
+      profileIds: sessionMetadataState.profileIds,
+      connectedProfileIds: sessionMetadataState.connectedProfileIds,
     });
     const profileState = createProfileReducerInitialState({
       sessionId: sessionId,
       profileIds: sessionMetadataState.participantProfileIds,
-      activityIds: profileMetadataState.activityIds,
-      activityMap: profileMetadataState.activityMap,
-      startEmotions: profileMetadataState.startEmotions,
-      endEmotions: profileMetadataState.endEmotions,
-      lastUpdateTimestamp: profileMetadataState.lastUpdateTimestamp,
+      activityIds:
+        profileMetadataState?.activityIds || sessionMetadataState.activityIds,
+      activityMap: profileMetadataState?.activityMap,
+      startEmotions: profileMetadataState?.startEmotions,
+      endEmotions: profileMetadataState?.endEmotions,
+      lastUpdateTimestamp: profileMetadataState?.lastUpdateTimestamp,
     });
     const sessionReducer = getSessionReducer(sessionState);
     const profileReducer = getProfileReducer(profileState);
 
     type AllActions =
-      | Parameters<typeof sessionReducer>["0"]
-      | Parameters<typeof profileReducer>["0"];
+      | Parameters<ReturnType<typeof getSessionReducer>>["0"]
+      | Parameters<ReturnType<typeof getProfileReducer>>["0"];
     return function dispatcher(action: AllActions) {
-      const updatedSessionState = sessionReducer(action);
-      const updatedProfileState = profileReducer(action);
+      const sessionResult = sessionReducer(action);
+      const profileResult = profileReducer(action);
 
       return Promise.all([
-        saveInMemorySessionMetadataState(updatedSessionState),
-        saveInMemoryProfileMetadataState(updatedProfileState),
-      ]);
+        sessionResult.hasStateChanged
+          ? saveInMemorySessionMetadataState(sessionResult.state).then(
+              (state) => ({ state, hasStateChanged: true })
+            )
+          : sessionResult,
+        profileResult.hasStateChanged
+          ? saveInMemoryProfileMetadataState(profileResult.state).then(
+              (state) => ({ state, hasStateChanged: true })
+            )
+          : profileResult,
+      ] as const);
     };
   });
 }

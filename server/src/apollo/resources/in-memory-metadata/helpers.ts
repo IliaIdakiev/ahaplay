@@ -1,7 +1,7 @@
 import {
   SubscriptionAction,
-  InMemorySessionMetadataError,
-  InMemoryProfileMetadataError,
+  InMemorySessionMetadataStateError,
+  InMemoryProfileMetadataStateError,
   ProfileAction,
 } from "../../types";
 import {
@@ -52,13 +52,15 @@ export function graphqlInMemoryProfileStateSerializer(
 
 export function publishInMemorySessionMetadataState(
   pubSub: RedisPubSub,
-  inMemorySessionMetadataState: InMemorySessionMetadataState
+  inMemorySessionMetadataState: InMemorySessionMetadataState,
+  inMemorySessionMetadataStateForGraphQL?: InMemorySessionMetadataGraphQLState
 ) {
   const { sessionId } = inMemorySessionMetadataState;
   const eventName = generateSessionUpdateSubscriptionEvent({
     sessionId,
   });
-  const inMemorySessionMetadataStateForGraphQL =
+  inMemorySessionMetadataStateForGraphQL =
+    inMemorySessionMetadataStateForGraphQL ||
     graphqlInMemorySessionStateSerializer(inMemorySessionMetadataState);
 
   pubSub.publish(eventName, {
@@ -66,18 +68,23 @@ export function publishInMemorySessionMetadataState(
       ...inMemorySessionMetadataStateForGraphQL,
     },
   });
-  return inMemorySessionMetadataState;
+  return [
+    inMemorySessionMetadataState,
+    inMemorySessionMetadataStateForGraphQL,
+  ] as const;
 }
 
 export function publishInMemoryProfileMetadataState(
   pubSub: RedisPubSub,
-  inMemoryProfileMetadataState: InMemoryProfileMetadataState
+  inMemoryProfileMetadataState: InMemoryProfileMetadataState,
+  inMemoryProfileMetadataStateForGraphQL?: InMemoryProfileMetadataGraphQLState
 ) {
   const { sessionId } = inMemoryProfileMetadataState;
   const eventName = generateProfileUpdateSubscriptionEvent({
     sessionId,
   });
-  const inMemoryProfileMetadataStateForGraphQL =
+  inMemoryProfileMetadataStateForGraphQL =
+    inMemoryProfileMetadataStateForGraphQL ||
     graphqlInMemoryProfileStateSerializer(inMemoryProfileMetadataState);
 
   pubSub.publish(eventName, {
@@ -85,24 +92,11 @@ export function publishInMemoryProfileMetadataState(
       ...inMemoryProfileMetadataStateForGraphQL,
     },
   });
-  return inMemoryProfileMetadataStateForGraphQL;
+  return [
+    inMemoryProfileMetadataState,
+    inMemoryProfileMetadataStateForGraphQL,
+  ] as const;
 }
-
-// export function readAndParseState(
-//   entry: InMemorySessionMetadata | InMemoryProfileMetadata
-// ) {
-//   try {
-//     return JSON.parse(entry.state);
-//   } catch (e) {
-//     console.error(e);
-//     const isSession = "sessionId" in entry;
-//     throw new Error(
-//       isSession
-//         ? InMemorySessionError.SESSION_STATE_MALFORMED
-//         : InMemoryProfileMetadataError.PROFILE_STATE_MALFORMED
-//     );
-//   }
-// }
 
 export function saveInMemorySessionMetadataState(
   inMemorySessionMetadataState: InMemorySessionMetadataState
@@ -137,7 +131,8 @@ export function readInMemorySessionMetadataState(
   allowNull: false
 ): Promise<InMemorySessionMetadataState>;
 export function readInMemorySessionMetadataState(
-  sessionId: string
+  sessionId: string,
+  allowNull?: boolean
 ): Promise<InMemorySessionMetadataState>;
 export function readInMemorySessionMetadataState(
   sessionId: string,
@@ -147,7 +142,7 @@ export function readInMemorySessionMetadataState(
   return readFromRedis<InMemorySessionMetadataState>(inMemorySessionKey).then(
     (session) => {
       if (allowNull === false && session === null) {
-        throw new Error(InMemorySessionMetadataError.SESSION_NOT_FOUND);
+        throw new Error(InMemorySessionMetadataStateError.SESSION_NOT_FOUND);
       }
       return session;
     }
@@ -163,7 +158,8 @@ export function readInMemoryProfileMetadataState(
   allowNull: false
 ): Promise<InMemoryProfileMetadataState>;
 export function readInMemoryProfileMetadataState(
-  sessionId: string
+  sessionId: string,
+  allowNull?: boolean
 ): Promise<InMemoryProfileMetadataState>;
 export function readInMemoryProfileMetadataState(
   sessionId: string,
@@ -175,7 +171,7 @@ export function readInMemoryProfileMetadataState(
   return readFromRedis<InMemoryProfileMetadataState>(profileStateKey).then(
     (profile) => {
       if (allowNull === false && profile === null) {
-        throw new Error(InMemoryProfileMetadataError.PROFILE_NOT_FOUND);
+        throw new Error(InMemoryProfileMetadataStateError.PROFILE_NOT_FOUND);
       }
       return profile;
     }

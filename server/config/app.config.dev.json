@@ -28,5 +28,6 @@
   "authCookieName": "auth",
   "authHeaderName": "Authorization",
   "refreshTokenName": "refresh",
-  "hashSaltRounds": 10
+  "hashSaltRounds": 10,
+  "allowGraphqlSandbox": true
 }

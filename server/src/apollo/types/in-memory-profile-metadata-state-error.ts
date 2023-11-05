@@ -1,4 +1,4 @@
-export enum InMemoryProfileMetadataError {
+export enum InMemoryProfileMetadataStateError {
   PROFILE_NOT_FOUND = "PROFILE_NOT_FOUND",
   PROFILE_STATE_MALFORMED = "PROFILE_STATE_MALFORMED",
   MISSING_VALUE = "MISSING_VALUE",

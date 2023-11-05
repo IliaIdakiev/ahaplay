@@ -5,8 +5,9 @@
   "license": "MIT",
   "scripts": {
     "start": "node -r tsconfig-paths/register dist/index.js",
-    "build": "tsc",
-    "test": "yarn build && mocha --config mocha.config.js"
+    "build:app": "tsc -p tsconfig.app.json",
+    "build:spec": "tsc -p tsconfig.spec.json",
+    "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js"
   },
   "dependencies": {
     "@apollo/server": "^4.9.4",

@@ -1,4 +1,4 @@
-import { InMemorySessionStage } from "../../../../redis/types";
+import { InMemorySessionStage } from "../../../types/in-memory-session-stage";
 
 export function getNextStage(currentStage: InMemorySessionStage) {
   if (currentStage === InMemorySessionStage.WAITING) {

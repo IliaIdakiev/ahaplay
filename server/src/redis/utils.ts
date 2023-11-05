@@ -1,8 +1,8 @@
 import { SessionStatus, models } from "../database";
 import { redisClient } from "./client";
 import { getUnixTime } from "date-fns";
-import { InMemorySessionMetadata } from "./types";
 import config from "../config";
+import { InMemorySessionMetadataState } from "../apollo/resources/in-memory-metadata/+state/reducers";
 
 export function generateRedisKey(key: string) {
   return `${config.redis.prefix}::${key}`;
@@ -22,7 +22,7 @@ export function syncActiveSessionsWithRedis() {
             try {
               return [
                 redisEntry
-                  ? (JSON.parse(redisEntry) as InMemorySessionMetadata)
+                  ? (JSON.parse(redisEntry) as InMemorySessionMetadataState)
                   : null,
                 databaseEntry,
               ] as const;
@@ -37,7 +37,8 @@ export function syncActiveSessionsWithRedis() {
             allEntries.map(([redisEntry, databaseEntry]) => {
               if (
                 redisEntry === null ||
-                getUnixTime(redisEntry.lastUpdateTimestamp) <
+                redisEntry.lastUpdateTimestamp === null ||
+                redisEntry.lastUpdateTimestamp <
                   getUnixTime(databaseEntry.update_date)
               ) {
                 console.log(

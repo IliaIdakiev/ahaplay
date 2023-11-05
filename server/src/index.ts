@@ -25,7 +25,7 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
     app.use(
       "/graphql",
       expressMiddleware(apolloServer, {
-        context: generateRequestContext,
+        context: ({ req }) => generateRequestContext(req),
       })
     );
 

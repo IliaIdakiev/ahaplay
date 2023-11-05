@@ -2,9 +2,31 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "tsc: build",
+      "label": "build:app",
       "type": "shell",
       "command": "./node_modules/.bin/tsc",
+      "args": [
+        "-p", "tsconfig.app.json"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
+    },
+    {
+      "label": "build:spec",
+      "type": "shell",
+      "command": "./node_modules/.bin/tsc",
+      "args": [
+        "-p", "tsconfig.spec.json"
+      ],
       "group": {
         "kind": "build",
         "isDefault": true

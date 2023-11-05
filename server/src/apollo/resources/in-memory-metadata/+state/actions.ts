@@ -16,8 +16,18 @@ export const removeParticipant = createAction(
   props<{ ids: string[] | string }>()
 );
 
+export const addConnectedProfile = createAction(
+  "ADD_CONNECTED_PROFILE",
+  props<{ ids: string[] | string }>()
+);
+
+export const removeConnectedProfile = createAction(
+  "REMOVE_CONNECTED_PROFILE",
+  props<{ ids: string[] | string }>()
+);
+
 export const setTeamName = createAction(
-  "SET_TEAM",
+  "SET_TEAM_NAME",
   props<{ teamName: string }>()
 );
 

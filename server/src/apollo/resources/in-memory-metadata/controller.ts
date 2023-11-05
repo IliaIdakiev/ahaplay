@@ -1,11 +1,6 @@
-import { getUnixTime } from "date-fns";
 import { UniqueConstraintError } from "sequelize";
-import {
-  AppContext,
-  InMemoryProfileMetadataError,
-  InMemorySessionMetadataError,
-} from "../../types";
-import { models, SessionStatus } from "../../../database";
+import { InMemorySessionMetadataStateError } from "../../types";
+import { models, SessionModelInstance, SessionStatus } from "../../../database";
 import {
   readSlotWithWorkshopActivitiesAndRelatedQuestions,
   generateSessionKey,
@@ -15,10 +10,23 @@ import {
   publishInMemorySessionMetadataState,
   readInMemoryProfileMetadataState,
   publishInMemoryProfileMetadataState,
+  graphqlInMemorySessionStateSerializer,
+  graphqlInMemoryProfileStateSerializer,
 } from "./helpers";
 import { RedisPubSub } from "graphql-redis-subscriptions";
+import {
+  InMemorySessionMetadataState,
+  createSessionReducerInitialState,
+} from "./+state/reducers/session";
+import { createInMemoryDispatcher } from "./+state";
+import { addConnectedProfile, removeConnectedProfile } from "./+state/actions";
+import { Unpack } from "../../../types";
+import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
+import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
+import { InMemoryProfileMetadataState } from "./+state/reducers";
+import { SlotModelInstance } from "src/database/interfaces/slot";
 
-export function publishSendInMemorySessionMetadata(
+export function readAndPublishInMemorySessionMetadataState(
   sessionId: string,
   pubSub: RedisPubSub
 ) {
@@ -28,7 +36,7 @@ export function publishSendInMemorySessionMetadata(
   );
 }
 
-export function publishSendInMemoryProfileMetadata(
+export function readAndPublishInMemoryProfileMetadataState(
   sessionId: string,
   pubSub: RedisPubSub
 ) {
@@ -38,242 +46,224 @@ export function publishSendInMemoryProfileMetadata(
   );
 }
 
-export function createInMemorySession(slotId: string, context: AppContext) {
-  const { profileId } = context.authenticatedUser;
-  return readSlotWithWorkshopActivitiesAndRelatedQuestions(slotId).then(
-    (slot) => {
-      if (
-        !slot ||
-        !slot.isOpenForSession() ||
-        !slot.workshop ||
-        !slot.workshop.activities ||
-        slot.workshop.activities.length === 0
-      ) {
-        throw new Error(InMemorySessionMetadataError.SESSION_NOT_FOUND);
+export function dispatchActionForSessionId(
+  sessionId: string,
+  action: Parameters<Unpack<ReturnType<typeof createInMemoryDispatcher>>>[0]
+) {
+  return createInMemoryDispatcher(sessionId, { allowNullProfile: true }).then(
+    (dispatch) => dispatch(action)
+  );
+}
+
+export function dispatchActionForSessionIdAndPublishChanges(
+  pubSub: RedisPubSub,
+  sessionId: string,
+  action: Parameters<Unpack<ReturnType<typeof createInMemoryDispatcher>>>[0]
+) {
+  return dispatchActionForSessionId(sessionId, action).then(
+    ([
+      inMemorySessionMetadataStateResult,
+      inMemoryProfileMetadataStateResult,
+    ]) => {
+      const inMemorySessionMetadataGraphQLState =
+        graphqlInMemorySessionStateSerializer(
+          inMemorySessionMetadataStateResult.state
+        );
+      const inMemoryProfileMetadataGraphQLState =
+        graphqlInMemoryProfileStateSerializer(
+          inMemoryProfileMetadataStateResult.state
+        );
+      const ops: [
+        Promise<
+          readonly [
+            InMemorySessionMetadataState,
+            InMemorySessionMetadataGraphQLState
+          ]
+        >,
+        Promise<
+          readonly [
+            InMemoryProfileMetadataState,
+            InMemoryProfileMetadataGraphQLState
+          ]
+        >
+      ] = [
+        Promise.resolve([
+          inMemorySessionMetadataStateResult.state,
+          inMemorySessionMetadataGraphQLState,
+        ]),
+        Promise.resolve([
+          inMemoryProfileMetadataStateResult.state,
+          inMemoryProfileMetadataGraphQLState,
+        ]),
+      ];
+      if (inMemorySessionMetadataStateResult.hasStateChanged) {
+        ops[0] = saveInMemorySessionMetadataState(
+          inMemorySessionMetadataStateResult.state
+        ).then((inMemorySessionMetadataState) =>
+          publishInMemorySessionMetadataState(
+            pubSub,
+            inMemorySessionMetadataState,
+            inMemorySessionMetadataGraphQLState
+          )
+        );
       }
+      if (inMemoryProfileMetadataStateResult.hasStateChanged) {
+        ops[1] = saveInMemoryProfileMetadataState(
+          inMemoryProfileMetadataStateResult.state
+        ).then((inMemoryProfileMetadataState) =>
+          publishInMemoryProfileMetadataState(
+            pubSub,
+            inMemoryProfileMetadataState,
+            inMemoryProfileMetadataGraphQLState
+          )
+        );
+      }
+      return Promise.all(ops);
+    }
+  );
+}
 
-      const sessionKey = generateSessionKey({ slotId });
-      return models.session
-        .create({
-          status: SessionStatus.SCHEDULED,
-          creator_id: context.authenticatedUser.profileId,
-          slot_id: slotId,
-          workshop_id: slot.workshop_id,
-          workspace_id: slot.workspace_id,
-          session_key: sessionKey,
-        })
-        .catch((error) => {
-          if (error instanceof UniqueConstraintError) {
-            return models.session.findOne({
-              where: { slot_id: slotId, status: SessionStatus.SCHEDULED },
-            });
-          }
-          return Promise.reject(error);
-        })
-        .then((session) => {
-          if (!session) {
-            throw new Error(InMemorySessionMetadataError.SESSION_NOT_FOUND);
-          }
-          if (session.state) {
-            return Promise.all([
-              session,
-              session.state,
-              readInMemoryProfile(session.id, profileId, true),
-              readInMemorySession(session.id),
-            ]);
-          }
-          //TODO: Create interface for the states
-          const state: Record<string, any> = {
-            stages: {
-              [InMemorySessionStage.WAITING]: [], // ids only because this is only for profile
-              [InMemorySessionStage.START_EMOTION_CHECK]: [], // ids only because this is only for profile
-              [InMemorySessionStage.TEAM_NAME]: [], // ids only because this is only for profile
-              [InMemorySessionStage.ON_GOING]: [], // ids only because this only used when all activities are filled for all profiles
-              [InMemorySessionStage.END_EMOTION_CHECK]: [], // ids only because this is only for profile
-              [InMemorySessionStage.VIEW_RESULTS]: [], // ids only because this is only for profile (not sure that we need this)
-            },
-          };
-          for (const activity of slot.workshop!.activities!) {
-            state[activity.id] = []; // { profileId: string, questionId: string }[]
-          }
-          return Promise.all([
-            session,
-            JSON.stringify(state),
-            readInMemoryProfile(session.id, profileId, true),
-            readInMemorySession(session.id, true),
-          ]);
-        })
+export function handleSessionSubscriptionForSessionId(
+  profileId: string,
+  sessionId: string
+) {
+  return readInMemorySessionMetadataState(sessionId).then(
+    (inMemorySessionMetadataState) => {
+      if (!inMemorySessionMetadataState) {
+        return Promise.reject(
+          new Error(InMemorySessionMetadataStateError.SESSION_NOT_FOUND)
+        );
+      }
+      return dispatchActionForSessionId(
+        sessionId,
+        addConnectedProfile({ ids: profileId })
+      )
         .then(
-          ([session, stateString, inMemoryProfile, inMemorySession]): Promise<
-            [InMemorySessionMetadata, InMemoryProfileMetadata | null]
-          > => {
-            if (session === null || stateString === null) {
-              throw new Error(InMemorySessionMetadataError.SESSION_NOT_FOUND);
-            }
-
-            const currentInMemorySession: InMemorySessionMetadata =
-              inMemorySession || {
-                sessionId: session!.id,
-                profileIds: [],
-                activeProfileIds: [],
-                connectedProfileIds: [],
-                stage: InMemorySessionStage.WAITING,
-                teamName: null,
-                state: stateString,
-                lastUpdateTimestamp: getUnixTime(new Date()),
-                groupCount: 2,
-              };
-
-            if (!currentInMemorySession.profileIds.includes(profileId)) {
-              currentInMemorySession.profileIds.push(profileId);
-            }
-            if (!currentInMemorySession.activeProfileIds.includes(profileId)) {
-              currentInMemorySession.activeProfileIds.push(profileId);
-            }
-            if (
-              !currentInMemorySession.connectedProfileIds.includes(profileId)
-            ) {
-              currentInMemorySession.connectedProfileIds.push(profileId);
-            }
-
-            let stateWithoutStagesString;
-            if (!inMemoryProfile) {
-              try {
-                const { stages, ...stateWithoutStages } = JSON.parse(
-                  session.state
-                );
-                stateWithoutStagesString = JSON.stringify(stateWithoutStages);
-              } catch (e) {
-                console.error(e);
-                throw new Error(
-                  InMemorySessionMetadataError.SESSION_STATE_MALFORMED
-                );
-              }
-            }
-            const currentInMemoryProfile: InMemoryProfileMetadata =
-              inMemoryProfile || {
-                state: stateWithoutStagesString!,
-                profileId,
-                isActive: true,
-                startEmotion: null,
-                endEmotion: null,
-                lastUpdateTimestamp: getUnixTime(new Date()),
-              };
-
-            return Promise.all([
-              saveInMemorySessionMetadataState(
-                currentInMemorySession.sessionId,
-                currentInMemorySession
-              ),
-              saveInMemoryProfileMetadataState(
-                currentInMemorySession.sessionId,
-                currentInMemoryProfile
-              ),
-            ]);
-          }
+          ([inMemorySessionMetadataResult]) =>
+            inMemorySessionMetadataResult.state
+        )
+        .then((inMemorySessionMetadataState) =>
+          saveInMemorySessionMetadataState(inMemorySessionMetadataState)
         );
     }
   );
 }
 
-export function updateInMemorySession(
-  sessionId: string,
-  updateFunction: (
-    inMemorySession: InMemorySessionMetadata
-  ) => InMemorySessionMetadata
-) {
-  const handleRequestTimestamp = getUnixTime(new Date());
-  return readInMemorySession(sessionId).then((inMemorySession) => {
-    if (handleRequestTimestamp < inMemorySession.lastUpdateTimestamp) {
-      throw new ErrorWithData(
-        InMemorySessionMetadataError.SESSION_OUTDATED,
-        inMemorySession
-      );
-    }
-    inMemorySession = updateFunction(inMemorySession);
-    return saveInMemorySessionMetadataState(sessionId, inMemorySession);
-  });
+function uniqueConstraintErrorHandler(
+  slotWithWorkshopAndActivities: SlotModelInstance,
+  profileId: string
+): Promise<Readonly<[SessionModelInstance, InMemorySessionMetadataState]>> {
+  return models.session
+    .findOne({
+      where: {
+        slot_id: slotWithWorkshopAndActivities.id,
+        status: SessionStatus.SCHEDULED,
+      },
+    })
+    .then((session) =>
+      readInMemorySessionMetadataState(session!.id).then(
+        (inMemorySessionMetadataState) => {
+          if (!inMemorySessionMetadataState) {
+            const inMemorySessionMetadataState =
+              createSessionReducerInitialState({
+                sessionId: session!.id,
+                activityIds:
+                  slotWithWorkshopAndActivities.workshop!.activities!.map(
+                    (a) => a.id
+                  ),
+                profileIds: [
+                  "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                  "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+                ], // All profiles that can access the workshop
+                participantProfileIds: [
+                  "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                  "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+                ], // Who is actually participating
+                connectedProfileIds: [profileId], // All profiles that are connected
+              });
+            return [session!, inMemorySessionMetadataState] as const;
+          }
+          return dispatchActionForSessionId(
+            session!.id,
+            addConnectedProfile({ ids: profileId })
+          ).then(
+            ([inMemorySessionMetadataResult]) =>
+              [session!, inMemorySessionMetadataResult.state] as const
+          );
+        }
+      )
+    );
 }
 
-export function updateInMemoryProfile(
-  sessionId: string,
+export function handleSessionSubscriptionWithSlotId(
   profileId: string,
-  updateFunction: (
-    inMemoryProfile: InMemoryProfileMetadata
-  ) => InMemoryProfileMetadata
-) {
-  const handleRequestTimestamp = getUnixTime(new Date());
-  return readInMemoryProfile(sessionId, profileId).then((inMemoryProfile) => {
-    if (handleRequestTimestamp < inMemoryProfile.lastUpdateTimestamp) {
-      throw new ErrorWithData(
-        InMemoryProfileMetadataError.PROFILE_OUTDATED,
-        inMemoryProfile
-      );
-    }
-    inMemoryProfile = updateFunction(inMemoryProfile);
-    return saveInMemoryProfileMetadataState(sessionId, inMemoryProfile);
-  });
-}
+  slotId: string
+): Promise<InMemorySessionMetadataState> {
+  return readSlotWithWorkshopActivitiesAndRelatedQuestions(slotId).then(
+    (slotWithWorkshopAndActivities) => {
+      if (
+        !slotWithWorkshopAndActivities ||
+        !slotWithWorkshopAndActivities.isOpenForSession() ||
+        !slotWithWorkshopAndActivities.workshop ||
+        !slotWithWorkshopAndActivities.workshop.activities ||
+        slotWithWorkshopAndActivities.workshop.activities.length === 0
+      ) {
+        throw new Error(InMemorySessionMetadataStateError.SESSION_NOT_FOUND);
+      }
+      const slotWorkshopId = slotWithWorkshopAndActivities.workshop_id;
+      const slotWorkspaceId = slotWithWorkshopAndActivities.workspace_id;
 
-export function createSessionAndProfileMetadata(
-  inMemorySession: InMemorySessionMetadata,
-  inMemoryProfile: InMemoryProfileMetadata | null,
-  context: AppContext
-) {
-  if (inMemorySession.stage === InMemorySessionStage.WAITING) {
-    inMemoryProfile = {
-      isActive: true,
-      profileId: context.authenticatedUser.profileId,
-      state: inMemorySession.state,
-      startEmotion: null,
-      endEmotion: null,
-      lastUpdateTimestamp: getUnixTime(new Date()),
-    };
-  } else {
-    throw new Error(InMemorySessionMetadataError.SESSION_ALREADY_STARTED);
-  }
-  return Promise.all([
-    saveInMemorySessionMetadataState(
-      inMemorySession.sessionId,
-      inMemorySession
-    ),
-    saveInMemoryProfileMetadataState(
-      inMemorySession.sessionId,
-      inMemoryProfile
-    ),
-  ]);
+      const sessionKey = generateSessionKey({ slotId });
+      return models.session
+        .create({
+          status: SessionStatus.SCHEDULED,
+          creator_id: profileId,
+          slot_id: slotId,
+          workshop_id: slotWorkshopId,
+          workspace_id: slotWorkspaceId,
+          session_key: sessionKey,
+        })
+        .then((session) =>
+          createSessionReducerInitialState({
+            sessionId: session.id,
+            activityIds:
+              slotWithWorkshopAndActivities.workshop!.activities!.map(
+                (a) => a.id
+              ),
+            profileIds: [
+              "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+              "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+            ], // All profiles that can access the workshop
+            participantProfileIds: [
+              "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+              "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+            ], // Who is actually participating
+            connectedProfileIds: [profileId], // All profiles that are connected
+          })
+        )
+        .catch((error) => {
+          if (error instanceof UniqueConstraintError) {
+            return uniqueConstraintErrorHandler(
+              slotWithWorkshopAndActivities,
+              profileId
+            ).then(
+              ([, inMemorySessionMetadataState]) => inMemorySessionMetadataState
+            );
+          }
+          return Promise.reject(error);
+        });
+    }
+  );
 }
 
 export function handleSessionUnsubscribe(
-  inMemorySession: InMemorySessionMetadata,
-  inMemoryProfile: InMemoryProfileMetadata,
+  profileId: string,
+  sessionId: string,
   pubSub: RedisPubSub
 ) {
-  const indexOfConnected = inMemorySession.connectedProfileIds.indexOf(
-    inMemoryProfile.profileId
+  return dispatchActionForSessionIdAndPublishChanges(
+    pubSub,
+    sessionId,
+    removeConnectedProfile({ ids: profileId })
   );
-  if (indexOfConnected !== -1) {
-    inMemorySession.connectedProfileIds = [
-      ...inMemorySession.connectedProfileIds.slice(0, indexOfConnected),
-      ...inMemorySession.connectedProfileIds.slice(indexOfConnected + 1),
-    ];
-  }
-
-  return Promise.all([
-    saveInMemoryProfileMetadataState(
-      inMemorySession.sessionId,
-      inMemoryProfile
-    ),
-    saveInMemorySessionMetadataState(
-      inMemorySession.sessionId,
-      inMemorySession
-    ),
-  ]).then(([inMemoryProfileMetadata, inMemorySession]) => {
-    publishInMemoryProfileMetadata(
-      pubSub,
-      inMemorySession.sessionId,
-      inMemoryProfileMetadata
-    );
-    publishInMemorySessionMetadata(pubSub, inMemorySession);
-  });
 }

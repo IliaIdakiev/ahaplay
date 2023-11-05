@@ -29,6 +29,7 @@ export interface IAppConfig {
   authHeaderName: string;
   refreshTokenName: string;
   hashSaltRounds: number;
+  allowGraphqlSandbox: boolean;
 }
 
 export interface IDatabaseConfig {

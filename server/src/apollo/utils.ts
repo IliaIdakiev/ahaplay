@@ -4,6 +4,7 @@ import { pubSub } from "./pub-sub";
 import { readAuthToken, verifyToken } from "../modules";
 import { AuthError } from "./types";
 import { AuthenticatedUserData } from "../types";
+import config from "../config";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
@@ -38,14 +39,16 @@ export function generateRequestContext(req: any) {
     return Promise.reject(AuthError.INVALID_CREDENTIALS);
   }
 
-  return verifyToken<AuthenticatedUserData>(token).then((userData) => {
-    const context: AppContext = {
-      authenticatedUser: {
-        profileId: userData.id,
-        workspaceId: userData.active_workspace_id,
-      },
-      pubSub,
-    };
-    return context;
-  });
+  return verifyToken<AuthenticatedUserData>(token)
+    .then((userData) => {
+      const context: AppContext = {
+        authenticatedProfile: {
+          profileId: userData.id,
+          workspaceId: userData.active_workspace_id,
+        },
+        pubSub,
+      };
+      return context;
+    })
+    .catch(() => Promise.reject(AuthError.INVALID_CREDENTIALS));
 }

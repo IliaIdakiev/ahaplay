@@ -1,11 +1,13 @@
 import { getNextStage } from "../helpers";
 import {
+  addConnectedProfile,
   addGroupActivityEntry,
   addParticipant,
   endEmotionReady,
   finish,
   groupActivityReady,
   readyToStart,
+  removeConnectedProfile,
   removeParticipant,
   setGroupActivityValue,
   setTeamName,
@@ -16,13 +18,16 @@ import { createReducer, on } from "../utils/reducer-creator";
 import { ActivityEntry } from "../types";
 import { InMemorySessionStage } from "../../../../types";
 import { getUnixTime } from "date-fns";
+import { isEqual } from "lodash";
 
 export interface InMemorySessionMetadataState {
   // INFO:
   // stages: { [InMemorySessionStage]: profileIds[] }
   // activities: { [activityId]: { profileId: string, questionId: string, ready: boolean } }
   readonly sessionId: string;
-  readonly participantProfileIds: string[];
+  readonly participantProfileIds: string[]; // Who is actually participating
+  readonly profileIds: string[]; // All profiles that can access the workshop
+  readonly connectedProfileIds: string[]; // All profiles that are connected
   readonly teamName: string | null;
   readonly currentStage: InMemorySessionStage;
   readonly activityIds: string[];
@@ -42,16 +47,20 @@ export interface InMemorySessionMetadataState {
 
 export function createSessionReducerInitialState({
   sessionId,
-  participantProfileIds,
   activityIds,
   teamName,
   stages,
   activityMap,
   lastUpdateTimestamp,
+  profileIds,
+  connectedProfileIds,
+  participantProfileIds,
 }: {
   sessionId: string;
-  participantProfileIds: string[];
   activityIds: string[];
+  profileIds: string[]; // All profiles that can access the workshop
+  participantProfileIds: string[]; // Who is actually participating
+  connectedProfileIds: string[]; // All profiles that are connected
   teamName?: string | null;
   stages?: InMemorySessionMetadataState["stages"];
   activityMap?: InMemorySessionMetadataState["activityMap"];
@@ -105,6 +114,8 @@ export function createSessionReducerInitialState({
   const initialState: InMemorySessionMetadataState = {
     sessionId,
     participantProfileIds,
+    connectedProfileIds,
+    profileIds,
     activityIds,
     teamName: teamName || null,
     currentStage: currentStage || InMemorySessionStage.WAITING,
@@ -155,6 +166,23 @@ function applyStageReadyForProfile(
 export function getSessionReducer(initialState: InMemorySessionMetadataState) {
   const reducer = createReducer(
     initialState,
+    on(addConnectedProfile, (state, { ids }) => {
+      return {
+        ...state,
+        connectedProfileIds: Array.from(
+          new Set(state.connectedProfileIds.concat(ids))
+        ),
+      };
+    }),
+    on(removeConnectedProfile, (state, { ids }) => {
+      const idArray = ([] as string[]).concat(ids);
+      return {
+        ...state,
+        connectedProfileIds: state.connectedProfileIds.filter(
+          (val) => !idArray.includes(val)
+        ),
+      };
+    }),
     on(addParticipant, (state, { ids }) => {
       if (state.currentStage !== InMemorySessionStage.WAITING) {
         return state;
@@ -325,6 +353,9 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
   type Action = Parameters<typeof reducer>[1];
   type State = Parameters<typeof reducer>[0];
   return function dispatchAction(action: Action, currentState?: State) {
-    return reducer(currentState || initialState, action);
+    const _initialState = currentState || initialState;
+    const stateAfterAction = reducer(_initialState, action);
+    const hasStateChanged = !isEqual(_initialState, stateAfterAction);
+    return { state: stateAfterAction, hasStateChanged };
   };
 }

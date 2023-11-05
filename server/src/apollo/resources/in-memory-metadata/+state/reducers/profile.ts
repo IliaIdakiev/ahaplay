@@ -9,6 +9,7 @@ import {
 } from "../actions";
 import { ActivityEntry } from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
+import { isEqual } from "lodash";
 
 export interface InMemoryProfileMetadataState {
   // INFO:
@@ -69,9 +70,10 @@ export function createProfileReducerInitialState({
 
   const currentActivityIndex = activityIds.indexOf(currentActivityId);
   const nextActivityIndex = currentActivityIndex + 1;
+  const nextActivity = activityIds[nextActivityIndex];
   const finished =
     nextActivityIndex >= activityIds.length - 1 &&
-    activityMap[nextActivityIndex].every((a) => a.ready);
+    activityMap[nextActivity].every((a) => a.ready);
 
   const initialState: InMemoryProfileMetadataState = {
     sessionId,
@@ -212,6 +214,9 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
   type Action = Parameters<typeof reducer>[1];
   type State = Parameters<typeof reducer>[0];
   return function dispatchAction(action: Action, currentState?: State) {
-    return reducer(currentState || initialState, action);
+    const _initialState = currentState || initialState;
+    const stateAfterAction = reducer(_initialState, action);
+    const hasStateChanged = !isEqual(_initialState, stateAfterAction);
+    return { state: stateAfterAction, hasStateChanged };
   };
 }

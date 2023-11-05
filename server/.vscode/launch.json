@@ -13,7 +13,7 @@
       },
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
       "runtimeArgs": ["-r", "tsconfig-paths/register"],
-      "preLaunchTask": "tsc: build",
+      "preLaunchTask": "build:app",
       "console": "integratedTerminal"
     },
     {
@@ -25,7 +25,7 @@
         "--config", "mocha.config.js",
         "--timeout", "0"
       ],
-      "preLaunchTask": "tsc: build",
+      "preLaunchTask": "build:spec",
       "runtimeArgs": ["--nolazy"],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
