@@ -42,7 +42,7 @@ export function setupSessionAndProfileMetadataInMemoryStates(
     if (!profileMetadataState) {
       const profileState = createProfileReducerInitialState({
         sessionId: sessionId,
-        profileIds: participantProfileIds,
+        participantProfileIds: participantProfileIds,
         activityIds: activityIds,
       });
 
@@ -78,7 +78,7 @@ export function createInMemoryDispatcher(
     });
     const profileState = createProfileReducerInitialState({
       sessionId: sessionId,
-      profileIds: sessionMetadataState.participantProfileIds,
+      participantProfileIds: sessionMetadataState.participantProfileIds,
       activityIds:
         profileMetadataState?.activityIds || sessionMetadataState.activityIds,
       activityMap: profileMetadataState?.activityMap,

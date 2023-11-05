@@ -4,7 +4,6 @@ import {
   createSessionReducerInitialState,
   getSessionReducer,
 } from "./session";
-import { InMemorySessionStage } from "../../../../../redis/types";
 import {
   addGroupActivityEntry,
   addParticipant,
@@ -14,19 +13,24 @@ import {
   readyToStart,
   removeParticipant,
   setGroupActivityValue,
+  setProfileActivityValue,
   setTeamName,
   startEmotionReady,
   teamNameReady,
 } from "../actions";
+import { InMemorySessionStage } from "../../../../../apollo/types";
 
 describe("Apollo > Resources > In Memory Session Metadata", () => {
   const activityIds = ["1", "2", "3"];
   const profileIds = ["profile1", "profile2", "profile3"];
+  const participantProfileIds = ["profile1", "profile2"];
+  const connectedProfileIds = ["profile1"];
   const questionIds = ["question1", "question2", "question3"];
+  const sessionId = "Session-123";
   const activityMap = activityIds.reduce(
     (acc, activityId) => ({
       ...acc,
-      [activityId]: profileIds.map((profileId, index) => ({
+      [activityId]: participantProfileIds.map((profileId, index) => ({
         profileId,
         questionId: questionIds[index],
         ready: true,
@@ -39,28 +43,45 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
   beforeEach(() => {
     initialState = createSessionReducerInitialState({
+      sessionId,
       activityIds,
-      participantProfileIds: profileIds,
+      participantProfileIds,
+      profileIds,
+      connectedProfileIds,
     });
     dispatch = getSessionReducer(initialState);
   });
 
   describe("state creation", () => {
     it("should check initial value", (done) => {
-      expect(initialState.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState.currentActivityId).to.equal(activityIds[0]);
       expect(initialState.currentStage).to.equal(InMemorySessionStage.WAITING);
       expect(initialState.teamName).to.equal(null);
       expect(initialState.allActivitiesFinished).to.equal(false);
-      expect(initialState.stages).to.equal(false);
-      expect(initialState.activityMap).to.equal(false);
+      expect(initialState.stages).to.deep.equal({
+        [InMemorySessionStage.WAITING]: [],
+        [InMemorySessionStage.START_EMOTION_CHECK]: [],
+        [InMemorySessionStage.TEAM_NAME]: [],
+        [InMemorySessionStage.ON_GOING]: [],
+        [InMemorySessionStage.END_EMOTION_CHECK]: [],
+        [InMemorySessionStage.VIEW_RESULTS]: [],
+      });
+      expect(initialState.activityMap).to.deep.equal(
+        activityIds.reduce(
+          (acc, activityId) => ({ ...acc, [activityId]: [] }),
+          {}
+        )
+      );
 
       done();
     });
 
     it("should createProfileReducerInitialState iterate over all stages before ongoing", (done) => {
       const stages1 = {
-        [InMemorySessionStage.WAITING]: profileIds.slice(),
+        [InMemorySessionStage.WAITING]: participantProfileIds.slice(),
         [InMemorySessionStage.START_EMOTION_CHECK]: [],
         [InMemorySessionStage.TEAM_NAME]: [],
         [InMemorySessionStage.ON_GOING]: [],
@@ -69,33 +90,45 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       };
       const initialState1 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages1,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const stages2 = {
         ...stages1,
-        [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
+        [InMemorySessionStage.START_EMOTION_CHECK]:
+          participantProfileIds.slice(),
       };
 
       const initialState2 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages2,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const stages3 = {
         ...stages2,
-        [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
+        [InMemorySessionStage.TEAM_NAME]: participantProfileIds.slice(),
       };
 
       const initialState3 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages3,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
-      expect(initialState1.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState1.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState1.currentActivityId).to.equal(activityIds[0]);
       expect(initialState1.currentStage).to.equal(
         InMemorySessionStage.START_EMOTION_CHECK
@@ -109,7 +142,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         "3": [],
       });
 
-      expect(initialState2.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState2.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState2.currentActivityId).to.equal(activityIds[0]);
       expect(initialState2.currentStage).to.equal(
         InMemorySessionStage.TEAM_NAME
@@ -123,7 +158,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         "3": [],
       });
 
-      expect(initialState3.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState3.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState3.currentActivityId).to.equal(activityIds[0]);
       expect(initialState3.currentStage).to.equal(
         InMemorySessionStage.ON_GOING
@@ -142,36 +179,40 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
     it("should createProfileReducerInitialState iterate over all stages after ongoing", (done) => {
       const activityMap = {
-        "1": profileIds.map((profileId, index) => ({
+        "1": participantProfileIds.map((profileId, index) => ({
           profileId,
           questionId: questionIds[index],
           ready: true,
         })),
-        "2": profileIds.map((profileId, index) => ({
+        "2": participantProfileIds.map((profileId, index) => ({
           profileId,
           questionId: questionIds[index],
           ready: true,
         })),
-        "3": profileIds.map((profileId, index) => ({
+        "3": participantProfileIds.map((profileId, index) => ({
           profileId,
           questionId: questionIds[index],
           ready: true,
         })),
       };
       const stages1 = {
-        [InMemorySessionStage.WAITING]: profileIds.slice(),
-        [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-        [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
+        [InMemorySessionStage.WAITING]: participantProfileIds.slice(),
+        [InMemorySessionStage.START_EMOTION_CHECK]:
+          participantProfileIds.slice(),
+        [InMemorySessionStage.TEAM_NAME]: participantProfileIds.slice(),
         [InMemorySessionStage.ON_GOING]: [],
         [InMemorySessionStage.END_EMOTION_CHECK]: [],
         [InMemorySessionStage.VIEW_RESULTS]: [],
       };
       const initialState1 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages1,
         activityMap,
         teamName: "Hello",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const stages2 = {
@@ -180,26 +221,34 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
       const initialState2 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages2,
         activityMap,
         teamName: "Hello",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const stages3 = {
         ...stages2,
-        [InMemorySessionStage.END_EMOTION_CHECK]: profileIds.slice(),
+        [InMemorySessionStage.END_EMOTION_CHECK]: participantProfileIds.slice(),
       };
 
       const initialState3 = createSessionReducerInitialState({
         activityIds,
-        participantProfileIds: profileIds,
+        participantProfileIds,
         stages: stages3,
         activityMap,
         teamName: "Hello",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
-      expect(initialState1.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState1.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState1.currentActivityId).to.equal(null);
       expect(initialState1.currentStage).to.equal(
         InMemorySessionStage.END_EMOTION_CHECK
@@ -209,7 +258,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState1.stages).to.deep.equal(stages1);
       expect(initialState1.activityMap).to.deep.equal(activityMap);
 
-      expect(initialState2.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState2.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState2.currentActivityId).to.equal(null);
       expect(initialState2.currentStage).to.equal(
         InMemorySessionStage.END_EMOTION_CHECK
@@ -219,7 +270,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState2.stages).to.deep.equal(stages2);
       expect(initialState2.activityMap).to.deep.equal(activityMap);
 
-      expect(initialState3.participantProfileIds).to.deep.equal(profileIds);
+      expect(initialState3.participantProfileIds).to.deep.equal(
+        participantProfileIds
+      );
       expect(initialState3.currentActivityId).to.equal(null);
       expect(initialState3.currentStage).to.equal(
         InMemorySessionStage.VIEW_RESULTS
@@ -231,110 +284,121 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
       done();
     });
+
+    it("should have result hasChanges equal to false", (done) => {
+      const action = setProfileActivityValue({
+        profileId: participantProfileIds[0],
+        questionId: questionIds[0],
+      });
+      const result = dispatch(action);
+      expect(result.hasStateChanged).to.equal(false);
+      expect(result.state).to.deep.equal(initialState);
+      done();
+    });
   });
 
   describe("actions dispatch", () => {
     it("should add participant", (done) => {
       const action = addParticipant({ ids: ["4"] });
-      const newState = dispatch(action);
-      expect(newState.participantProfileIds).to.deep.equal(
-        profileIds.concat("4")
+      const result = dispatch(action);
+      expect(result.state.participantProfileIds).to.deep.equal(
+        participantProfileIds.concat("4")
       );
+      expect(result.hasStateChanged).to.equal(true);
       done();
     });
 
     it("should remove participant", (done) => {
-      const action = removeParticipant({ ids: profileIds[2] });
-      const newState = dispatch(action);
-      expect(newState.participantProfileIds).to.deep.equal(
-        profileIds.slice(0, 2)
-      );
+      const action = removeParticipant({ ids: participantProfileIds[1] });
+      const result = dispatch(action);
+      expect(result.state.participantProfileIds).to.deep.equal([
+        participantProfileIds[0],
+      ]);
+      expect(result.hasStateChanged).to.equal(true);
       done();
     });
 
     it("should test readyToStart", (done) => {
-      const action1 = readyToStart({ profileId: profileIds[2] });
-      const newState1 = dispatch(action1);
+      const action1 = readyToStart({ profileId: participantProfileIds[0] });
+      const result2 = dispatch(action1, initialState);
 
-      const action2 = readyToStart({ profileId: profileIds[0] });
-      const newState2 = dispatch(action2, newState1);
+      const action3 = readyToStart({ profileId: participantProfileIds[1] });
+      const result3 = dispatch(action3, result2.state);
 
-      const action3 = readyToStart({ profileId: profileIds[1] });
-      const newState3 = dispatch(action3, newState2);
-
-      expect(newState1.stages[InMemorySessionStage.WAITING]).to.deep.equal(
-        profileIds.slice(2)
-      );
-      expect(newState2.stages[InMemorySessionStage.WAITING]).to.deep.equal([
-        profileIds[2],
-        profileIds[0],
+      expect(result2.state.stages[InMemorySessionStage.WAITING]).to.deep.equal([
+        participantProfileIds[0],
       ]);
-      expect(newState3.stages[InMemorySessionStage.WAITING]).to.deep.equal([
-        profileIds[2],
-        profileIds[0],
-        profileIds[1],
+      expect(result3.state.stages[InMemorySessionStage.WAITING]).to.deep.equal([
+        participantProfileIds[0],
+        participantProfileIds[1],
       ]);
-      expect(newState3.currentStage).to.equal(
+      expect(result3.state.currentStage).to.equal(
         InMemorySessionStage.START_EMOTION_CHECK
       );
+      expect(result2.hasStateChanged).to.equal(true);
+      expect(result3.hasStateChanged).to.equal(true);
       done();
     });
 
     it("should test setting team", (done) => {
-      const newState1 = createSessionReducerInitialState({
+      const state = createSessionReducerInitialState({
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const action1 = setTeamName({ teamName: "Hello" });
-      const newState2 = dispatch(action1, newState1);
+      const result2 = dispatch(action1, state);
 
       const action2 = setTeamName({ teamName: "Hello 2" });
-      const newState3 = dispatch(action2, newState2);
+      const result3 = dispatch(action2, result2.state);
 
-      const action3 = teamNameReady({ profileId: profileIds[0] });
-      const newState4 = dispatch(action3, newState3);
+      const action3 = teamNameReady({ profileId: participantProfileIds[0] });
+      const result4 = dispatch(action3, result3.state);
 
-      const action4 = teamNameReady({ profileId: profileIds[1] });
-      const newState5 = dispatch(action4, newState4);
+      const action4 = teamNameReady({ profileId: participantProfileIds[1] });
+      const result5 = dispatch(action4, result4.state);
 
-      const action5 = teamNameReady({ profileId: profileIds[2] });
-      const newState6 = dispatch(action5, newState5);
+      expect(state.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
+      expect(state.teamName).to.equal(null);
+      expect(result2.hasStateChanged).to.equal(true);
+      expect(result2.state.currentStage).to.equal(
+        InMemorySessionStage.TEAM_NAME
+      );
+      expect(result2.state.teamName).to.equal("Hello");
 
-      expect(newState1.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState1.teamName).to.equal(null);
+      expect(result3.state.currentStage).to.equal(
+        InMemorySessionStage.TEAM_NAME
+      );
+      expect(result3.state.teamName).to.equal("Hello 2");
+      expect(result3.hasStateChanged).to.equal(true);
 
-      expect(newState2.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState2.teamName).to.equal("Hello");
+      expect(result4.state.currentStage).to.equal(
+        InMemorySessionStage.TEAM_NAME
+      );
+      expect(result4.state.teamName).to.equal("Hello 2");
+      expect(
+        result4.state.stages[InMemorySessionStage.TEAM_NAME]
+      ).to.deep.equal([profileIds[0]]);
+      expect(result4.hasStateChanged).to.equal(true);
 
-      expect(newState3.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState3.teamName).to.equal("Hello 2");
-
-      expect(newState4.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState4.teamName).to.equal("Hello 2");
-      expect(newState4.stages[InMemorySessionStage.TEAM_NAME]).to.deep.equal([
-        profileIds[0],
-      ]);
-
-      expect(newState5.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState5.teamName).to.equal("Hello 2");
-      expect(newState5.stages[InMemorySessionStage.TEAM_NAME]).to.deep.equal([
-        profileIds[0],
-        profileIds[1],
-      ]);
-
-      expect(newState6.currentStage).to.equal(InMemorySessionStage.ON_GOING);
-      expect(newState6.teamName).to.equal("Hello 2");
-      expect(newState6.stages[InMemorySessionStage.TEAM_NAME]).to.deep.equal([
-        profileIds[0],
-        profileIds[1],
-        profileIds[2],
-      ]);
+      expect(result5.state.currentStage).to.equal(
+        InMemorySessionStage.ON_GOING
+      );
+      expect(result5.state.teamName).to.equal("Hello 2");
+      expect(
+        result5.state.stages[InMemorySessionStage.TEAM_NAME]
+      ).to.deep.equal([participantProfileIds[0], participantProfileIds[1]]);
+      expect(result5.hasStateChanged).to.equal(true);
 
       done();
     });
@@ -344,41 +408,42 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
-      const action1 = startEmotionReady({ profileId: profileIds[0] });
-      const newState2 = dispatch(action1, newState1);
+      const action1 = startEmotionReady({
+        profileId: participantProfileIds[0],
+      });
+      const result2 = dispatch(action1, newState1);
 
-      const action2 = startEmotionReady({ profileId: profileIds[1] });
-      const newState3 = dispatch(action2, newState2);
+      const action2 = startEmotionReady({
+        profileId: participantProfileIds[1],
+      });
+      const result3 = dispatch(action2, result2.state);
 
-      const action3 = startEmotionReady({ profileId: profileIds[2] });
-      const newState4 = dispatch(action3, newState3);
-
-      expect(newState2.currentStage).to.equal(
+      expect(result2.state.currentStage).to.equal(
         InMemorySessionStage.START_EMOTION_CHECK
       );
-      expect(newState2.teamName).to.equal(null);
+      expect(result2.hasStateChanged).to.equal(true);
+      expect(result2.state.teamName).to.equal(null);
       expect(
-        newState2.stages[InMemorySessionStage.START_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0]]);
+        result2.state.stages[InMemorySessionStage.START_EMOTION_CHECK]
+      ).to.deep.equal([participantProfileIds[0]]);
 
-      expect(newState3.currentStage).to.equal(
-        InMemorySessionStage.START_EMOTION_CHECK
+      expect(result3.state.currentStage).to.equal(
+        InMemorySessionStage.TEAM_NAME
       );
-      expect(newState3.teamName).to.equal(null);
+      expect(result3.hasStateChanged).to.equal(true);
+      expect(result3.state.teamName).to.equal(null);
       expect(
-        newState3.stages[InMemorySessionStage.START_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0], profileIds[1]]);
-
-      expect(newState4.currentStage).to.equal(InMemorySessionStage.TEAM_NAME);
-      expect(newState4.teamName).to.equal(null);
-      expect(
-        newState4.stages[InMemorySessionStage.START_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0], profileIds[1], profileIds[2]]);
+        result3.state.stages[InMemorySessionStage.START_EMOTION_CHECK]
+      ).to.deep.equal([participantProfileIds[0], participantProfileIds[1]]);
 
       done();
     });
@@ -388,47 +453,45 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-          [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
-          [InMemorySessionStage.ON_GOING]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.TEAM_NAME]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.ON_GOING]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
         activityMap,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
-      const action1 = endEmotionReady({ profileId: profileIds[0] });
-      const newState2 = dispatch(action1, newState1);
+      const action1 = endEmotionReady({ profileId: participantProfileIds[0] });
+      const result2 = dispatch(action1, newState1);
 
-      const action2 = endEmotionReady({ profileId: profileIds[1] });
-      const newState3 = dispatch(action2, newState2);
+      const action2 = endEmotionReady({ profileId: participantProfileIds[1] });
+      const result3 = dispatch(action2, result2.state);
 
-      const action3 = endEmotionReady({ profileId: profileIds[2] });
-      const newState4 = dispatch(action3, newState3);
-
-      expect(newState2.currentStage).to.equal(
+      expect(result2.state.currentStage).to.equal(
         InMemorySessionStage.END_EMOTION_CHECK
       );
-      expect(newState2.teamName).to.equal(null);
+      expect(result2.state.teamName).to.equal(null);
       expect(
-        newState2.stages[InMemorySessionStage.END_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0]]);
+        result2.state.stages[InMemorySessionStage.END_EMOTION_CHECK]
+      ).to.deep.equal([participantProfileIds[0]]);
+      expect(result2.hasStateChanged).to.equal(true);
 
-      expect(newState3.currentStage).to.equal(
-        InMemorySessionStage.END_EMOTION_CHECK
-      );
-      expect(newState3.teamName).to.equal(null);
-      expect(
-        newState3.stages[InMemorySessionStage.END_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0], profileIds[1]]);
-
-      expect(newState4.currentStage).to.equal(
+      expect(result3.state.currentStage).to.equal(
         InMemorySessionStage.VIEW_RESULTS
       );
-      expect(newState4.teamName).to.equal(null);
+      expect(result3.state.teamName).to.equal(null);
       expect(
-        newState4.stages[InMemorySessionStage.END_EMOTION_CHECK]
-      ).to.deep.equal([profileIds[0], profileIds[1], profileIds[2]]);
+        result3.state.stages[InMemorySessionStage.END_EMOTION_CHECK]
+      ).to.deep.equal([participantProfileIds[0], participantProfileIds[1]]);
+      expect(result3.hasStateChanged).to.equal(true);
 
       done();
     });
@@ -438,26 +501,35 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-          [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
-          [InMemorySessionStage.ON_GOING]: profileIds.slice(),
-          [InMemorySessionStage.END_EMOTION_CHECK]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.TEAM_NAME]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.ON_GOING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.END_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
         activityMap,
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const action1 = finish();
-      const newState2 = dispatch(action1, newState1);
+      const result2 = dispatch(action1, newState1);
 
-      expect(newState2.currentStage).to.equal(
+      expect(result2.state.currentStage).to.equal(
         InMemorySessionStage.VIEW_RESULTS
       );
-      expect(newState2.teamName).to.equal(null);
+      expect(result2.state.teamName).to.equal(null);
       expect(
-        newState2.stages[InMemorySessionStage.END_EMOTION_CHECK]
-      ).to.deep.equal(profileIds);
+        result2.state.stages[InMemorySessionStage.END_EMOTION_CHECK]
+      ).to.deep.equal(initialState.participantProfileIds);
+      expect(result2.hasStateChanged).to.equal(true);
 
       done();
     });
@@ -467,155 +539,107 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-          [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.TEAM_NAME]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
         teamName: "HELLO",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
 
       const action1 = setGroupActivityValue({
         questionId: questionIds[0],
-        profileId: profileIds[1],
+        profileId: participantProfileIds[1],
       });
-      const newState2 = dispatch(action1, newState1);
+      const result2 = dispatch(action1, newState1);
 
       const action2 = setGroupActivityValue({
-        questionId: questionIds[0],
-        profileId: profileIds[2],
-      });
-      const newState3 = dispatch(action2, newState2);
-
-      const action3 = setGroupActivityValue({
         questionId: questionIds[1],
-        profileId: profileIds[0],
+        profileId: participantProfileIds[0],
       });
-      const newState4 = dispatch(action3, newState3);
+      const result3 = dispatch(action2, result2.state);
 
       const action4 = groupActivityReady({
-        profileId: profileIds[0],
+        profileId: participantProfileIds[0],
       });
-      const newState5 = dispatch(action4, newState4);
+      const result4 = dispatch(action4, result3.state);
       const action5 = groupActivityReady({
-        profileId: profileIds[1],
+        profileId: participantProfileIds[1],
       });
-      const newState6 = dispatch(action5, newState5);
-      const action6 = groupActivityReady({
-        profileId: profileIds[2],
-      });
-      const newState7 = dispatch(action6, newState6);
+      const result6 = dispatch(action5, result4.state);
 
       expect(newState1.currentActivityId).to.equal(activityIds[0]);
-      expect(newState2.currentStage).to.equal(InMemorySessionStage.ON_GOING);
-      expect(newState2.teamName).to.equal("HELLO");
-      expect(newState2.currentActivityId).to.equal(activityIds[0]);
-      expect(newState2.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: false,
-          },
-        ]
+      expect(result2.state.currentStage).to.equal(
+        InMemorySessionStage.ON_GOING
       );
-      expect(newState3.currentActivityId).to.equal(activityIds[0]);
-      expect(newState3.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: false,
-          },
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[2],
-            ready: false,
-          },
-        ]
-      );
-      expect(newState4.currentActivityId).to.equal(activityIds[0]);
-      expect(newState4.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: false,
-          },
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[2],
-            ready: false,
-          },
-          {
-            questionId: questionIds[1],
-            profileId: profileIds[0],
-            ready: false,
-          },
-        ]
-      );
+      expect(result2.state.teamName).to.equal("HELLO");
+      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result2.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([
+        {
+          questionId: questionIds[0],
+          profileId: participantProfileIds[1],
+          ready: false,
+        },
+      ]);
+      expect(result2.hasStateChanged).to.equal(true);
+      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result3.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([
+        {
+          questionId: questionIds[0],
+          profileId: participantProfileIds[1],
+          ready: false,
+        },
+        {
+          questionId: questionIds[1],
+          profileId: participantProfileIds[0],
+          ready: false,
+        },
+      ]);
+      expect(result3.hasStateChanged).to.equal(true);
 
-      expect(newState5.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: false,
-          },
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[2],
-            ready: false,
-          },
-          {
-            questionId: questionIds[1],
-            profileId: profileIds[0],
-            ready: true,
-          },
-        ]
-      );
+      expect(
+        result4.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([
+        {
+          questionId: questionIds[0],
+          profileId: participantProfileIds[1],
+          ready: false,
+        },
+        {
+          questionId: questionIds[1],
+          profileId: participantProfileIds[0],
+          ready: true,
+        },
+      ]);
+      expect(result4.hasStateChanged).to.equal(true);
 
-      expect(newState6.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: true,
-          },
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[2],
-            ready: false,
-          },
-          {
-            questionId: questionIds[1],
-            profileId: profileIds[0],
-            ready: true,
-          },
-        ]
-      );
+      expect(
+        result6.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([
+        {
+          questionId: questionIds[0],
+          profileId: participantProfileIds[1],
+          ready: true,
+        },
+        {
+          questionId: questionIds[1],
+          profileId: participantProfileIds[0],
+          ready: true,
+        },
+      ]);
+      expect(result6.hasStateChanged).to.equal(true);
 
-      expect(newState7.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[1],
-            ready: true,
-          },
-          {
-            questionId: questionIds[0],
-            profileId: profileIds[2],
-            ready: true,
-          },
-          {
-            questionId: questionIds[1],
-            profileId: profileIds[0],
-            ready: true,
-          },
-        ]
-      );
-
-      expect(newState7.currentActivityId).to.equal(activityIds[1]);
+      expect(result6.state.currentActivityId).to.equal(activityIds[1]);
 
       done();
     });
@@ -625,12 +649,18 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-          [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.TEAM_NAME]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
         teamName: "HELLO",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
       const entry1 = {
         questionId: questionIds[0],
@@ -654,24 +684,27 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       const action2 = addGroupActivityEntry({ entry: entry2 });
       const action3 = addGroupActivityEntry({ entry: entry3 });
 
-      const newState2 = dispatch(action1, newState1);
-      const newState3 = dispatch(action2, newState2);
-      const newState4 = dispatch(action3, newState3);
+      const result2 = dispatch(action1, newState1);
+      const result3 = dispatch(action2, result2.state);
+      const result4 = dispatch(action3, result3.state);
 
-      expect(newState2.currentActivityId).to.equal(activityIds[0]);
-      expect(newState2.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1]
-      );
+      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result2.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1]);
+      expect(result3.hasStateChanged).to.equal(true);
 
-      expect(newState3.currentActivityId).to.equal(activityIds[0]);
-      expect(newState3.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2]
-      );
+      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result3.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, entry2]);
+      expect(result3.hasStateChanged).to.equal(true);
 
-      expect(newState4.currentActivityId).to.equal(activityIds[0]);
-      expect(newState4.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2, entry3]
-      );
+      expect(result4.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result4.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, entry2, entry3]);
+      expect(result4.hasStateChanged).to.equal(true);
 
       done();
     });
@@ -681,31 +714,32 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         participantProfileIds: initialState.participantProfileIds,
         stages: {
           ...initialState.stages,
-          [InMemorySessionStage.WAITING]: profileIds.slice(),
-          [InMemorySessionStage.START_EMOTION_CHECK]: profileIds.slice(),
-          [InMemorySessionStage.TEAM_NAME]: profileIds.slice(),
+          [InMemorySessionStage.WAITING]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.START_EMOTION_CHECK]:
+            initialState.participantProfileIds.slice(),
+          [InMemorySessionStage.TEAM_NAME]:
+            initialState.participantProfileIds.slice(),
         },
         activityIds,
         teamName: "HELLO",
+        sessionId,
+        profileIds,
+        connectedProfileIds,
       });
       const entry1 = {
         questionId: questionIds[0],
-        profileId: profileIds[0],
+        profileId: participantProfileIds[0],
         ready: false,
       };
       const entry2 = {
         questionId: questionIds[0],
-        profileId: profileIds[1],
-        ready: false,
-      };
-      const entry3 = {
-        questionId: questionIds[0],
-        profileId: profileIds[2],
+        profileId: participantProfileIds[1],
         ready: false,
       };
       const entry4 = {
         questionId: questionIds[1],
-        profileId: profileIds[2],
+        profileId: participantProfileIds[1],
         ready: true,
       };
 
@@ -713,50 +747,48 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         entry: entry1,
       });
       const action2 = addGroupActivityEntry({ entry: entry2 });
-      const action3 = addGroupActivityEntry({ entry: entry3 });
-      const action4 = addGroupActivityEntry({ entry: entry3 });
+      const action3 = addGroupActivityEntry({ entry: entry2 });
       const action5 = addGroupActivityEntry({ entry: entry4 });
       const action6 = addGroupActivityEntry({
         entry: entry4,
         forceUpdate: true,
       });
 
-      const newState2 = dispatch(action1, newState1);
-      const newState3 = dispatch(action2, newState2);
-      const newState4 = dispatch(action3, newState3);
-      const newState5 = dispatch(action4, newState4);
-      const newState6 = dispatch(action5, newState5);
-      const newState7 = dispatch(action6, newState6);
+      const result2 = dispatch(action1, newState1);
+      const result3 = dispatch(action2, result2.state);
+      const result4 = dispatch(action3, result3.state);
+      const result6 = dispatch(action5, result4.state);
+      const result7 = dispatch(action6, result6.state);
 
-      expect(newState2.currentActivityId).to.equal(activityIds[0]);
-      expect(newState2.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1]
-      );
+      expect(result2.hasStateChanged).to.equal(true);
+      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result2.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1]);
 
-      expect(newState3.currentActivityId).to.equal(activityIds[0]);
-      expect(newState3.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2]
-      );
+      expect(result3.hasStateChanged).to.equal(true);
+      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result3.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, entry2]);
 
-      expect(newState4.currentActivityId).to.equal(activityIds[0]);
-      expect(newState4.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2, entry3]
-      );
+      expect(result4.hasStateChanged).to.equal(false);
+      expect(result4.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result4.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, entry2]);
 
-      expect(newState5.currentActivityId).to.equal(activityIds[0]);
-      expect(newState5.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2, entry3]
-      );
+      expect(result6.hasStateChanged).to.equal(false);
+      expect(result6.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result6.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, entry2]);
 
-      expect(newState6.currentActivityId).to.equal(activityIds[0]);
-      expect(newState6.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2, entry3]
-      );
-
-      expect(newState7.currentActivityId).to.equal(activityIds[0]);
-      expect(newState7.activityMap[newState2.currentActivityId!]).to.deep.equal(
-        [entry1, entry2, { ...entry4, ready: false }]
-      );
+      expect(result7.hasStateChanged).to.equal(true);
+      expect(result7.state.currentActivityId).to.equal(activityIds[0]);
+      expect(
+        result7.state.activityMap[result2.state.currentActivityId!]
+      ).to.deep.equal([entry1, { ...entry4, ready: false }]);
 
       done();
     });

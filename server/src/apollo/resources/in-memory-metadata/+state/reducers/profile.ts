@@ -26,7 +26,7 @@ export interface InMemoryProfileMetadataState {
 
 export function createProfileReducerInitialState({
   sessionId,
-  profileIds,
+  participantProfileIds,
   activityIds,
   activityMap,
   startEmotions,
@@ -34,7 +34,7 @@ export function createProfileReducerInitialState({
   lastUpdateTimestamp,
 }: {
   sessionId: string;
-  profileIds: string[];
+  participantProfileIds: string[];
   activityIds: string[];
   activityMap?: InMemoryProfileMetadataState["activityMap"];
   startEmotions?: { emotion: number; profileId: string }[];
@@ -59,7 +59,7 @@ export function createProfileReducerInitialState({
     activityIds.reduce(
       (acc, activityId) => ({
         ...acc,
-        [activityId]: profileIds.map((profileId) => ({
+        [activityId]: participantProfileIds.map((profileId) => ({
           profileId,
           questionId: null,
           ready: false,
@@ -71,9 +71,9 @@ export function createProfileReducerInitialState({
   const currentActivityIndex = activityIds.indexOf(currentActivityId);
   const nextActivityIndex = currentActivityIndex + 1;
   const nextActivity = activityIds[nextActivityIndex];
-  const finished =
-    nextActivityIndex >= activityIds.length - 1 &&
-    activityMap[nextActivity].every((a) => a.ready);
+  const finished = !!(
+    !nextActivity && activityMap[currentActivityId].every((a) => a.ready)
+  );
 
   const initialState: InMemoryProfileMetadataState = {
     sessionId,
