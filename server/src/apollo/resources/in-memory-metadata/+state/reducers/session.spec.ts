@@ -32,7 +32,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       ...acc,
       [activityId]: participantProfileIds.map((profileId, index) => ({
         profileId,
-        questionId: questionIds[index],
+        value: questionIds[index],
         ready: true,
       })),
     }),
@@ -181,17 +181,17 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       const activityMap = {
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
-          questionId: questionIds[index],
+          value: questionIds[index],
           ready: true,
         })),
         "2": participantProfileIds.map((profileId, index) => ({
           profileId,
-          questionId: questionIds[index],
+          value: questionIds[index],
           ready: true,
         })),
         "3": participantProfileIds.map((profileId, index) => ({
           profileId,
-          questionId: questionIds[index],
+          value: questionIds[index],
           ready: true,
         })),
       };
@@ -288,7 +288,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
     it("should have result hasChanges equal to false", (done) => {
       const action = setProfileActivityValue({
         profileId: participantProfileIds[0],
-        questionId: questionIds[0],
+        value: questionIds[0],
       });
       const result = dispatch(action);
       expect(result.hasStateChanged).to.equal(false);
@@ -554,13 +554,13 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       });
 
       const action1 = setGroupActivityValue({
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: participantProfileIds[1],
       });
       const result2 = dispatch(action1, newState1);
 
       const action2 = setGroupActivityValue({
-        questionId: questionIds[1],
+        value: questionIds[1],
         profileId: participantProfileIds[0],
       });
       const result3 = dispatch(action2, result2.state);
@@ -584,7 +584,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         result2.state.activityMap[result2.state.currentActivityId!]
       ).to.deep.equal([
         {
-          questionId: questionIds[0],
+          value: questionIds[0],
           profileId: participantProfileIds[1],
           ready: false,
         },
@@ -595,12 +595,12 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         result3.state.activityMap[result2.state.currentActivityId!]
       ).to.deep.equal([
         {
-          questionId: questionIds[0],
+          value: questionIds[0],
           profileId: participantProfileIds[1],
           ready: false,
         },
         {
-          questionId: questionIds[1],
+          value: questionIds[1],
           profileId: participantProfileIds[0],
           ready: false,
         },
@@ -611,12 +611,12 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         result4.state.activityMap[result2.state.currentActivityId!]
       ).to.deep.equal([
         {
-          questionId: questionIds[0],
+          value: questionIds[0],
           profileId: participantProfileIds[1],
           ready: false,
         },
         {
-          questionId: questionIds[1],
+          value: questionIds[1],
           profileId: participantProfileIds[0],
           ready: true,
         },
@@ -627,12 +627,12 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         result6.state.activityMap[result2.state.currentActivityId!]
       ).to.deep.equal([
         {
-          questionId: questionIds[0],
+          value: questionIds[0],
           profileId: participantProfileIds[1],
           ready: true,
         },
         {
-          questionId: questionIds[1],
+          value: questionIds[1],
           profileId: participantProfileIds[0],
           ready: true,
         },
@@ -663,17 +663,17 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         connectedProfileIds,
       });
       const entry1 = {
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: profileIds[0],
         ready: false,
       };
       const entry2 = {
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: profileIds[1],
         ready: false,
       };
       const entry3 = {
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: profileIds[2],
         ready: false,
       };
@@ -728,17 +728,17 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         connectedProfileIds,
       });
       const entry1 = {
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: participantProfileIds[0],
         ready: false,
       };
       const entry2 = {
-        questionId: questionIds[0],
+        value: questionIds[0],
         profileId: participantProfileIds[1],
         ready: false,
       };
       const entry4 = {
-        questionId: questionIds[1],
+        value: questionIds[1],
         profileId: participantProfileIds[1],
         ready: true,
       };

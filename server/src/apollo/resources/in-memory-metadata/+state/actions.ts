@@ -58,12 +58,12 @@ export const endEmotionReady = createAction(
 
 export const setProfileActivityValue = createAction(
   "SET_PROFILE_ACTIVITY_VALUE",
-  props<{ questionId: string; profileId: string }>()
+  props<{ value: string; profileId: string }>()
 );
 
 export const setGroupActivityValue = createAction(
   "SET_GROUP_ACTIVITY_VALUE",
-  props<{ questionId: string; profileId: string }>()
+  props<{ value: string; profileId: string }>()
 );
 
 export const addGroupActivityEntry = createAction(

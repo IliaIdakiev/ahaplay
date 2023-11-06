@@ -172,14 +172,14 @@ export const mutationResolvers = {
     _: undefined,
     data: {
       sessionId: string;
-      questionId: string;
+      value: string;
     },
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
     const action = setProfileActivityValue({
       profileId: context.authenticatedProfile.profileId,
-      questionId: data.questionId,
+      value: data.value,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -208,14 +208,14 @@ export const mutationResolvers = {
     _: undefined,
     data: {
       sessionId: string;
-      questionId: string;
+      value: string;
     },
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
     const action = setGroupActivityValue({
       profileId: context.authenticatedProfile.profileId,
-      questionId: data.questionId,
+      value: data.value,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)

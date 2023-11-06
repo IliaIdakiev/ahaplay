@@ -13,7 +13,7 @@ import { isEqual } from "lodash";
 
 export interface InMemoryProfileMetadataState {
   // INFO:
-  // activities: { [activityId]: { profileId: string, questionId: string } }
+  // activities: { [activityId]: { profileId: string, value: string } }
   readonly sessionId: string;
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;
@@ -61,7 +61,7 @@ export function createProfileReducerInitialState({
         ...acc,
         [activityId]: participantProfileIds.map((profileId) => ({
           profileId,
-          questionId: null,
+          value: null,
           ready: false,
         })),
       }),
@@ -100,7 +100,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         for (const id of idArray) {
           updatedActivities[activityId] = [
             ...updatedActivities[activityId],
-            { profileId: id, questionId: null, ready: false },
+            { profileId: id, value: null, ready: false },
           ];
         }
       }
@@ -120,7 +120,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       }
       return { ...state, activityMap: updatedActivities };
     }),
-    on(setProfileActivityValue, (state, { profileId, questionId }) => {
+    on(setProfileActivityValue, (state, { profileId, value }) => {
       const { activityMap: activities } = state;
       const valueForCurrentActivity = activities[state.currentActivityId!];
       return {
@@ -129,7 +129,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
           ...activities,
           [state.currentActivityId!]: valueForCurrentActivity
             .filter(({ profileId: pId }) => profileId !== pId)
-            .concat([{ profileId, questionId, ready: false }]),
+            .concat([{ profileId, value, ready: false }]),
         },
         lastUpdateTimestamp: getUnixTime(new Date()),
       };
@@ -138,8 +138,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       const { activityMap: activities } = state;
       const valuesForCurrentActivity = activities[state.currentActivityId!];
       if (
-        !valuesForCurrentActivity.find((a) => a.profileId === profileId)
-          ?.questionId
+        !valuesForCurrentActivity.find((a) => a.profileId === profileId)?.value
       ) {
         return state;
       }

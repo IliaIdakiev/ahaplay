@@ -23,7 +23,7 @@ import { isEqual } from "lodash";
 export interface InMemorySessionMetadataState {
   // INFO:
   // stages: { [InMemorySessionStage]: profileIds[] }
-  // activities: { [activityId]: { profileId: string, questionId: string, ready: boolean } }
+  // activities: { [activityId]: { profileId: string, value: string, ready: boolean } }
   readonly sessionId: string;
   readonly participantProfileIds: string[]; // Who is actually participating
   readonly profileIds: string[]; // All profiles that can access the workshop
@@ -244,7 +244,7 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
         },
       };
     }),
-    on(setGroupActivityValue, (state, { profileId, questionId }) => {
+    on(setGroupActivityValue, (state, { profileId, value }) => {
       const { activityMap: activities } = state;
       const valueForCurrentActivity = activities[state.currentActivityId!];
       return {
@@ -253,7 +253,7 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
           ...activities,
           [state.currentActivityId!]: valueForCurrentActivity
             .filter(({ profileId: pId }) => profileId !== pId)
-            .concat([{ profileId, questionId, ready: false }]),
+            .concat([{ profileId, value, ready: false }]),
         },
       };
     }),

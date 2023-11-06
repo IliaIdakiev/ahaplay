@@ -13,7 +13,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
   
   type ActivityEntry {
     profileId: String
-    questionId: String
+    value: String
     ready: Boolean
   }
   
@@ -90,12 +90,12 @@ export const sessionMutationDefs = gql`
 
     setProfileActivityValue(
       sessionId: String!
-      questionId: String!
+      value: String!
     ): InMemoryProfileMetadataState!
     setProfileActivityAsReady(sessionId: String!): InMemoryProfileMetadataState!
     setGroupActivityValue(
       sessionId: String!
-      questionId: String!
+      value: String!
     ): InMemorySessionMetadataState!
     setGroupActivityAsReady(sessionId: String!): InMemorySessionMetadataState!
   }

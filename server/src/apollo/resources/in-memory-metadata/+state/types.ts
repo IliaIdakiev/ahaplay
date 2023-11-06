@@ -1,5 +1,5 @@
 export interface ActivityEntry {
   profileId: string;
-  questionId: string | null;
+  value: string | null;
   ready: boolean;
 }
