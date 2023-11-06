@@ -12,6 +12,7 @@ import {
   getProfileReducer,
   getSessionReducer,
 } from "./reducers";
+import * as actions from "./actions";
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
@@ -111,3 +112,7 @@ export function createInMemoryDispatcher(
     };
   });
 }
+
+export type InMemoryMetadataActions = ReturnType<
+  (typeof actions)[keyof typeof actions]
+>;

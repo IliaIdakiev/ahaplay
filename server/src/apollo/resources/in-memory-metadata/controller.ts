@@ -18,7 +18,7 @@ import {
   InMemorySessionMetadataState,
   createSessionReducerInitialState,
 } from "./+state/reducers/session";
-import { createInMemoryDispatcher } from "./+state";
+import { createInMemoryDispatcher, InMemoryMetadataActions } from "./+state";
 import { addConnectedProfile, removeConnectedProfile } from "./+state/actions";
 import { Unpack } from "../../../types";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
@@ -266,4 +266,54 @@ export function handleSessionUnsubscribe(
     sessionId,
     removeConnectedProfile({ ids: profileId })
   );
+}
+
+export function handleMutationAction(
+  sessionId: string,
+  action: InMemoryMetadataActions,
+  pubSub: RedisPubSub
+) {
+  return createInMemoryDispatcher(sessionId)
+    .then((dispatcher) => dispatcher(action))
+    .then(
+      ([
+        {
+          state: inMemorySessionMetadataState,
+          hasStateChanged: hasStateSessionChanged,
+        },
+        {
+          state: inMemoryProfileMetadataState,
+          hasStateChanged: hasProfileStateChanged,
+        },
+      ]) => {
+        const inMemorySessionMetadataGraphQLState =
+          graphqlInMemorySessionStateSerializer(inMemorySessionMetadataState);
+        const inMemoryProfileMetadataGraphQLState =
+          graphqlInMemoryProfileStateSerializer(inMemoryProfileMetadataState);
+        const ops: [
+          [InMemorySessionMetadataState, InMemorySessionMetadataGraphQLState],
+          [InMemoryProfileMetadataState, InMemoryProfileMetadataGraphQLState]
+        ] = [
+          [inMemorySessionMetadataState, inMemorySessionMetadataGraphQLState],
+          [inMemoryProfileMetadataState, inMemoryProfileMetadataGraphQLState],
+        ];
+        if (hasStateSessionChanged) {
+          ops[0] = [
+            ...publishInMemorySessionMetadataState(
+              pubSub,
+              inMemorySessionMetadataState
+            ),
+          ];
+        }
+        if (hasProfileStateChanged) {
+          ops[1] = [
+            ...publishInMemoryProfileMetadataState(
+              pubSub,
+              inMemoryProfileMetadataState
+            ),
+          ];
+        }
+        return ops;
+      }
+    );
 }

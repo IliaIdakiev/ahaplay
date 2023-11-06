@@ -21,6 +21,7 @@ import {
 } from "./+state/actions";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
 import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
+import * as controller from "./controller";
 
 export const mutationResolvers = {
   setProfileAsSessionParticipant(
@@ -29,20 +30,13 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          addParticipant({ ids: context.authenticatedProfile.profileId })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = addParticipant({
+      ids: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -52,20 +46,13 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          removeParticipant({ ids: context.authenticatedProfile.profileId })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = removeParticipant({
+      ids: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -75,20 +62,13 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          readyToStart({ profileId: context.authenticatedProfile.profileId })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = readyToStart({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -98,18 +78,11 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(setTeamName({ teamName: data.teamName }))
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = setTeamName({ teamName: data.teamName });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -119,20 +92,13 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          teamNameReady({ profileId: context.authenticatedProfile.profileId })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = teamNameReady({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -142,24 +108,15 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          setStartEmotion({
-            emotion: data.emotion,
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = setStartEmotion({
+      emotion: data.emotion,
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setStartEmotionAsReady(
@@ -168,23 +125,14 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          startEmotionReady({
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = startEmotionReady({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setEndEmotionAsReady(
@@ -193,23 +141,14 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          endEmotionReady({
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = endEmotionReady({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setEndEmotion(
@@ -218,24 +157,15 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          setEndEmotion({
-            emotion: data.emotion,
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = setEndEmotion({
+      emotion: data.emotion,
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setProfileActivityValue(
@@ -247,24 +177,15 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          setProfileActivityValue({
-            profileId: context.authenticatedProfile.profileId,
-            questionId: data.questionId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = setProfileActivityValue({
+      profileId: context.authenticatedProfile.profileId,
+      questionId: data.questionId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setProfileActivityAsReady(
@@ -273,23 +194,14 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          profileActivityReady({
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([, { state: inMemoryProfileMetadataState }]) =>
-        publishInMemoryProfileMetadataState(
-          context.pubSub,
-          inMemoryProfileMetadataState
-        )
-      )
+    const action = profileActivityReady({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemoryProfileMetadataStateForGraphQL]) =>
-          inMemoryProfileMetadataStateForGraphQL
+        ([, [, inMemorySessionMetadataStateForGraphQL]]) =>
+          inMemorySessionMetadataStateForGraphQL
       );
   },
   setGroupActivityValue(
@@ -301,23 +213,14 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          setGroupActivityValue({
-            profileId: context.authenticatedProfile.profileId,
-            questionId: data.questionId,
-          })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = setGroupActivityValue({
+      profileId: context.authenticatedProfile.profileId,
+      questionId: data.questionId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
@@ -327,22 +230,13 @@ export const mutationResolvers = {
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
-    return createInMemoryDispatcher(data.sessionId)
-      .then((dispatcher) =>
-        dispatcher(
-          groupActivityReady({
-            profileId: context.authenticatedProfile.profileId,
-          })
-        )
-      )
-      .then(([{ state: inMemorySessionMetadataState }]) =>
-        publishInMemorySessionMetadataState(
-          context.pubSub,
-          inMemorySessionMetadataState
-        )
-      )
+    const action = groupActivityReady({
+      profileId: context.authenticatedProfile.profileId,
+    });
+    return controller
+      .handleMutationAction(data.sessionId, action, context.pubSub)
       .then(
-        ([, inMemorySessionMetadataStateForGraphQL]) =>
+        ([[, inMemorySessionMetadataStateForGraphQL]]) =>
           inMemorySessionMetadataStateForGraphQL
       );
   },
