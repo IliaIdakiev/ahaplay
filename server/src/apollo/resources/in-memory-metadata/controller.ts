@@ -14,17 +14,17 @@ import {
   graphqlInMemoryProfileStateSerializer,
 } from "./helpers";
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import {
-  InMemorySessionMetadataState,
-  createSessionReducerInitialState,
-} from "./+state/reducers/session";
 import { createInMemoryDispatcher, InMemoryMetadataActions } from "./+state";
 import { addConnectedProfile, removeConnectedProfile } from "./+state/actions";
 import { Unpack } from "../../../types";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
 import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
-import { InMemoryProfileMetadataState } from "./+state/reducers";
-import { SlotModelInstance } from "src/database/interfaces/slot";
+import {
+  InMemoryProfileMetadataState,
+  InMemorySessionMetadataState,
+  createSessionReducerInitialState,
+} from "./+state/reducers";
+import { SlotModelInstance } from "../../../database/interfaces/slot";
 
 export function readAndPublishInMemorySessionMetadataState(
   sessionId: string,
