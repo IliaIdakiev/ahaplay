@@ -4,7 +4,6 @@ import { pubSub } from "./pub-sub";
 import { readAuthToken, verifyToken } from "../modules";
 import { AuthError } from "./types";
 import { AuthenticatedUserData } from "../types";
-import config from "../config";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
