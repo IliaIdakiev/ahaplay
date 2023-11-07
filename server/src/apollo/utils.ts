@@ -1,6 +1,6 @@
 import { DocumentNode } from "graphql";
 import { AppContext } from "./types/context";
-import { pubSub } from "./pub-sub";
+import { pubSub } from "../redis";
 import { readAuthToken, verifyToken } from "../modules";
 import { AuthError } from "./types";
 import { AuthenticatedUserData } from "../types";

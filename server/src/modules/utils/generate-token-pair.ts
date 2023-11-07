@@ -1,7 +1,7 @@
-import { AuthJwtPayload, RefreshJwtPayload } from "../../api/interfaces";
 import { createToken } from "../jwt";
 import { getRefreshTokenJti } from "./refresh-token-jti";
 import config from "../../config";
+import { AuthJwtPayload, RefreshJwtPayload } from "../../types";
 
 const accessTokenExpieryTime = config.app.jwt.accessTokenExpieryTime;
 const refreshTokenExpieryTime = config.app.jwt.refreshTokenExpieryTime;

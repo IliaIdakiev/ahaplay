@@ -12,7 +12,7 @@ import { ExecutionArgs, ExecutionResult } from "graphql";
 import { AuthError } from "./types";
 import { decodeToken, readAuthToken, verifyToken } from "../modules";
 import { AuthJwtPayload } from "src/types";
-import { pubSub } from "./pub-sub";
+import { pubSub } from "../redis";
 
 function formatError(error: any) {
   console.error(error);
