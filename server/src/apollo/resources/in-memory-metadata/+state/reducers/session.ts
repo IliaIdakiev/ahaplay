@@ -23,7 +23,7 @@ import { isEqual } from "lodash";
 export interface InMemorySessionMetadataState {
   // INFO:
   // stages: { [InMemorySessionStage]: profileIds[] }
-  // activities: { [activityId]: { profileId: string, value: string, ready: boolean } }
+  // activities: { [activityId]: { profileId: string, value: string, ready: boolean }[] }
   readonly sessionId: string;
   readonly participantProfileIds: string[]; // Who is actually participating
   readonly profileIds: string[]; // All profiles that can access the workshop

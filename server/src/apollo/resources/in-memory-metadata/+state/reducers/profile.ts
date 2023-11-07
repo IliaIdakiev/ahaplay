@@ -13,7 +13,7 @@ import { isEqual } from "lodash";
 
 export interface InMemoryProfileMetadataState {
   // INFO:
-  // activities: { [activityId]: { profileId: string, value: string } }
+  // activities: { [activityId]: { profileId: string, value: string }[] }
   readonly sessionId: string;
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;

@@ -215,6 +215,7 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
           {
             model: models.activity,
             as: activityAssociationNames.plural,
+            order: [["sequence_number", "ASC"]],
             include: [
               {
                 model: models.question,
