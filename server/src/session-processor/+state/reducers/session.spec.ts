@@ -18,7 +18,7 @@ import {
   startEmotionReady,
   teamNameReady,
 } from "../actions";
-import { InMemorySessionStage } from "../../../../../apollo/types";
+import { InMemorySessionStage } from "../types";
 
 describe("Apollo > Resources > In Memory Session Metadata", () => {
   const activityIds = ["1", "2", "3"];

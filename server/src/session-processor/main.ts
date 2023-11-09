@@ -1,10 +1,22 @@
-import { connectRedis, pubSub } from "../redis";
-import { SessionProcessorMessage } from "./types";
+import { connectRedis, pubSub, redisClient } from "../redis";
 import {
-  createProcessorMessage,
+  PubSubActionMessage,
+  PubSubActionMessageResult,
+  PubSubMessage,
+  SessionProcessorMessage,
+} from "./types";
+import {
+  activityAssociationNames,
+  connectSequelize,
+  models,
+  workshopAssociationNames,
+} from "../database";
+import {
   generateRedisSessionProcessListenerName,
-  generateRedisSessionProcessReceiverName,
+  generateRedisSessionProcessorPidKey,
+  generateRedisSessionProcessorSessionIdKey,
 } from "./utils";
+import { createInMemoryDispatcher } from "./+state";
 
 const args = process.argv.slice(2);
 const sessionId = args[0];
@@ -12,32 +24,88 @@ if (!sessionId) {
   throw new Error("No session id provided");
 }
 
-function publishMessage(message: string) {
+function publishMessage(payload: any) {
   return pubSub.publish(
-    generateRedisSessionProcessReceiverName(process.pid.toString()),
-    message
+    generateRedisSessionProcessListenerName(sessionId),
+    payload
   );
 }
 
-connectRedis().then(() => {
-  publishMessage(
-    createProcessorMessage(SessionProcessorMessage.SESSION_PROCESSOR_STARTED)
-  );
+function getSessionWithWorkshopAndActivities(sessionId: string) {
+  return models.session.findByPk(sessionId, {
+    include: [
+      {
+        model: models.workshop,
+        as: workshopAssociationNames.singular,
+        include: [
+          {
+            model: models.activity,
+            as: activityAssociationNames.plural,
+          },
+        ],
+      },
+    ],
+  });
+}
 
-  setTimeout(() => {
-    process.exit();
-  }, 5000);
+Promise.all([
+  connectSequelize().then(() => getSessionWithWorkshopAndActivities(sessionId)),
+  connectRedis(),
+]).then(([session]) => {
+  console.log(session);
+  publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
+
+  // setTimeout(() => {
+  //   process.exit();
+  // }, 5000);
 
   pubSub.subscribe(
     generateRedisSessionProcessListenerName(sessionId),
-    (message) => {
-      console.log(message);
+    (message: PubSubMessage<any>) => {
+      if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
+        const actionMessage = message as PubSubActionMessage;
+        createInMemoryDispatcher(sessionId, {
+          allowNullProfile: actionMessage.data.allowNullProfile,
+        })
+          .then((dispatch) => dispatch(actionMessage.data.action))
+          .then((result) => {
+            const actionResult: PubSubActionMessageResult = {
+              type: SessionProcessorMessage.ACTION_RESULT,
+              data: { result, action: actionMessage.data.action },
+            };
+            publishMessage(actionResult);
+          });
+      }
     }
   );
 });
 
 process.on("exit", () => {
-  publishMessage(
-    createProcessorMessage(SessionProcessorMessage.SESSION_PROCESSOR_STOPPED)
+  publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STOPPED });
+  const sessionIdSessionProcessorPidKey =
+    generateRedisSessionProcessorSessionIdKey(sessionId);
+  const sessionProcessorPidSessionIdKey = generateRedisSessionProcessorPidKey(
+    process.pid.toString()
   );
+
+  redisClient.del([
+    sessionIdSessionProcessorPidKey,
+    sessionProcessorPidSessionIdKey,
+  ]);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  publishMessage({
+    type: SessionProcessorMessage.UNHANDLED_REJECTION,
+    data: reason,
+  });
+});
+
+process.on("uncaughtException", (error) => {
+  console.error("Uncaught Exception:", error);
+  publishMessage({
+    type: SessionProcessorMessage.UNCAUGHT_EXCEPTION,
+    data: error,
+  });
 });

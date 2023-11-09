@@ -9,10 +9,6 @@ import { connectRedis } from "./redis";
 import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
 import { generateRequestContext } from "./apollo";
-import {
-  messageSessionProcessor,
-  startSessionProcessor,
-} from "./session-processor";
 
 const cookieSecret = config.app.cookieSecret;
 
@@ -23,10 +19,6 @@ const apolloServer = createApolloServer(httpServer);
 Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
   () => {
     console.log("Database connected, Redis connected and apollo is running.");
-
-    startSessionProcessor("123").then(() => {
-      messageSessionProcessor("123", "HELLO WORLD");
-    });
 
     app.use(bodyParser.json());
     app.use(cookieParser(cookieSecret));

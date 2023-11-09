@@ -7,7 +7,7 @@ import {
   setProfileActivityValue,
   setStartEmotion,
 } from "../actions";
-import { ActivityEntry } from "../types";
+import { ActivityEntry, ActivityMode } from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
 import { isEqual } from "lodash";
 
@@ -17,6 +17,7 @@ export interface InMemoryProfileMetadataState {
   readonly sessionId: string;
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;
+  readonly activityMode: ActivityMode;
   readonly currentActivityId: string | null;
   readonly finished: boolean;
   readonly startEmotions: { emotion: number; profileId: string }[];
@@ -81,6 +82,7 @@ export function createProfileReducerInitialState({
     activityIds,
     activityMap,
     finished,
+    activityMode: ActivityMode.PROFILE,
     startEmotions: startEmotions || [],
     endEmotions: endEmotions || [],
     lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
@@ -163,6 +165,9 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
 
       let currentActivityId = state.currentActivityId;
       let finished = state.finished;
+      let activityMode = isCurrentActivityReady
+        ? ActivityMode.GROUP
+        : ActivityMode.PROFILE;
 
       if (isCurrentActivityReady) {
         const currentActivityIndex = state.activityIds.indexOf(
@@ -180,6 +185,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         ...state,
         currentActivityId,
         finished,
+        activityMode,
         lastUpdateTimestamp: getUnixTime(new Date()),
         activityMap: {
           ...activities,

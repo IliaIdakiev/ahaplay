@@ -4,27 +4,36 @@ import { models, SessionModelInstance, SessionStatus } from "../../../database";
 import {
   readSlotWithWorkshopActivitiesAndRelatedQuestions,
   generateSessionKey,
-  saveInMemoryProfileMetadataState,
-  saveInMemorySessionMetadataState,
-  readInMemorySessionMetadataState,
   publishInMemorySessionMetadataState,
-  readInMemoryProfileMetadataState,
   publishInMemoryProfileMetadataState,
   graphqlInMemorySessionStateSerializer,
   graphqlInMemoryProfileStateSerializer,
 } from "./helpers";
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import { createInMemoryDispatcher, InMemoryMetadataActions } from "./+state";
-import { addConnectedProfile, removeConnectedProfile } from "./+state/actions";
-import { Unpack } from "../../../types";
+import { InMemoryMetadataActions } from "../../../session-processor/+state";
+import {
+  addConnectedProfile,
+  removeConnectedProfile,
+} from "../../../session-processor/+state/actions";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
 import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
 import {
   InMemoryProfileMetadataState,
   InMemorySessionMetadataState,
+  createProfileReducerInitialState,
   createSessionReducerInitialState,
-} from "./+state/reducers";
+} from "../../../session-processor/+state/reducers";
 import { SlotModelInstance } from "../../../database/interfaces/slot";
+import {
+  readInMemorySessionMetadataState,
+  readInMemoryProfileMetadataState,
+  saveInMemorySessionMetadataState,
+  saveInMemoryProfileMetadataState,
+} from "../../../session-processor/+state/helpers";
+import {
+  dispatchActionToProcessor,
+  startSessionProcessor,
+} from "../../../session-processor";
 
 export function readAndPublishInMemorySessionMetadataState(
   sessionId: string,
@@ -48,17 +57,16 @@ export function readAndPublishInMemoryProfileMetadataState(
 
 export function dispatchActionForSessionId(
   sessionId: string,
-  action: Parameters<Unpack<ReturnType<typeof createInMemoryDispatcher>>>[0]
+  action: InMemoryMetadataActions,
+  allowNullProfile: boolean = false
 ) {
-  return createInMemoryDispatcher(sessionId, { allowNullProfile: true }).then(
-    (dispatch) => dispatch(action)
-  );
+  return dispatchActionToProcessor(sessionId, action, allowNullProfile);
 }
 
 export function dispatchActionForSessionIdAndPublishChanges(
   pubSub: RedisPubSub,
   sessionId: string,
-  action: Parameters<Unpack<ReturnType<typeof createInMemoryDispatcher>>>[0]
+  action: InMemoryMetadataActions
 ) {
   return dispatchActionForSessionId(sessionId, action).then(
     ([
@@ -137,14 +145,13 @@ export function handleSessionSubscriptionForSessionId(
       return dispatchActionForSessionId(
         sessionId,
         addConnectedProfile({ ids: profileId })
-      )
-        .then(
-          ([inMemorySessionMetadataResult]) =>
-            inMemorySessionMetadataResult.state
-        )
-        .then((inMemorySessionMetadataState) =>
-          saveInMemorySessionMetadataState(inMemorySessionMetadataState)
-        );
+      ).then(
+        ([inMemorySessionMetadataResult, inMemoryProfileMetadataResult]) =>
+          [
+            inMemorySessionMetadataResult.state,
+            inMemoryProfileMetadataResult.state,
+          ] as const
+      );
     }
   );
 }
@@ -152,7 +159,15 @@ export function handleSessionSubscriptionForSessionId(
 function uniqueConstraintErrorHandler(
   slotWithWorkshopAndActivities: SlotModelInstance,
   profileId: string
-): Promise<Readonly<[SessionModelInstance, InMemorySessionMetadataState]>> {
+): Promise<
+  Readonly<
+    [
+      SessionModelInstance,
+      InMemorySessionMetadataState,
+      InMemoryProfileMetadataState
+    ]
+  >
+> {
   return models.session
     .findOne({
       where: {
@@ -161,7 +176,7 @@ function uniqueConstraintErrorHandler(
       },
     })
     .then((session) =>
-      readInMemorySessionMetadataState(session!.id).then(
+      readInMemorySessionMetadataState(session!.id, true).then(
         (inMemorySessionMetadataState) => {
           if (!inMemorySessionMetadataState) {
             const inMemorySessionMetadataState =
@@ -181,14 +196,34 @@ function uniqueConstraintErrorHandler(
                 ], // Who is actually participating
                 connectedProfileIds: [profileId], // All profiles that are connected
               });
-            return [session!, inMemorySessionMetadataState] as const;
+            const inMemoryProfileMetadataState =
+              createProfileReducerInitialState({
+                sessionId: session!.id,
+                participantProfileIds: [
+                  "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                  "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+                ], // Who is actually participating
+                activityIds:
+                  slotWithWorkshopAndActivities.workshop!.activities!.map(
+                    (a) => a.id
+                  ),
+              });
+            return Promise.all([
+              session!,
+              saveInMemorySessionMetadataState(inMemorySessionMetadataState),
+              saveInMemoryProfileMetadataState(inMemoryProfileMetadataState),
+            ] as const);
           }
           return dispatchActionForSessionId(
             session!.id,
             addConnectedProfile({ ids: profileId })
           ).then(
-            ([inMemorySessionMetadataResult]) =>
-              [session!, inMemorySessionMetadataResult.state] as const
+            ([inMemorySessionMetadataResult, inMemoryProfileMetadataResult]) =>
+              [
+                session!,
+                inMemorySessionMetadataResult.state,
+                inMemoryProfileMetadataResult.state,
+              ] as const
           );
         }
       )
@@ -198,7 +233,9 @@ function uniqueConstraintErrorHandler(
 export function handleSessionSubscriptionWithSlotId(
   profileId: string,
   slotId: string
-): Promise<InMemorySessionMetadataState> {
+): Promise<
+  Readonly<[InMemorySessionMetadataState, InMemoryProfileMetadataState]>
+> {
   return readSlotWithWorkshopActivitiesAndRelatedQuestions(slotId).then(
     (slotWithWorkshopAndActivities) => {
       if (
@@ -223,34 +260,64 @@ export function handleSessionSubscriptionWithSlotId(
           workspace_id: slotWorkspaceId,
           session_key: sessionKey,
         })
-        .then((session) =>
-          createSessionReducerInitialState({
-            sessionId: session.id,
-            activityIds:
-              slotWithWorkshopAndActivities.workshop!.activities!.map(
-                (a) => a.id
-              ),
-            profileIds: [
-              "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
-              "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
-            ], // All profiles that can access the workshop
-            participantProfileIds: [
-              "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
-              "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
-            ], // Who is actually participating
-            connectedProfileIds: [profileId], // All profiles that are connected
-          })
-        )
+        .then((session) => {
+          const inMemorySessionMetadataState = createSessionReducerInitialState(
+            {
+              sessionId: session!.id,
+              activityIds:
+                slotWithWorkshopAndActivities.workshop!.activities!.map(
+                  (a) => a.id
+                ),
+              profileIds: [
+                "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+              ], // All profiles that can access the workshop
+              participantProfileIds: [
+                "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+              ], // Who is actually participating
+              connectedProfileIds: [profileId], // All profiles that are connected
+            }
+          );
+          const inMemoryProfileMetadataState = createProfileReducerInitialState(
+            {
+              sessionId: session!.id,
+              participantProfileIds: [
+                "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
+                "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
+              ], // Who is actually participating
+              activityIds:
+                slotWithWorkshopAndActivities.workshop!.activities!.map(
+                  (a) => a.id
+                ),
+            }
+          );
+          return [
+            inMemorySessionMetadataState,
+            inMemoryProfileMetadataState,
+          ] as const;
+        })
         .catch((error) => {
           if (error instanceof UniqueConstraintError) {
             return uniqueConstraintErrorHandler(
               slotWithWorkshopAndActivities,
               profileId
             ).then(
-              ([, inMemorySessionMetadataState]) => inMemorySessionMetadataState
+              ([
+                ,
+                inMemorySessionMetadataState,
+                inMemoryProfileMetadataState,
+              ]) =>
+                [
+                  inMemorySessionMetadataState,
+                  inMemoryProfileMetadataState,
+                ] as const
             );
           }
           return Promise.reject(error);
+        })
+        .then((result) => {
+          return startSessionProcessor(result[0].sessionId).then(() => result);
         });
     }
   );
@@ -273,47 +340,45 @@ export function handleMutationAction(
   action: InMemoryMetadataActions,
   pubSub: RedisPubSub
 ) {
-  return createInMemoryDispatcher(sessionId)
-    .then((dispatcher) => dispatcher(action))
-    .then(
-      ([
-        {
-          state: inMemorySessionMetadataState,
-          hasStateChanged: hasStateSessionChanged,
-        },
-        {
-          state: inMemoryProfileMetadataState,
-          hasStateChanged: hasProfileStateChanged,
-        },
-      ]) => {
-        const inMemorySessionMetadataGraphQLState =
-          graphqlInMemorySessionStateSerializer(inMemorySessionMetadataState);
-        const inMemoryProfileMetadataGraphQLState =
-          graphqlInMemoryProfileStateSerializer(inMemoryProfileMetadataState);
-        const ops: [
-          [InMemorySessionMetadataState, InMemorySessionMetadataGraphQLState],
-          [InMemoryProfileMetadataState, InMemoryProfileMetadataGraphQLState]
-        ] = [
-          [inMemorySessionMetadataState, inMemorySessionMetadataGraphQLState],
-          [inMemoryProfileMetadataState, inMemoryProfileMetadataGraphQLState],
+  return dispatchActionForSessionId(sessionId, action).then(
+    ([
+      {
+        state: inMemorySessionMetadataState,
+        hasStateChanged: hasStateSessionChanged,
+      },
+      {
+        state: inMemoryProfileMetadataState,
+        hasStateChanged: hasProfileStateChanged,
+      },
+    ]) => {
+      const inMemorySessionMetadataGraphQLState =
+        graphqlInMemorySessionStateSerializer(inMemorySessionMetadataState);
+      const inMemoryProfileMetadataGraphQLState =
+        graphqlInMemoryProfileStateSerializer(inMemoryProfileMetadataState);
+      const ops: [
+        [InMemorySessionMetadataState, InMemorySessionMetadataGraphQLState],
+        [InMemoryProfileMetadataState, InMemoryProfileMetadataGraphQLState]
+      ] = [
+        [inMemorySessionMetadataState, inMemorySessionMetadataGraphQLState],
+        [inMemoryProfileMetadataState, inMemoryProfileMetadataGraphQLState],
+      ];
+      if (hasStateSessionChanged) {
+        ops[0] = [
+          ...publishInMemorySessionMetadataState(
+            pubSub,
+            inMemorySessionMetadataState
+          ),
         ];
-        if (hasStateSessionChanged) {
-          ops[0] = [
-            ...publishInMemorySessionMetadataState(
-              pubSub,
-              inMemorySessionMetadataState
-            ),
-          ];
-        }
-        if (hasProfileStateChanged) {
-          ops[1] = [
-            ...publishInMemoryProfileMetadataState(
-              pubSub,
-              inMemoryProfileMetadataState
-            ),
-          ];
-        }
-        return ops;
       }
-    );
+      if (hasProfileStateChanged) {
+        ops[1] = [
+          ...publishInMemoryProfileMetadataState(
+            pubSub,
+            inMemoryProfileMetadataState
+          ),
+        ];
+      }
+      return ops;
+    }
+  );
 }

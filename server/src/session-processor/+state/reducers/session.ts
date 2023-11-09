@@ -15,8 +15,7 @@ import {
   teamNameReady,
 } from "../actions";
 import { createReducer, on } from "../utils/reducer-creator";
-import { ActivityEntry } from "../types";
-import { InMemorySessionStage } from "../../../../types";
+import { InMemorySessionStage, ActivityEntry, ActivityMode } from "../types";
 import { getUnixTime } from "date-fns";
 import { isEqual } from "lodash";
 
@@ -31,6 +30,7 @@ export interface InMemorySessionMetadataState {
   readonly teamName: string | null;
   readonly currentStage: InMemorySessionStage;
   readonly activityIds: string[];
+  readonly activityMode: ActivityMode;
   readonly stages: {
     [InMemorySessionStage.WAITING]: string[];
     [InMemorySessionStage.START_EMOTION_CHECK]: string[];
@@ -40,8 +40,8 @@ export interface InMemorySessionMetadataState {
     [InMemorySessionStage.VIEW_RESULTS]: string[];
   };
   readonly activityMap: Record<string, ActivityEntry[]>;
-  readonly currentActivityId: string | null;
-  readonly allActivitiesFinished: boolean;
+  readonly currentActivityId: string | null; // TODO: rename to current group activity? also needs fixing because always showing null
+  readonly allActivitiesFinished: boolean; // this also for some reason is returned as true
   readonly lastUpdateTimestamp: number | null;
 }
 
@@ -128,6 +128,7 @@ export function createSessionReducerInitialState({
       [InMemorySessionStage.VIEW_RESULTS]: [],
     },
     activityMap,
+    activityMode: ActivityMode.PROFILE,
     currentActivityId: allActivitiesFinished ? null : currentActivityId,
     allActivitiesFinished,
     lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
@@ -277,7 +278,9 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
 
       let currentActivityId = state.currentActivityId;
       let allActivitiesFinished = state.allActivitiesFinished;
+      let activityMode = ActivityMode.GROUP;
       if (updatedValuesForCurrentActivity.every((a) => a.ready)) {
+        activityMode = ActivityMode.PROFILE;
         const currentActivityIndex = state.activityIds.indexOf(
           currentActivityId!
         );

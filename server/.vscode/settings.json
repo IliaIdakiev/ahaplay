@@ -2,5 +2,7 @@
   "cSpell.words": [
     "expiery",
     "sendgrid"
-  ]
+  ],
+  "javascript.preferences.importModuleSpecifier": "relative",
+  "typescript.preferences.importModuleSpecifier": "relative"
 }

@@ -1,5 +1,5 @@
 import gql from "graphql-tag";
-import { InMemorySessionStage } from "../../../apollo/types";
+import { InMemorySessionStage } from "../../../session-processor/types";
 
 export const sessionAndProfileMetadataTypeDefs = gql`
   enum InMemorySessionStage {

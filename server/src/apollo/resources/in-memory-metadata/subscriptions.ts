@@ -21,7 +21,7 @@ export const subscriptionResolvers = {
         ? controller.handleSessionSubscriptionForSessionId(profileId, sessionId)
         : controller.handleSessionSubscriptionWithSlotId(profileId, slotId);
 
-      return handler.then((inMemorySessionMetadataState) => {
+      return handler.then(([inMemorySessionMetadataState]) => {
         const eventName = generateSessionUpdateSubscriptionEvent({
           sessionId: inMemorySessionMetadataState.sessionId,
         });

@@ -1,10 +1,5 @@
 import { AuthenticatedAppContext } from "../../types";
 import {
-  publishInMemoryProfileMetadataState,
-  publishInMemorySessionMetadataState,
-} from "./helpers";
-import { createInMemoryDispatcher } from "./+state";
-import {
   addParticipant,
   endEmotionReady,
   groupActivityReady,
@@ -18,7 +13,7 @@ import {
   setTeamName,
   startEmotionReady,
   teamNameReady,
-} from "./+state/actions";
+} from "../../../session-processor/+state/actions";
 import { InMemorySessionMetadataGraphQLState } from "../../types/in-memory-session-metadata-graphql-state";
 import { InMemoryProfileMetadataGraphQLState } from "../../types/in-memory-profile-metadata-graphql-state";
 import * as controller from "./controller";

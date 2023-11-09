@@ -1,10 +1,4 @@
 import {
-  readInMemoryProfileMetadataState,
-  readInMemorySessionMetadataState,
-  saveInMemoryProfileMetadataState,
-  saveInMemorySessionMetadataState,
-} from "../helpers";
-import {
   InMemoryProfileMetadataState,
   InMemorySessionMetadataState,
   createProfileReducerInitialState,
@@ -13,6 +7,12 @@ import {
   getSessionReducer,
 } from "./reducers";
 import * as actions from "./actions";
+import {
+  readInMemoryProfileMetadataState,
+  readInMemorySessionMetadataState,
+  saveInMemoryProfileMetadataState,
+  saveInMemorySessionMetadataState,
+} from "./helpers";
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
@@ -90,10 +90,7 @@ export function createInMemoryDispatcher(
     const sessionReducer = getSessionReducer(sessionState);
     const profileReducer = getProfileReducer(profileState);
 
-    type AllActions =
-      | Parameters<ReturnType<typeof getSessionReducer>>["0"]
-      | Parameters<ReturnType<typeof getProfileReducer>>["0"];
-    return function dispatcher(action: AllActions) {
+    return function dispatcher(action: InMemoryMetadataActions) {
       const sessionResult = sessionReducer(action);
       const profileResult = profileReducer(action);
 
