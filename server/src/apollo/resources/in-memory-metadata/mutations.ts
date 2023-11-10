@@ -26,7 +26,7 @@ export const mutationResolvers = {
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
     const action = addParticipant({
-      ids: context.authenticatedProfile.profileId,
+      profileIds: context.authenticatedProfile.profileId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -42,7 +42,7 @@ export const mutationResolvers = {
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
     const action = removeParticipant({
-      ids: context.authenticatedProfile.profileId,
+      profileIds: context.authenticatedProfile.profileId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -168,6 +168,7 @@ export const mutationResolvers = {
     data: {
       sessionId: string;
       value: string;
+      activityId: string;
     },
     context: AuthenticatedAppContext,
     info: any
@@ -175,6 +176,7 @@ export const mutationResolvers = {
     const action = setProfileActivityValue({
       profileId: context.authenticatedProfile.profileId,
       value: data.value,
+      activityId: data.activityId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -185,12 +187,13 @@ export const mutationResolvers = {
   },
   setProfileActivityAsReady(
     _: undefined,
-    data: { sessionId: string },
+    data: { sessionId: string; activityId: string },
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemoryProfileMetadataGraphQLState> {
     const action = profileActivityReady({
       profileId: context.authenticatedProfile.profileId,
+      activityId: data.activityId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -203,6 +206,7 @@ export const mutationResolvers = {
     _: undefined,
     data: {
       sessionId: string;
+      activityId: string;
       value: string;
     },
     context: AuthenticatedAppContext,
@@ -211,6 +215,7 @@ export const mutationResolvers = {
     const action = setGroupActivityValue({
       profileId: context.authenticatedProfile.profileId,
       value: data.value,
+      activityId: data.activityId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)
@@ -221,12 +226,13 @@ export const mutationResolvers = {
   },
   setGroupActivityAsReady(
     _: undefined,
-    data: { sessionId: string },
+    data: { sessionId: string; activityId: string },
     context: AuthenticatedAppContext,
     info: any
   ): Promise<InMemorySessionMetadataGraphQLState> {
     const action = groupActivityReady({
       profileId: context.authenticatedProfile.profileId,
+      activityId: data.activityId,
     });
     return controller
       .handleMutationAction(data.sessionId, action, context.pubSub)

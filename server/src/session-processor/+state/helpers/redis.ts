@@ -1,34 +1,17 @@
-import { readFromRedis, saveInRedis } from "../../redis/utils";
+import { readFromRedis, saveInRedis } from "../../../redis/utils";
 import {
   generateSessionMetadataRedisKey,
   generateProfileMetadataRedisKey,
-} from "../../apollo/resources/in-memory-metadata/helpers";
+} from "../../../apollo/resources/in-memory-metadata/helpers";
 
 import {
   InMemorySessionMetadataStateError,
   InMemoryProfileMetadataStateError,
-} from "../../apollo/types";
+} from "../../../apollo/types";
 import {
   InMemorySessionMetadataState,
   InMemoryProfileMetadataState,
-} from "./reducers";
-import { InMemorySessionStage } from "./types";
-
-export function getNextStage(currentStage: InMemorySessionStage) {
-  if (currentStage === InMemorySessionStage.WAITING) {
-    return InMemorySessionStage.START_EMOTION_CHECK;
-  }
-  if (currentStage === InMemorySessionStage.START_EMOTION_CHECK) {
-    return InMemorySessionStage.TEAM_NAME;
-  }
-  if (currentStage === InMemorySessionStage.TEAM_NAME) {
-    return InMemorySessionStage.ON_GOING;
-  }
-  if (currentStage === InMemorySessionStage.ON_GOING) {
-    return InMemorySessionStage.END_EMOTION_CHECK;
-  }
-  return InMemorySessionStage.VIEW_RESULTS;
-}
+} from "../reducers";
 
 export function readInMemorySessionMetadataState(
   sessionId: string,

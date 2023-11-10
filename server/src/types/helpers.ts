@@ -9,3 +9,5 @@ export type Unpack<T> = T extends Array<infer I>
   : T extends Promise<infer P>
   ? P
   : T;
+
+export type RemoveUnion<T, P> = T extends P ? never : T;

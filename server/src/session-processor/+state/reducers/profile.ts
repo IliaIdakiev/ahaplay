@@ -3,13 +3,15 @@ import {
   addParticipant,
   profileActivityReady,
   removeParticipant,
+  setActivityMode,
   setEndEmotion,
   setProfileActivityValue,
   setStartEmotion,
 } from "../actions";
-import { ActivityEntry, ActivityMode } from "../types";
+import { ActivityEntry, ActivityMode, InMemorySessionStage } from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
-import { isEqual } from "lodash";
+import { diff } from "deep-diff";
+import { RemoveUnion } from "../../../types";
 
 export interface InMemoryProfileMetadataState {
   // INFO:
@@ -18,7 +20,8 @@ export interface InMemoryProfileMetadataState {
   readonly activityIds: string[];
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly activityMode: ActivityMode;
-  readonly currentActivityId: string | null;
+  readonly currentProfileActivityId: string | null;
+  readonly sessionStage: InMemorySessionStage;
   readonly finished: boolean;
   readonly startEmotions: { emotion: number; profileId: string }[];
   readonly endEmotions: { emotion: number; profileId: string }[];
@@ -33,6 +36,7 @@ export function createProfileReducerInitialState({
   startEmotions,
   endEmotions,
   lastUpdateTimestamp,
+  sessionStage,
 }: {
   sessionId: string;
   participantProfileIds: string[];
@@ -41,6 +45,7 @@ export function createProfileReducerInitialState({
   startEmotions?: { emotion: number; profileId: string }[];
   endEmotions?: { emotion: number; profileId: string }[];
   lastUpdateTimestamp?: number | null;
+  sessionStage: InMemorySessionStage;
 }) {
   let currentActivityId = activityIds[0];
   if (activityMap) {
@@ -78,7 +83,7 @@ export function createProfileReducerInitialState({
 
   const initialState: InMemoryProfileMetadataState = {
     sessionId,
-    currentActivityId,
+    currentProfileActivityId: currentActivityId,
     activityIds,
     activityMap,
     finished,
@@ -86,6 +91,7 @@ export function createProfileReducerInitialState({
     startEmotions: startEmotions || [],
     endEmotions: endEmotions || [],
     lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
+    sessionStage,
   };
   return initialState;
 }
@@ -93,7 +99,10 @@ export function createProfileReducerInitialState({
 export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
   const reducer = createReducer(
     initialState,
-    on(addParticipant, (state, { ids }) => {
+    on(setActivityMode, (state, { activityMode }) => {
+      return { ...state, activityMode };
+    }),
+    on(addParticipant, (state, { profileIds: ids }) => {
       const { activityIds, activityMap } = state;
       const idArray = ([] as string[]).concat(ids);
       const updatedActivities: Record<string, ActivityEntry[]> = {};
@@ -108,7 +117,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       }
       return { ...state, activityMap: updatedActivities };
     }),
-    on(removeParticipant, (state, { ids }) => {
+    on(removeParticipant, (state, { profileIds: ids }) => {
       const { activityIds, activityMap } = state;
       const idArray = ([] as string[]).concat(ids);
       const updatedActivities: Record<string, ActivityEntry[]> = {};
@@ -122,23 +131,37 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       }
       return { ...state, activityMap: updatedActivities };
     }),
-    on(setProfileActivityValue, (state, { profileId, value }) => {
+    on(setProfileActivityValue, (state, { profileId, value, activityId }) => {
+      if (
+        activityId !== state.currentProfileActivityId ||
+        state.sessionStage !== InMemorySessionStage.ON_GOING
+      ) {
+        return state;
+      }
       const { activityMap: activities } = state;
-      const valueForCurrentActivity = activities[state.currentActivityId!];
+      const valueForCurrentActivity =
+        activities[state.currentProfileActivityId!];
       return {
         ...state,
         activityMap: {
           ...activities,
-          [state.currentActivityId!]: valueForCurrentActivity
+          [state.currentProfileActivityId!]: valueForCurrentActivity
             .filter(({ profileId: pId }) => profileId !== pId)
             .concat([{ profileId, value, ready: false }]),
         },
         lastUpdateTimestamp: getUnixTime(new Date()),
       };
     }),
-    on(profileActivityReady, (state, { profileId }) => {
+    on(profileActivityReady, (state, { profileId, activityId }) => {
+      if (
+        activityId !== state.currentProfileActivityId ||
+        state.sessionStage !== InMemorySessionStage.ON_GOING
+      ) {
+        return state;
+      }
       const { activityMap: activities } = state;
-      const valuesForCurrentActivity = activities[state.currentActivityId!];
+      const valuesForCurrentActivity =
+        activities[state.currentProfileActivityId!];
       if (
         !valuesForCurrentActivity.find((a) => a.profileId === profileId)?.value
       ) {
@@ -163,7 +186,7 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         (a) => a.ready
       );
 
-      let currentActivityId = state.currentActivityId;
+      let currentActivityId: string | null = state.currentProfileActivityId;
       let finished = state.finished;
       let activityMode = isCurrentActivityReady
         ? ActivityMode.GROUP
@@ -183,17 +206,20 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
 
       return {
         ...state,
-        currentActivityId,
+        currentProfileActivityId: currentActivityId,
         finished,
         activityMode,
         lastUpdateTimestamp: getUnixTime(new Date()),
         activityMap: {
           ...activities,
-          [state.currentActivityId!]: updatedValuesForCurrentActivity,
+          [state.currentProfileActivityId!]: updatedValuesForCurrentActivity,
         },
       };
     }),
     on(setStartEmotion, (state, { profileId, emotion }) => {
+      if (state.sessionStage !== InMemorySessionStage.START_EMOTION_CHECK) {
+        return state;
+      }
       let { startEmotions } = state;
       startEmotions = startEmotions
         .filter((e) => e.profileId !== profileId)
@@ -205,6 +231,9 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       };
     }),
     on(setEndEmotion, (state, { profileId, emotion }) => {
+      if (state.sessionStage !== InMemorySessionStage.END_EMOTION_CHECK) {
+        return state;
+      }
       let { endEmotions } = state;
       endEmotions = endEmotions
         .filter((e) => e.profileId !== profileId)
@@ -218,10 +247,28 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
   );
   type Action = Parameters<typeof reducer>[1];
   type State = Parameters<typeof reducer>[0];
-  return function dispatchAction(action: Action, currentState?: State) {
-    const _initialState = currentState || initialState;
-    const stateAfterAction = reducer(_initialState, action);
-    const hasStateChanged = !isEqual(_initialState, stateAfterAction);
-    return { state: stateAfterAction, hasStateChanged };
+  return function dispatchAction(
+    action: Action,
+    ...other:
+      | []
+      | [RemoveUnion<State, undefined>]
+      | [...Action[], RemoveUnion<State, undefined>]
+  ) {
+    const additionalActions = other.filter((a) => "type" in a) as Action[];
+    const providedState: State | null =
+      other.length > 0 && additionalActions.length < other.length
+        ? (other[other.length - 1] as State)
+        : null;
+
+    const _initialState = providedState || initialState;
+    const stateAfterActions = [action]
+      .concat(additionalActions)
+      .reduce((state, action) => {
+        return reducer(state, action);
+      }, _initialState);
+
+    const differences = diff(_initialState, stateAfterActions);
+    const hasStateChanged = !!differences;
+    return { state: stateAfterActions, hasStateChanged, differences };
   };
 }

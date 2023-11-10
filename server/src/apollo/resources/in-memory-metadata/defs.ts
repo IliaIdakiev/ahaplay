@@ -90,14 +90,22 @@ export const sessionMutationDefs = gql`
 
     setProfileActivityValue(
       sessionId: String!
+      activityId: String!
       value: String!
     ): InMemoryProfileMetadataState!
-    setProfileActivityAsReady(sessionId: String!): InMemoryProfileMetadataState!
+    setProfileActivityAsReady(
+      sessionId: String!
+      activityId: String!
+    ): InMemoryProfileMetadataState!
     setGroupActivityValue(
       sessionId: String!
       value: String!
+      activityId: String!
     ): InMemorySessionMetadataState!
-    setGroupActivityAsReady(sessionId: String!): InMemorySessionMetadataState!
+    setGroupActivityAsReady(
+      sessionId: String!
+      activityId: String!
+    ): InMemorySessionMetadataState!
   }
 `;
 

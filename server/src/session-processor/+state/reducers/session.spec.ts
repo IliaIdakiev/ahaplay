@@ -57,7 +57,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState.currentActivityId).to.equal(activityIds[0]);
+      expect(initialState.currentGroupActivityId).to.equal(activityIds[0]);
       expect(initialState.currentStage).to.equal(InMemorySessionStage.WAITING);
       expect(initialState.teamName).to.equal(null);
       expect(initialState.allActivitiesFinished).to.equal(false);
@@ -129,7 +129,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState1.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState1.currentActivityId).to.equal(activityIds[0]);
+      expect(initialState1.currentGroupActivityId).to.equal(activityIds[0]);
       expect(initialState1.currentStage).to.equal(
         InMemorySessionStage.START_EMOTION_CHECK
       );
@@ -145,7 +145,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState2.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState2.currentActivityId).to.equal(activityIds[0]);
+      expect(initialState2.currentGroupActivityId).to.equal(activityIds[0]);
       expect(initialState2.currentStage).to.equal(
         InMemorySessionStage.TEAM_NAME
       );
@@ -161,7 +161,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState3.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState3.currentActivityId).to.equal(activityIds[0]);
+      expect(initialState3.currentGroupActivityId).to.equal(activityIds[0]);
       expect(initialState3.currentStage).to.equal(
         InMemorySessionStage.ON_GOING
       );
@@ -249,7 +249,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState1.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState1.currentActivityId).to.equal(null);
+      expect(initialState1.currentGroupActivityId).to.equal(null);
       expect(initialState1.currentStage).to.equal(
         InMemorySessionStage.END_EMOTION_CHECK
       );
@@ -261,7 +261,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState2.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState2.currentActivityId).to.equal(null);
+      expect(initialState2.currentGroupActivityId).to.equal(null);
       expect(initialState2.currentStage).to.equal(
         InMemorySessionStage.END_EMOTION_CHECK
       );
@@ -273,7 +273,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(initialState3.participantProfileIds).to.deep.equal(
         participantProfileIds
       );
-      expect(initialState3.currentActivityId).to.equal(null);
+      expect(initialState3.currentGroupActivityId).to.equal(null);
       expect(initialState3.currentStage).to.equal(
         InMemorySessionStage.VIEW_RESULTS
       );
@@ -289,6 +289,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       const action = setProfileActivityValue({
         profileId: participantProfileIds[0],
         value: questionIds[0],
+        activityId: activityIds[0],
       });
       const result = dispatch(action);
       expect(result.hasStateChanged).to.equal(false);
@@ -299,7 +300,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
   describe("actions dispatch", () => {
     it("should add participant", (done) => {
-      const action = addParticipant({ ids: ["4"] });
+      const action = addParticipant({ profileIds: ["4"] });
       const result = dispatch(action);
       expect(result.state.participantProfileIds).to.deep.equal(
         participantProfileIds.concat("4")
@@ -309,7 +310,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
     });
 
     it("should remove participant", (done) => {
-      const action = removeParticipant({ ids: participantProfileIds[1] });
+      const action = removeParticipant({
+        profileIds: participantProfileIds[1],
+      });
       const result = dispatch(action);
       expect(result.state.participantProfileIds).to.deep.equal([
         participantProfileIds[0],
@@ -556,32 +559,36 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       const action1 = setGroupActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const result2 = dispatch(action1, newState1);
 
       const action2 = setGroupActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const result3 = dispatch(action2, result2.state);
 
       const action4 = groupActivityReady({
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const result4 = dispatch(action4, result3.state);
       const action5 = groupActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const result6 = dispatch(action5, result4.state);
 
-      expect(newState1.currentActivityId).to.equal(activityIds[0]);
+      expect(newState1.currentGroupActivityId).to.equal(activityIds[0]);
       expect(result2.state.currentStage).to.equal(
         InMemorySessionStage.ON_GOING
       );
       expect(result2.state.teamName).to.equal("HELLO");
-      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result2.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result2.state.activityMap[result2.state.currentActivityId!]
+        result2.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([
         {
           value: questionIds[0],
@@ -590,9 +597,9 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         },
       ]);
       expect(result2.hasStateChanged).to.equal(true);
-      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result3.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result3.state.activityMap[result2.state.currentActivityId!]
+        result3.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([
         {
           value: questionIds[0],
@@ -608,7 +615,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(result3.hasStateChanged).to.equal(true);
 
       expect(
-        result4.state.activityMap[result2.state.currentActivityId!]
+        result4.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([
         {
           value: questionIds[0],
@@ -624,7 +631,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       expect(result4.hasStateChanged).to.equal(true);
 
       expect(
-        result6.state.activityMap[result2.state.currentActivityId!]
+        result6.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([
         {
           value: questionIds[0],
@@ -639,7 +646,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       ]);
       expect(result6.hasStateChanged).to.equal(true);
 
-      expect(result6.state.currentActivityId).to.equal(activityIds[1]);
+      expect(result6.state.currentGroupActivityId).to.equal(activityIds[1]);
 
       done();
     });
@@ -680,29 +687,36 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
       const action1 = addGroupActivityEntry({
         entry: entry1,
+        activityId: activityIds[0],
       });
-      const action2 = addGroupActivityEntry({ entry: entry2 });
-      const action3 = addGroupActivityEntry({ entry: entry3 });
+      const action2 = addGroupActivityEntry({
+        entry: entry2,
+        activityId: activityIds[0],
+      });
+      const action3 = addGroupActivityEntry({
+        entry: entry3,
+        activityId: activityIds[0],
+      });
 
       const result2 = dispatch(action1, newState1);
       const result3 = dispatch(action2, result2.state);
       const result4 = dispatch(action3, result3.state);
 
-      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result2.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result2.state.activityMap[result2.state.currentActivityId!]
+        result2.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1]);
       expect(result3.hasStateChanged).to.equal(true);
 
-      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result3.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result3.state.activityMap[result2.state.currentActivityId!]
+        result3.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, entry2]);
       expect(result3.hasStateChanged).to.equal(true);
 
-      expect(result4.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result4.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result4.state.activityMap[result2.state.currentActivityId!]
+        result4.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, entry2, entry3]);
       expect(result4.hasStateChanged).to.equal(true);
 
@@ -745,13 +759,24 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
       const action1 = addGroupActivityEntry({
         entry: entry1,
+        activityId: activityIds[1],
       });
-      const action2 = addGroupActivityEntry({ entry: entry2 });
-      const action3 = addGroupActivityEntry({ entry: entry2 });
-      const action5 = addGroupActivityEntry({ entry: entry4 });
+      const action2 = addGroupActivityEntry({
+        entry: entry2,
+        activityId: activityIds[1],
+      });
+      const action3 = addGroupActivityEntry({
+        entry: entry2,
+        activityId: activityIds[1],
+      });
+      const action5 = addGroupActivityEntry({
+        entry: entry4,
+        activityId: activityIds[2],
+      });
       const action6 = addGroupActivityEntry({
         entry: entry4,
         forceUpdate: true,
+        activityId: activityIds[2],
       });
 
       const result2 = dispatch(action1, newState1);
@@ -761,33 +786,33 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       const result7 = dispatch(action6, result6.state);
 
       expect(result2.hasStateChanged).to.equal(true);
-      expect(result2.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result2.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result2.state.activityMap[result2.state.currentActivityId!]
+        result2.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1]);
 
       expect(result3.hasStateChanged).to.equal(true);
-      expect(result3.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result3.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result3.state.activityMap[result2.state.currentActivityId!]
+        result3.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, entry2]);
 
       expect(result4.hasStateChanged).to.equal(false);
-      expect(result4.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result4.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result4.state.activityMap[result2.state.currentActivityId!]
+        result4.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, entry2]);
 
       expect(result6.hasStateChanged).to.equal(false);
-      expect(result6.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result6.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result6.state.activityMap[result2.state.currentActivityId!]
+        result6.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, entry2]);
 
       expect(result7.hasStateChanged).to.equal(true);
-      expect(result7.state.currentActivityId).to.equal(activityIds[0]);
+      expect(result7.state.currentGroupActivityId).to.equal(activityIds[0]);
       expect(
-        result7.state.activityMap[result2.state.currentActivityId!]
+        result7.state.activityMap[result2.state.currentGroupActivityId!]
       ).to.deep.equal([entry1, { ...entry4, ready: false }]);
 
       done();

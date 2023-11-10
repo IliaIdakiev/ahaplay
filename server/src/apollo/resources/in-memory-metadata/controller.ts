@@ -29,7 +29,7 @@ import {
   readInMemoryProfileMetadataState,
   saveInMemorySessionMetadataState,
   saveInMemoryProfileMetadataState,
-} from "../../../session-processor/+state/helpers";
+} from "../../../session-processor/+state/helpers/redis";
 import {
   dispatchActionToProcessor,
   startSessionProcessor,
@@ -144,7 +144,7 @@ export function handleSessionSubscriptionForSessionId(
       }
       return dispatchActionForSessionId(
         sessionId,
-        addConnectedProfile({ ids: profileId })
+        addConnectedProfile({ profileIds: profileId })
       ).then(
         ([inMemorySessionMetadataResult, inMemoryProfileMetadataResult]) =>
           [
@@ -207,6 +207,7 @@ function uniqueConstraintErrorHandler(
                   slotWithWorkshopAndActivities.workshop!.activities!.map(
                     (a) => a.id
                   ),
+                sessionStage: inMemorySessionMetadataState.currentStage,
               });
             return Promise.all([
               session!,
@@ -216,7 +217,7 @@ function uniqueConstraintErrorHandler(
           }
           return dispatchActionForSessionId(
             session!.id,
-            addConnectedProfile({ ids: profileId })
+            addConnectedProfile({ profileIds: profileId })
           ).then(
             ([inMemorySessionMetadataResult, inMemoryProfileMetadataResult]) =>
               [
@@ -290,6 +291,7 @@ export function handleSessionSubscriptionWithSlotId(
                 slotWithWorkshopAndActivities.workshop!.activities!.map(
                   (a) => a.id
                 ),
+              sessionStage: inMemorySessionMetadataState.currentStage,
             }
           );
           return [
@@ -331,7 +333,7 @@ export function handleSessionUnsubscribe(
   return dispatchActionForSessionIdAndPublishChanges(
     pubSub,
     sessionId,
-    removeConnectedProfile({ ids: profileId })
+    removeConnectedProfile({ profileIds: profileId })
   );
 }
 

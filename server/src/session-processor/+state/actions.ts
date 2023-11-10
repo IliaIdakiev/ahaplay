@@ -1,4 +1,4 @@
-import { ActivityEntry } from "./types";
+import { ActivityEntry, ActivityMode } from "./types";
 import { createAction, props } from "./utils/action-creator";
 
 export const readyToStart = createAction(
@@ -8,22 +8,22 @@ export const readyToStart = createAction(
 
 export const addParticipant = createAction(
   "ADD_PARTICIPANT",
-  props<{ ids: string[] | string }>()
+  props<{ profileIds: string[] | string }>()
 );
 
 export const removeParticipant = createAction(
   "REMOVE_PARTICIPANT",
-  props<{ ids: string[] | string }>()
+  props<{ profileIds: string[] | string }>()
 );
 
 export const addConnectedProfile = createAction(
   "ADD_CONNECTED_PROFILE",
-  props<{ ids: string[] | string }>()
+  props<{ profileIds: string[] | string }>()
 );
 
 export const removeConnectedProfile = createAction(
   "REMOVE_CONNECTED_PROFILE",
-  props<{ ids: string[] | string }>()
+  props<{ profileIds: string[] | string }>()
 );
 
 export const setTeamName = createAction(
@@ -58,27 +58,32 @@ export const endEmotionReady = createAction(
 
 export const setProfileActivityValue = createAction(
   "SET_PROFILE_ACTIVITY_VALUE",
-  props<{ value: string; profileId: string }>()
+  props<{ value: string; profileId: string; activityId: string }>()
 );
 
 export const setGroupActivityValue = createAction(
   "SET_GROUP_ACTIVITY_VALUE",
-  props<{ value: string; profileId: string }>()
+  props<{ value: string; profileId: string; activityId: string }>()
 );
 
 export const addGroupActivityEntry = createAction(
   "ADD_GROUP_ACTIVITY_ENTRY",
-  props<{ entry: ActivityEntry; forceUpdate?: boolean }>()
+  props<{ entry: ActivityEntry; activityId: string; forceUpdate?: boolean }>()
 );
 
 export const profileActivityReady = createAction(
   "PROFILE_ACTIVITY_READY",
-  props<{ profileId: string }>()
+  props<{ profileId: string; activityId: string }>()
 );
 
 export const groupActivityReady = createAction(
   "GROUP_ACTIVITY_READY",
-  props<{ profileId: string }>()
+  props<{ profileId: string; activityId: string }>()
+);
+
+export const setActivityMode = createAction(
+  "SET_ACTIVITY_MODE",
+  props<{ activityMode: ActivityMode }>()
 );
 
 export const finish = createAction("FINISH");

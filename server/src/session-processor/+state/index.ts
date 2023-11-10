@@ -12,7 +12,7 @@ import {
   readInMemorySessionMetadataState,
   saveInMemoryProfileMetadataState,
   saveInMemorySessionMetadataState,
-} from "./helpers";
+} from "./helpers/redis";
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
@@ -25,12 +25,13 @@ export function setupSessionAndProfileMetadataInMemoryStates(
     readInMemorySessionMetadataState(sessionId, true),
     readInMemoryProfileMetadataState(sessionId, true),
   ]).then(([sessionMetadataState, profileMetadataState]) => {
+    let sessionState = sessionMetadataState;
     let ops = [
       Promise.resolve(sessionMetadataState),
       Promise.resolve(profileMetadataState),
     ];
     if (!sessionMetadataState) {
-      const sessionState = createSessionReducerInitialState({
+      sessionState = createSessionReducerInitialState({
         sessionId: sessionId,
         participantProfileIds: participantProfileIds,
         activityIds: activityIds,
@@ -45,6 +46,7 @@ export function setupSessionAndProfileMetadataInMemoryStates(
         sessionId: sessionId,
         participantProfileIds: participantProfileIds,
         activityIds: activityIds,
+        sessionStage: sessionState!.currentStage,
       });
 
       ops[1] = saveInMemoryProfileMetadataState(profileState);
@@ -86,13 +88,45 @@ export function createInMemoryDispatcher(
       startEmotions: profileMetadataState?.startEmotions,
       endEmotions: profileMetadataState?.endEmotions,
       lastUpdateTimestamp: profileMetadataState?.lastUpdateTimestamp,
+      sessionStage: sessionState.currentStage,
     });
     const sessionReducer = getSessionReducer(sessionState);
     const profileReducer = getProfileReducer(profileState);
 
     return function dispatcher(action: InMemoryMetadataActions) {
-      const sessionResult = sessionReducer(action);
-      const profileResult = profileReducer(action);
+      let sessionResult = sessionReducer(action);
+      let profileResult = profileReducer(action);
+
+      const hasSessionActivityModeChanged = sessionResult.differences?.find(
+        (d) => d.path?.includes("activityMode")
+      );
+      const hasProfileActivityModeChanged = profileResult.differences?.find(
+        (d) => d.path?.includes("activityMode")
+      );
+
+      if (
+        hasSessionActivityModeChanged &&
+        profileResult.state.activityMode !== sessionResult.state.activityMode
+      ) {
+        profileResult = profileReducer(
+          actions.setActivityMode({
+            activityMode: sessionResult.state.activityMode,
+          }),
+          profileResult.state
+        );
+      }
+
+      if (
+        hasProfileActivityModeChanged &&
+        profileResult.state.activityMode !== sessionResult.state.activityMode
+      ) {
+        sessionResult = sessionReducer(
+          actions.setActivityMode({
+            activityMode: profileResult.state.activityMode,
+          }),
+          sessionResult.state
+        );
+      }
 
       return Promise.all([
         sessionResult.hasStateChanged

@@ -1,11 +1,16 @@
 import { GraphQLActivityMap } from "./graphql-activity-map";
 import { InMemorySessionStage } from "../../session-processor/+state/types/in-memory-session-stage";
+import { ActivityMode } from "../../session-processor/types";
 
 export interface InMemorySessionMetadataGraphQLState {
+  sessionId: string;
+  profileIds: string[];
   participantProfileIds: string[];
+  connectedProfileIds: string[];
   teamName: string | null;
   currentStage: InMemorySessionStage;
   activityIds: string[];
+  activityMode: ActivityMode;
   stages: {
     [InMemorySessionStage.WAITING]: string[];
     [InMemorySessionStage.START_EMOTION_CHECK]: string[];
@@ -15,6 +20,7 @@ export interface InMemorySessionMetadataGraphQLState {
     [InMemorySessionStage.VIEW_RESULTS]: string[];
   };
   activityMap: GraphQLActivityMap;
-  currentActivityId: string | null;
+  currentGroupActivityId: string | null;
   allActivitiesFinished: boolean;
+  lastUpdateTimestamp: number | null;
 }

@@ -6,6 +6,7 @@ import {
 } from "./profile";
 import { profileActivityReady, setProfileActivityValue } from "../actions";
 import { getUnixTime } from "date-fns";
+import { InMemorySessionStage } from "../types";
 
 describe("Apollo > Resources > In Memory Profile Metadata", () => {
   const activityIds = ["1", "2", "3"];
@@ -29,6 +30,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       activityIds,
       participantProfileIds,
       sessionId,
+      sessionStage: InMemorySessionStage.ON_GOING,
     });
     initialTimestamp = getUnixTime(new Date());
     dispatch = getProfileReducer(initialState);
@@ -37,7 +39,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
   describe("state creation", () => {
     it("should createProfileReducerInitialState initial", (done) => {
       expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentActivityId).to.equal(activityIds[0]);
+      expect(initialState.currentProfileActivityId).to.equal(activityIds[0]);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId) => ({
           profileId,
@@ -84,10 +86,11 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         startEmotions,
         endEmotions,
         sessionId,
+        sessionStage: InMemorySessionStage.ON_GOING,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentActivityId).to.equal(activityIds[2]);
+      expect(initialState.currentProfileActivityId).to.equal(activityIds[2]);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -133,10 +136,11 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         startEmotions,
         endEmotions,
         sessionId,
+        sessionStage: InMemorySessionStage.ON_GOING,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentActivityId).to.equal(activityIds[2]);
+      expect(initialState.currentProfileActivityId).to.equal(activityIds[2]);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -186,10 +190,11 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         startEmotions,
         endEmotions,
         sessionId,
+        sessionStage: InMemorySessionStage.ON_GOING,
       });
 
       expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentActivityId).to.equal(activityIds[1]);
+      expect(initialState.currentProfileActivityId).to.equal(activityIds[1]);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -217,11 +222,12 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
   describe("actions dispatch", () => {
     it("should setProfileActivityValue for currentActivity for a given player", (done) => {
-      const currentActivityId = initialState.currentActivityId;
+      const currentActivityId = initialState.currentProfileActivityId;
       const timestamp = getUnixTime(new Date());
       const action = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const result = dispatch(action);
       expect(
@@ -242,14 +248,17 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const result1 = dispatch(action1);
@@ -286,20 +295,25 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const action2 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const result1 = dispatch(action1);
@@ -316,22 +330,27 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
       const timestamp = getUnixTime(new Date());
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const result1 = dispatch(action1);
@@ -371,24 +390,30 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
       const action6 = profileActivityReady({
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
 
       const result1 = dispatch(action1);
@@ -421,8 +446,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         })),
       });
 
-      expect(result5.state.currentActivityId).to.equal("1");
-      expect(result6.state.currentActivityId).to.equal("2");
+      expect(result5.state.currentProfileActivityId).to.equal("1");
+      expect(result6.state.currentProfileActivityId).to.equal("2");
       expect(result6.state.lastUpdateTimestamp).to.equal(timestamp);
       done();
     });
@@ -432,70 +457,88 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[0],
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[0],
       });
       const action6 = profileActivityReady({
         profileId: participantProfileIds[0],
+        activityId: activityIds[0],
       });
 
       const action7 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[0],
+        activityId: activityIds[1],
       });
       const action8 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[1],
+        activityId: activityIds[1],
       });
       const action9 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
+        activityId: activityIds[1],
       });
 
       const action10 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[1],
       });
       const action11 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[1],
       });
       const action12 = profileActivityReady({
         profileId: participantProfileIds[0],
+        activityId: activityIds[1],
       });
 
       const action13 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[0],
+        activityId: activityIds[2],
       });
       const action14 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[1],
+        activityId: activityIds[2],
       });
       const action15 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[2],
+        activityId: activityIds[2],
       });
 
       const action16 = profileActivityReady({
         profileId: participantProfileIds[1],
+        activityId: activityIds[2],
       });
       const action17 = profileActivityReady({
         profileId: participantProfileIds[2],
+        activityId: activityIds[2],
       });
       const action18 = profileActivityReady({
         profileId: participantProfileIds[0],
+        activityId: activityIds[2],
       });
 
       const result1 = dispatch(action1);
@@ -571,14 +614,14 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         ],
       });
 
-      expect(result5.state.currentActivityId).to.equal("1");
-      expect(result6.state.currentActivityId).to.equal("2");
+      expect(result5.state.currentProfileActivityId).to.equal("1");
+      expect(result6.state.currentProfileActivityId).to.equal("2");
 
-      expect(result11.state.currentActivityId).to.equal("2");
-      expect(result12.state.currentActivityId).to.equal("3");
+      expect(result11.state.currentProfileActivityId).to.equal("2");
+      expect(result12.state.currentProfileActivityId).to.equal("3");
 
-      expect(result17.state.currentActivityId).to.equal("3");
-      expect(result18.state.currentActivityId).to.equal(null);
+      expect(result17.state.currentProfileActivityId).to.equal("3");
+      expect(result18.state.currentProfileActivityId).to.equal(null);
       expect(result18.state.finished).to.equal(true);
       expect(result18.state.lastUpdateTimestamp).to.equal(timestamp);
       done();
