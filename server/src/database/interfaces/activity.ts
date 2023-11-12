@@ -27,6 +27,14 @@ export interface ActivityAttributes extends IBase {
   type: ActivityType;
 
   workshop?: WorkshopModelInstance;
+  authorChallenges?: AuthorChallengeModelInstance[];
+  benchmark?: BenchmarkModelInstance;
+  answers?: AnswerModelInstance[];
+  assignment?: AssignmentModelInstance[];
+  concept?: ConceptModelInstance;
+  conceptualization?: ConceptModelInstance;
+  question?: QuestionModelInstance;
+  theory?: TheoryModelInstance;
 }
 
 export interface ActivityCreationAttributes

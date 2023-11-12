@@ -36,6 +36,12 @@ export const activityModel = sequelize.define<
   }
 );
 
-activityModel.prototype.getGroupDuration = function () {};
+activityModel.prototype.getGroupDuration = function (
+  this: ActivityModelInstance
+) {
+  // const groupDuration = this;
+};
 
-activityModel.prototype.getProfileDuration = function () {};
+activityModel.prototype.getProfileDuration = function (
+  this: ActivityModelInstance
+) {};
