@@ -12,13 +12,14 @@ import {
   groupActivityReady,
   readyToStart,
   removeParticipant,
+  setActivityMode,
   setGroupActivityValue,
   setProfileActivityValue,
   setTeamName,
   startEmotionReady,
   teamNameReady,
 } from "../actions";
-import { InMemorySessionStage } from "../types";
+import { ActivityMode, InMemorySessionStage } from "../types";
 
 describe("Apollo > Resources > In Memory Session Metadata", () => {
   const activityIds = ["1", "2", "3"];
@@ -48,6 +49,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       participantProfileIds,
       profileIds,
       connectedProfileIds,
+      activityMode: ActivityMode.GROUP,
     });
     dispatch = getSessionReducer(initialState);
   });
@@ -95,6 +97,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const stages2 = {
@@ -110,6 +113,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const stages3 = {
@@ -124,6 +128,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       expect(initialState1.participantProfileIds).to.deep.equal(
@@ -213,6 +218,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const stages2 = {
@@ -228,6 +234,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const stages3 = {
@@ -244,6 +251,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       expect(initialState1.participantProfileIds).to.deep.equal(
@@ -357,6 +365,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const action1 = setTeamName({ teamName: "Hello" });
@@ -418,6 +427,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const action1 = startEmotionReady({
@@ -470,6 +480,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const action1 = endEmotionReady({ profileId: participantProfileIds[0] });
@@ -520,6 +531,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const action1 = finish();
@@ -554,6 +566,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
 
       const action1 = setGroupActivityValue({
@@ -581,6 +594,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
       });
       const result6 = dispatch(action5, result4.state);
 
+      expect(newState1.activityMode).to.equal(ActivityMode.GROUP);
       expect(newState1.currentGroupActivityId).to.equal(activityIds[0]);
       expect(result2.state.currentStage).to.equal(
         InMemorySessionStage.ON_GOING
@@ -645,6 +659,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         },
       ]);
       expect(result6.hasStateChanged).to.equal(true);
+      expect(result6.state.activityMode).to.equal(ActivityMode.PROFILE);
 
       expect(result6.state.currentGroupActivityId).to.equal(activityIds[1]);
 
@@ -668,6 +683,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
       const entry1 = {
         value: questionIds[0],
@@ -740,6 +756,7 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
         sessionId,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.GROUP,
       });
       const entry1 = {
         value: questionIds[0],
@@ -759,24 +776,24 @@ describe("Apollo > Resources > In Memory Session Metadata", () => {
 
       const action1 = addGroupActivityEntry({
         entry: entry1,
-        activityId: activityIds[1],
+        activityId: activityIds[0],
       });
       const action2 = addGroupActivityEntry({
         entry: entry2,
-        activityId: activityIds[1],
+        activityId: activityIds[0],
       });
       const action3 = addGroupActivityEntry({
         entry: entry2,
-        activityId: activityIds[1],
+        activityId: activityIds[0],
       });
       const action5 = addGroupActivityEntry({
         entry: entry4,
-        activityId: activityIds[2],
+        activityId: activityIds[0],
       });
       const action6 = addGroupActivityEntry({
         entry: entry4,
         forceUpdate: true,
-        activityId: activityIds[2],
+        activityId: activityIds[0],
       });
 
       const result2 = dispatch(action1, newState1);

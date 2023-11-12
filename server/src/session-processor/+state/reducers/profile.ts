@@ -134,7 +134,8 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
     on(setProfileActivityValue, (state, { profileId, value, activityId }) => {
       if (
         activityId !== state.currentProfileActivityId ||
-        state.sessionStage !== InMemorySessionStage.ON_GOING
+        state.sessionStage !== InMemorySessionStage.ON_GOING ||
+        state.activityMode !== ActivityMode.PROFILE
       ) {
         return state;
       }
@@ -155,7 +156,8 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
     on(profileActivityReady, (state, { profileId, activityId }) => {
       if (
         activityId !== state.currentProfileActivityId ||
-        state.sessionStage !== InMemorySessionStage.ON_GOING
+        state.sessionStage !== InMemorySessionStage.ON_GOING ||
+        state.activityMode !== ActivityMode.PROFILE
       ) {
         return state;
       }

@@ -4,9 +4,13 @@ import {
   createProfileReducerInitialState,
   getProfileReducer,
 } from "./profile";
-import { profileActivityReady, setProfileActivityValue } from "../actions";
+import {
+  profileActivityReady,
+  setActivityMode,
+  setProfileActivityValue,
+} from "../actions";
 import { getUnixTime } from "date-fns";
-import { InMemorySessionStage } from "../types";
+import { ActivityMode, InMemorySessionStage } from "../types";
 
 describe("Apollo > Resources > In Memory Profile Metadata", () => {
   const activityIds = ["1", "2", "3"];
@@ -454,6 +458,9 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
     it("should setProfileActivityValue for all activities for all players and all should be finished", (done) => {
       const timestamp = getUnixTime(new Date());
+      const profileActivityMode = setActivityMode({
+        activityMode: ActivityMode.PROFILE,
+      });
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
@@ -547,13 +554,15 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const result4 = dispatch(action4, result3.state);
       const result5 = dispatch(action5, result4.state);
       const result6 = dispatch(action6, result5.state);
-      const result7 = dispatch(action7, result6.state);
+      const profileActivity1 = dispatch(profileActivityMode, result6.state);
+      const result7 = dispatch(action7, profileActivity1.state);
       const result8 = dispatch(action8, result7.state);
       const result9 = dispatch(action9, result8.state);
       const result10 = dispatch(action10, result9.state);
       const result11 = dispatch(action11, result10.state);
       const result12 = dispatch(action12, result11.state);
-      const result13 = dispatch(action13, result12.state);
+      const profileActivity2 = dispatch(profileActivityMode, result12.state);
+      const result13 = dispatch(action13, profileActivity2.state);
       const result14 = dispatch(action14, result13.state);
       const result15 = dispatch(action15, result14.state);
       const result16 = dispatch(action16, result15.state);
@@ -616,9 +625,17 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
       expect(result5.state.currentProfileActivityId).to.equal("1");
       expect(result6.state.currentProfileActivityId).to.equal("2");
+      expect(result6.state.activityMode).to.equal(ActivityMode.GROUP);
+      expect(profileActivity1.state.activityMode).to.equal(
+        ActivityMode.PROFILE
+      );
 
       expect(result11.state.currentProfileActivityId).to.equal("2");
       expect(result12.state.currentProfileActivityId).to.equal("3");
+      expect(result12.state.activityMode).to.equal(ActivityMode.GROUP);
+      expect(profileActivity2.state.activityMode).to.equal(
+        ActivityMode.PROFILE
+      );
 
       expect(result17.state.currentProfileActivityId).to.equal("3");
       expect(result18.state.currentProfileActivityId).to.equal(null);

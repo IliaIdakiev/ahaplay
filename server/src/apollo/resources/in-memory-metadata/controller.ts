@@ -34,6 +34,7 @@ import {
   dispatchActionToProcessor,
   startSessionProcessor,
 } from "../../../session-processor";
+import { ActivityMode } from "../../../session-processor/types";
 
 export function readAndPublishInMemorySessionMetadataState(
   sessionId: string,
@@ -194,7 +195,8 @@ function uniqueConstraintErrorHandler(
                   "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
                   "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
                 ], // Who is actually participating
-                connectedProfileIds: [profileId], // All profiles that are connected
+                connectedProfileIds: [profileId], // All profiles that are connected,
+                activityMode: ActivityMode.PROFILE,
               });
             const inMemoryProfileMetadataState =
               createProfileReducerInitialState({
@@ -278,6 +280,7 @@ export function handleSessionSubscriptionWithSlotId(
                 "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
               ], // Who is actually participating
               connectedProfileIds: [profileId], // All profiles that are connected
+              activityMode: ActivityMode.PROFILE,
             }
           );
           const inMemoryProfileMetadataState = createProfileReducerInitialState(

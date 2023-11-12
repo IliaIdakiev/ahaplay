@@ -13,6 +13,7 @@ import {
   saveInMemoryProfileMetadataState,
   saveInMemorySessionMetadataState,
 } from "./helpers/redis";
+import { ActivityMode } from "./types";
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
@@ -37,6 +38,7 @@ export function setupSessionAndProfileMetadataInMemoryStates(
         activityIds: activityIds,
         profileIds,
         connectedProfileIds,
+        activityMode: ActivityMode.PROFILE,
       });
 
       ops[0] = saveInMemorySessionMetadataState(sessionState);
@@ -78,6 +80,7 @@ export function createInMemoryDispatcher(
       lastUpdateTimestamp: sessionMetadataState.lastUpdateTimestamp,
       profileIds: sessionMetadataState.profileIds,
       connectedProfileIds: sessionMetadataState.connectedProfileIds,
+      activityMode: sessionMetadataState.activityMode,
     });
     const profileState = createProfileReducerInitialState({
       sessionId: sessionId,

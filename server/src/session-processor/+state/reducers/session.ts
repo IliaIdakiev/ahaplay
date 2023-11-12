@@ -57,6 +57,7 @@ export function createSessionReducerInitialState({
   profileIds,
   connectedProfileIds,
   participantProfileIds,
+  activityMode,
 }: {
   sessionId: string;
   activityIds: string[];
@@ -67,6 +68,7 @@ export function createSessionReducerInitialState({
   stages?: InMemorySessionMetadataState["stages"];
   activityMap?: InMemorySessionMetadataState["activityMap"];
   lastUpdateTimestamp?: number | null;
+  activityMode: ActivityMode;
 }) {
   let currentStage = InMemorySessionStage.WAITING;
   let currentActivityId = activityIds[0];
@@ -101,9 +103,14 @@ export function createSessionReducerInitialState({
     activityMap ||
     activityIds.reduce((acc, activityId) => ({ ...acc, [activityId]: [] }), {});
 
-  const isCurrentActivityReady = activityMap[currentActivityId].every(
-    (a) => a.ready
-  );
+  const isCurrentActivityReady =
+    activityMap[currentActivityId].length === participantProfileIds.length &&
+    activityMap[currentActivityId].every((a) => a.ready);
+
+  activityMode =
+    isCurrentActivityReady && activityMode === ActivityMode.GROUP
+      ? ActivityMode.PROFILE
+      : ActivityMode.GROUP;
   const currentActivityIndex = activityIds.indexOf(currentActivityId);
   const nextActivityIndex = currentActivityIndex + 1;
   const allActivitiesFinished =
@@ -130,7 +137,7 @@ export function createSessionReducerInitialState({
       [InMemorySessionStage.VIEW_RESULTS]: [],
     },
     activityMap,
-    activityMode: ActivityMode.PROFILE,
+    activityMode,
     currentGroupActivityId: allActivitiesFinished ? null : currentActivityId,
     allActivitiesFinished,
     lastUpdateTimestamp: lastUpdateTimestamp || getUnixTime(new Date()),
@@ -271,7 +278,8 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
     on(setGroupActivityValue, (state, { profileId, value, activityId }) => {
       if (
         activityId !== state.currentGroupActivityId ||
-        state.currentStage !== InMemorySessionStage.ON_GOING
+        state.currentStage !== InMemorySessionStage.ON_GOING ||
+        state.activityMode !== ActivityMode.GROUP
       ) {
         return state;
       }
@@ -290,7 +298,8 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
     on(groupActivityReady, (state, { profileId, activityId }) => {
       if (
         activityId !== state.currentGroupActivityId ||
-        state.currentStage !== InMemorySessionStage.ON_GOING
+        state.currentStage !== InMemorySessionStage.ON_GOING ||
+        state.activityMode !== ActivityMode.GROUP
       ) {
         return state;
       }
@@ -342,7 +351,8 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
     on(addGroupActivityEntry, (state, { entry, forceUpdate, activityId }) => {
       if (
         activityId !== state.currentGroupActivityId ||
-        state.currentStage !== InMemorySessionStage.ON_GOING
+        state.currentStage !== InMemorySessionStage.ON_GOING ||
+        state.activityMode !== ActivityMode.GROUP
       ) {
         return state;
       }
