@@ -72,3 +72,8 @@ export const instructionAssociationNames = {
   singular: "instruction",
   plural: "instructions",
 };
+
+export const goalAssociationNames = {
+  singular: "goal",
+  plural: "goals",
+};

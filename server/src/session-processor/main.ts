@@ -15,13 +15,18 @@ import {
 } from "./types";
 import {
   activityAssociationNames,
+  answerAssociationNames,
   assignmentAssociationNames,
+  benchmarkAssociationNames,
   conceptAssociationNames,
   conceptualizationAssociationNames,
   connectSequelize,
+  goalAssociationNames,
+  instructionAssociationNames,
   models,
   questionAssociationNames,
   theoryAssociationNames,
+  typeAssociationNames,
   workshopAssociationNames,
 } from "../database";
 import {
@@ -52,28 +57,54 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
         as: workshopAssociationNames.singular,
         include: [
           {
-            model: models.activity,
-            as: activityAssociationNames.plural,
+            model: models.goal,
+            as: goalAssociationNames.plural,
+            order: [["sequence_number", "ASC"]],
+          },
+          {
+            model: models.type,
+            as: typeAssociationNames.singular,
             include: [
               {
-                model: models.assignment,
-                as: assignmentAssociationNames.singular,
+                model: models.instruction,
+                as: instructionAssociationNames.plural,
+                order: [["sequence_number", "ASC"]],
+              },
+            ],
+          },
+          {
+            model: models.activity,
+            as: activityAssociationNames.plural,
+            order: [["sequence_number", "ASC"]],
+            include: [
+              {
+                model: models.question,
+                as: questionAssociationNames.plural,
               },
               {
-                model: models.concept,
-                as: conceptAssociationNames.singular,
+                model: models.answer,
+                as: answerAssociationNames.plural,
+              },
+              {
+                model: models.benchmark,
+                as: benchmarkAssociationNames.singular,
               },
               {
                 model: models.conceptualization,
                 as: conceptualizationAssociationNames.singular,
               },
               {
-                model: models.question,
-                as: questionAssociationNames.singular,
+                model: models.concept,
+                as: conceptAssociationNames.singular,
+                order: [["sequence_number", "ASC"]],
               },
               {
                 model: models.theory,
                 as: theoryAssociationNames.singular,
+              },
+              {
+                model: models.assignment,
+                as: assignmentAssociationNames.singular,
               },
             ],
           },

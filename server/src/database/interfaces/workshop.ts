@@ -10,6 +10,7 @@ import { WorkshopAvailability } from "../enums";
 import { IBase, IBaseKeys } from "./base";
 import { ActivityModelInstance } from "./activity";
 import { TypeModelInstance } from "./type";
+import { GoalModelInstance } from "./goal";
 
 export interface WorkshopAttributes extends IBase {
   duration: number;
@@ -22,6 +23,7 @@ export interface WorkshopAttributes extends IBase {
   about_video: string;
 
   activities?: ActivityModelInstance[];
+  goals?: GoalModelInstance[];
   typeInstance?: TypeModelInstance;
 }
 
@@ -36,6 +38,9 @@ export interface WorkshopModelInstance
     WorkshopInstanceMethods {
   getActivities: HasManyGetAssociationsMixin<ActivityModelInstance>;
   setActivities: HasManySetAssociationsMixin<ActivityModelInstance, string>;
+
+  getGoals: HasManyGetAssociationsMixin<GoalModelInstance>;
+  setGoals: HasManySetAssociationsMixin<GoalModelInstance, string>;
 
   getTypeInstance: HasOneGetAssociationMixin<TypeModelInstance>;
   setTypeInstance: HasOneSetAssociationMixin<TypeModelInstance, string>;

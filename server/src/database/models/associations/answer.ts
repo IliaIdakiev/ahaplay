@@ -1,8 +1,8 @@
-import { goalModel } from "../goal";
+import { answerModel } from "../answer";
 import { activityModel } from "../activity";
 import { activityAssociationNames } from "../constants";
 
-goalModel.belongsTo(activityModel, {
+answerModel.belongsTo(activityModel, {
   foreignKey: "activity_id",
   as: activityAssociationNames.singular,
   onDelete: "SET NULL",

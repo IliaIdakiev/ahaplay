@@ -6,6 +6,7 @@ import {
   benchmarkAssociationNames,
   conceptAssociationNames,
   conceptualizationAssociationNames,
+  goalAssociationNames,
   instructionAssociationNames,
   models,
   questionAssociationNames,
@@ -135,12 +136,18 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
         as: workshopAssociationNames.singular,
         include: [
           {
+            model: models.goal,
+            as: goalAssociationNames.plural,
+            order: [["sequence_number", "ASC"]],
+          },
+          {
             model: models.type,
             as: typeAssociationNames.singular,
             include: [
               {
                 model: models.instruction,
                 as: instructionAssociationNames.plural,
+                order: [["sequence_number", "ASC"]],
               },
             ],
           },
@@ -168,6 +175,7 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
               {
                 model: models.concept,
                 as: conceptAssociationNames.singular,
+                order: [["sequence_number", "ASC"]],
               },
               {
                 model: models.theory,

@@ -16,6 +16,7 @@ import { conceptModel } from "./concept";
 import { answerModel } from "./answer";
 import { typeModel } from "./type";
 import { instructionModel } from "./instruction";
+import { goalModel } from "./goal";
 
 export const models = {
   profile: profileModel,
@@ -35,4 +36,5 @@ export const models = {
   concept: conceptModel,
   type: typeModel,
   instruction: instructionModel,
+  goal: goalModel,
 };
