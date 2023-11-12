@@ -1,5 +1,13 @@
+import {
+  getUnixTime,
+  minutesToMilliseconds,
+  differenceInMinutes,
+  fromUnixTime,
+} from "date-fns";
 import { connectRedis, pubSub, redisClient } from "../redis";
 import {
+  ActivityMode,
+  InMemorySessionStage,
   PubSubActionMessage,
   PubSubActionMessageResult,
   PubSubMessage,
@@ -7,8 +15,13 @@ import {
 } from "./types";
 import {
   activityAssociationNames,
+  assignmentAssociationNames,
+  conceptAssociationNames,
+  conceptualizationAssociationNames,
   connectSequelize,
   models,
+  questionAssociationNames,
+  theoryAssociationNames,
   workshopAssociationNames,
 } from "../database";
 import {
@@ -41,6 +54,28 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
           {
             model: models.activity,
             as: activityAssociationNames.plural,
+            include: [
+              {
+                model: models.assignment,
+                as: assignmentAssociationNames.singular,
+              },
+              {
+                model: models.concept,
+                as: conceptAssociationNames.singular,
+              },
+              {
+                model: models.conceptualization,
+                as: conceptualizationAssociationNames.singular,
+              },
+              {
+                model: models.question,
+                as: questionAssociationNames.singular,
+              },
+              {
+                model: models.theory,
+                as: theoryAssociationNames.singular,
+              },
+            ],
           },
         ],
       },
@@ -48,11 +83,58 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
   });
 }
 
+const scheduler = {
+  isSessionTimerRunning: false,
+  timerIds: {
+    session: null as NodeJS.Timeout | null,
+    profile: null as NodeJS.Timeout | null,
+    group: null as NodeJS.Timeout | null,
+  },
+  timestamps: {
+    session: null as number | null,
+    profile: null as number | null,
+    group: null as number | null,
+  },
+  startSessionTimer(durationInMinutes: number, sessionEndCallback: () => void) {
+    this.timestamps.session = getUnixTime(new Date());
+    this.isSessionTimerRunning = true;
+    this.timerIds.session = setTimeout(() => {
+      this.timestamps.session = null;
+      this.timerIds.session = null;
+      sessionEndCallback();
+    }, minutesToMilliseconds(durationInMinutes));
+  },
+  startProfileActivityTimer(
+    durationInMinutes: number,
+    profileActivityEndCallback: () => void
+  ) {
+    this.timestamps.profile = getUnixTime(new Date());
+    this.timerIds.profile = setTimeout(() => {
+      this.timestamps.session = null;
+      this.timerIds.session = null;
+      profileActivityEndCallback();
+    }, minutesToMilliseconds(durationInMinutes));
+  },
+  startGroupActivityTimer(
+    durationInMinutes: number,
+    groupActivityEndCallback: () => void
+  ) {
+    this.timestamps.group = getUnixTime(new Date());
+    this.timerIds.group = setTimeout(() => {
+      this.timestamps.session = null;
+      this.timerIds.session = null;
+      groupActivityEndCallback();
+    }, minutesToMilliseconds(durationInMinutes));
+  },
+};
+
 Promise.all([
   connectSequelize().then(() => getSessionWithWorkshopAndActivities(sessionId)),
   connectRedis(),
 ]).then(([session]) => {
-  console.log(session);
+  if (!session) {
+    throw new Error("Session with provided id not found!");
+  }
   publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
 
   // setTimeout(() => {
@@ -69,6 +151,52 @@ Promise.all([
         })
           .then((dispatch) => dispatch(actionMessage.data.action))
           .then((result) => {
+            if (
+              result[0].state.currentStage === InMemorySessionStage.ON_GOING &&
+              !scheduler.isSessionTimerRunning
+            ) {
+              scheduler.startSessionTimer(session.workshop!.duration, () => {
+                // TODO: Create functionality to force end of workshop
+                console.log("Session ended!");
+              });
+            }
+
+            if (
+              result[0].state.currentStage ===
+              InMemorySessionStage.END_EMOTION_CHECK
+            ) {
+              const endTimestamp = getUnixTime(new Date());
+              clearTimeout(scheduler.timerIds.session!);
+              // Create functionality to set the workshop end time
+              const timeSpend = differenceInMinutes(
+                fromUnixTime(scheduler.timestamps.session!),
+                fromUnixTime(endTimestamp)
+              );
+              console.log(
+                "Session finished successfully in time (" +
+                  timeSpend +
+                  "). Unix end timestamp: " +
+                  getUnixTime(new Date())
+              );
+            }
+
+            const currentGroupActivity = session.workshop!.activities!.find(
+              (a) => a.id === result[0].state.currentGroupActivityId
+            );
+            const currentProfileActivity = session.workshop!.activities!.find(
+              (a) => a.id === result[1].state.currentProfileActivityId
+            );
+
+            // if (
+            //   result[0].state.currentStage === InMemorySessionStage.ON_GOING &&
+            //   result[0].state.activityMode === ActivityMode.GROUP &&
+            //   result[0].differences?.find((d) =>
+            //     d.path?.includes("currentGroupActivityId")
+            //   ) &&
+
+            // ) {
+            // }
+
             const actionResult: PubSubActionMessageResult = {
               type: SessionProcessorMessage.ACTION_RESULT,
               data: { result, action: actionMessage.data.action },

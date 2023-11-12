@@ -3,10 +3,13 @@ import {
   Model,
   HasManyGetAssociationsMixin,
   HasManySetAssociationsMixin,
+  HasOneGetAssociationMixin,
+  HasOneSetAssociationMixin,
 } from "sequelize";
 import { WorkshopAvailability } from "../enums";
 import { IBase, IBaseKeys } from "./base";
 import { ActivityModelInstance } from "./activity";
+import { TypeModelInstance } from "./type";
 
 export interface WorkshopAttributes extends IBase {
   duration: number;
@@ -19,6 +22,7 @@ export interface WorkshopAttributes extends IBase {
   about_video: string;
 
   activities?: ActivityModelInstance[];
+  typeInstance?: TypeModelInstance;
 }
 
 export interface WorkshopCreationAttributes
@@ -32,4 +36,7 @@ export interface WorkshopModelInstance
     WorkshopInstanceMethods {
   getActivities: HasManyGetAssociationsMixin<ActivityModelInstance>;
   setActivities: HasManySetAssociationsMixin<ActivityModelInstance, string>;
+
+  getTypeInstance: HasOneGetAssociationMixin<TypeModelInstance>;
+  setTypeInstance: HasOneSetAssociationMixin<TypeModelInstance, string>;
 }

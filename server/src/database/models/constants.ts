@@ -38,6 +38,16 @@ export const assignmentAssociationNames = {
   plural: "assignments",
 };
 
+export const answerAssociationNames = {
+  singular: "answer",
+  plural: "answers",
+};
+
+export const conceptAssociationNames = {
+  singular: "concept",
+  plural: "concepts",
+};
+
 export const theoryAssociationNames = {
   singular: "theory",
   plural: "theories",
@@ -51,4 +61,14 @@ export const conceptualizationAssociationNames = {
 export const questionAssociationNames = {
   singular: "question",
   plural: "questions",
+};
+
+export const typeAssociationNames = {
+  singular: "typeInstance",
+  plural: "types",
+};
+
+export const instructionAssociationNames = {
+  singular: "instruction",
+  plural: "instructions",
 };

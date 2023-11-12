@@ -21,7 +21,7 @@ export const instructionModel = sequelize.define<
       type: DataTypes.NUMBER,
       allowNull: false,
     },
-    workshop_id: {
+    type_id: {
       type: DataTypes.STRING,
       allowNull: true,
     },

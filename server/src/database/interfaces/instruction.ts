@@ -5,14 +5,14 @@ import {
   Optional,
 } from "sequelize";
 import { IBase, IBaseKeys } from "./base";
-import { WorkshopModelInstance } from "./workshop";
+import { TypeModelInstance } from "./type";
 
 export interface InstructionAttributes extends IBase {
   text: string;
   sequence_number: number;
-  workshop_id: string;
+  type_id: string;
 
-  workshop?: WorkshopModelInstance;
+  type?: TypeModelInstance;
 }
 
 export interface InstructionCreationAttributes
@@ -24,6 +24,6 @@ export interface InstructionModelInstance
   extends Model<InstructionAttributes, InstructionCreationAttributes>,
     InstructionAttributes,
     InstructionInstanceMethods {
-  getWorkshop: BelongsToGetAssociationMixin<WorkshopModelInstance>;
-  setWorkshop: BelongsToSetAssociationMixin<WorkshopModelInstance, string>;
+  getType: BelongsToGetAssociationMixin<TypeModelInstance>;
+  setType: BelongsToSetAssociationMixin<TypeModelInstance, string>;
 }

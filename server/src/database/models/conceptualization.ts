@@ -26,6 +26,7 @@ export const conceptualizationModel = sequelize.define<
     activity_id: {
       type: DataTypes.STRING,
       allowNull: false,
+      primaryKey: true,
     },
     concept: {
       type: DataTypes.STRING,

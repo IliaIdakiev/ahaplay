@@ -3,6 +3,8 @@ import {
   BelongsToSetAssociationMixin,
   HasManyGetAssociationsMixin,
   HasManySetAssociationsMixin,
+  HasOneGetAssociationMixin,
+  HasOneSetAssociationMixin,
   Model,
   Optional,
 } from "sequelize";
@@ -10,6 +12,13 @@ import { ActivityType } from "../enums";
 import { IBase, IBaseKeys } from "./base";
 import { WorkshopModelInstance } from "./workshop";
 import { AuthorChallengeModelInstance } from "./author-challenge";
+import { BenchmarkModelInstance } from "./benchmark";
+import { AnswerModelInstance } from "./answer";
+import { AssignmentModelInstance } from "./assignment";
+import { ConceptModelInstance } from "./concept";
+import { ConceptualizationModelInstance } from "./conceptualization";
+import { QuestionModelInstance } from "./question";
+import { TheoryModelInstance } from "./theory";
 
 export interface ActivityAttributes extends IBase {
   description: string;
@@ -32,14 +41,33 @@ export interface ActivityModelInstance
   getWorkshop: BelongsToGetAssociationMixin<WorkshopModelInstance>;
   setWorkshop: BelongsToSetAssociationMixin<WorkshopModelInstance, string>;
 
-  getAuthorChallengeModel: HasManyGetAssociationsMixin<AuthorChallengeModelInstance>;
-  setAuthorChallengeModel: HasManySetAssociationsMixin<
+  getAuthorChallenges: HasManyGetAssociationsMixin<AuthorChallengeModelInstance>;
+  setAuthorChallenges: HasManySetAssociationsMixin<
     AuthorChallengeModelInstance,
     string
   >;
 
-  // (benchmarkModel
-  // (conceptualizationModel
-  // (questionModel
-  // (theoryModel
+  getBenchmark: HasOneGetAssociationMixin<BenchmarkModelInstance>;
+  setBenchmark: HasOneSetAssociationMixin<BenchmarkModelInstance, string>;
+
+  getAnswers: HasManyGetAssociationsMixin<AnswerModelInstance>;
+  setAnswers: HasManySetAssociationsMixin<AnswerModelInstance, string>;
+
+  getAssignment: HasOneGetAssociationMixin<AssignmentModelInstance>;
+  setAssignment: HasOneSetAssociationMixin<AssignmentModelInstance, string>;
+
+  getConcept: HasOneGetAssociationMixin<ConceptModelInstance>;
+  setConcept: HasOneSetAssociationMixin<ConceptModelInstance, string>;
+
+  getConceptualization: HasOneGetAssociationMixin<ConceptualizationModelInstance>;
+  setConceptualization: HasOneSetAssociationMixin<
+    ConceptualizationModelInstance,
+    string
+  >;
+
+  getQuestion: HasOneGetAssociationMixin<QuestionModelInstance>;
+  setQuestion: HasOneSetAssociationMixin<QuestionModelInstance, string>;
+
+  getTheory: HasOneGetAssociationMixin<TheoryModelInstance>;
+  setTheory: HasOneSetAssociationMixin<TheoryModelInstance, string>;
 }

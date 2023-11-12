@@ -1,8 +1,16 @@
 import { SubscriptionAction, ProfileAction } from "../../types";
 import {
   activityAssociationNames,
+  answerAssociationNames,
+  assignmentAssociationNames,
+  benchmarkAssociationNames,
+  conceptAssociationNames,
+  conceptualizationAssociationNames,
+  instructionAssociationNames,
   models,
   questionAssociationNames,
+  theoryAssociationNames,
+  typeAssociationNames,
   workshopAssociationNames,
 } from "../../../database";
 import { RedisPubSub } from "graphql-redis-subscriptions";
@@ -127,6 +135,16 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
         as: workshopAssociationNames.singular,
         include: [
           {
+            model: models.type,
+            as: typeAssociationNames.singular,
+            include: [
+              {
+                model: models.instruction,
+                as: instructionAssociationNames.plural,
+              },
+            ],
+          },
+          {
             model: models.activity,
             as: activityAssociationNames.plural,
             order: [["sequence_number", "ASC"]],
@@ -134,6 +152,30 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
               {
                 model: models.question,
                 as: questionAssociationNames.plural,
+              },
+              {
+                model: models.answer,
+                as: answerAssociationNames.plural,
+              },
+              {
+                model: models.benchmark,
+                as: benchmarkAssociationNames.singular,
+              },
+              {
+                model: models.conceptualization,
+                as: conceptualizationAssociationNames.singular,
+              },
+              {
+                model: models.concept,
+                as: conceptAssociationNames.singular,
+              },
+              {
+                model: models.theory,
+                as: theoryAssociationNames.singular,
+              },
+              {
+                model: models.assignment,
+                as: assignmentAssociationNames.singular,
               },
             ],
           },

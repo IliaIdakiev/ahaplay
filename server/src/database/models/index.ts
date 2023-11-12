@@ -12,6 +12,10 @@ import { benchmarkModel } from "./benchmark";
 import { conceptualizationModel } from "./conceptualization";
 import { theoryModel } from "./theory";
 import { sessionModel } from "./session";
+import { conceptModel } from "./concept";
+import { answerModel } from "./answer";
+import { typeModel } from "./type";
+import { instructionModel } from "./instruction";
 
 export const models = {
   profile: profileModel,
@@ -23,8 +27,12 @@ export const models = {
   slot: slotModel,
   assignment: assignmentModel,
   question: questionModel,
+  answer: answerModel,
   benchmark: benchmarkModel,
   conceptualization: conceptualizationModel,
   theory: theoryModel,
   session: sessionModel,
+  concept: conceptModel,
+  type: typeModel,
+  instruction: instructionModel,
 };

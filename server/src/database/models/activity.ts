@@ -35,3 +35,7 @@ export const activityModel = sequelize.define<
     tableName: "activities",
   }
 );
+
+activityModel.prototype.getGroupDuration = function () {};
+
+activityModel.prototype.getProfileDuration = function () {};

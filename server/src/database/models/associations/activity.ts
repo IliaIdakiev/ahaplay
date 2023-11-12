@@ -7,12 +7,18 @@ import {
   conceptualizationAssociationNames,
   questionAssociationNames,
   theoryAssociationNames,
+  assignmentAssociationNames,
+  answerAssociationNames,
+  conceptAssociationNames,
 } from "../constants";
 import { authorChallengeModel } from "../author-challenge";
 import { benchmarkModel } from "../benchmark";
 import { conceptualizationModel } from "../conceptualization";
 import { questionModel } from "../question";
 import { theoryModel } from "../theory";
+import { assignmentModel } from "../assignment";
+import { answerModel } from "../answer";
+import { conceptModel } from "../concept";
 
 activityModel.belongsTo(workshopModel, {
   foreignKey: "workshop_id",
@@ -21,22 +27,22 @@ activityModel.belongsTo(workshopModel, {
   constraints: false,
 });
 
-activityModel.hasMany(authorChallengeModel, {
+activityModel.hasOne(authorChallengeModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
   as: authorChallengeAssociationNames.plural,
 });
 
-activityModel.hasMany(benchmarkModel, {
+activityModel.hasOne(benchmarkModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
-  as: benchmarkAssociationNames.plural,
+  as: benchmarkAssociationNames.singular,
 });
 
-activityModel.hasMany(conceptualizationModel, {
+activityModel.hasOne(conceptualizationModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
-  as: conceptualizationAssociationNames.plural,
+  as: conceptualizationAssociationNames.singular,
 });
 
 activityModel.hasMany(questionModel, {
@@ -45,8 +51,26 @@ activityModel.hasMany(questionModel, {
   as: questionAssociationNames.plural,
 });
 
-activityModel.hasMany(theoryModel, {
+activityModel.hasOne(theoryModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
-  as: theoryAssociationNames.plural,
+  as: theoryAssociationNames.singular,
+});
+
+activityModel.hasOne(assignmentModel, {
+  sourceKey: "id",
+  foreignKey: "activity_id",
+  as: assignmentAssociationNames.singular,
+});
+
+activityModel.hasMany(answerModel, {
+  sourceKey: "id",
+  foreignKey: "activity_id",
+  as: answerAssociationNames.plural,
+});
+
+activityModel.hasOne(conceptModel, {
+  sourceKey: "id",
+  foreignKey: "activity_id",
+  as: conceptAssociationNames.singular,
 });

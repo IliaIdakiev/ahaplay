@@ -1,10 +1,10 @@
+import { typeAssociationNames } from "../constants";
 import { instructionModel } from "../instruction";
-import { workshopModel } from "../workshop";
-import { workshopAssociationNames } from "../constants";
+import { typeModel } from "../type";
 
-instructionModel.belongsTo(workshopModel, {
-  foreignKey: "workshop_id",
-  as: workshopAssociationNames.singular,
+instructionModel.belongsTo(typeModel, {
+  foreignKey: "type_id",
+  as: typeAssociationNames.singular,
   onDelete: "SET NULL",
   constraints: false,
 });

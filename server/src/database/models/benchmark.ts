@@ -30,6 +30,7 @@ export const benchmarkModel = sequelize.define<
     activity_id: {
       type: DataTypes.STRING,
       allowNull: false,
+      primaryKey: true,
     },
     conceptualization_id: {
       type: DataTypes.STRING,
@@ -37,7 +38,7 @@ export const benchmarkModel = sequelize.define<
     },
   },
   {
-    tableName: "benchmarks",
+    tableName: "benckmarks",
     timestamps: false,
   }
 );

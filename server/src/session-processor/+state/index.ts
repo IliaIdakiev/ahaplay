@@ -131,18 +131,20 @@ export function createInMemoryDispatcher(
         );
       }
 
-      return Promise.all([
+      const result = Promise.all([
         sessionResult.hasStateChanged
           ? saveInMemorySessionMetadataState(sessionResult.state).then(
-              (state) => ({ state, hasStateChanged: true })
+              () => sessionResult
             )
           : sessionResult,
         profileResult.hasStateChanged
           ? saveInMemoryProfileMetadataState(profileResult.state).then(
-              (state) => ({ state, hasStateChanged: true })
+              () => profileResult
             )
           : profileResult,
       ] as const);
+
+      return result;
     };
   });
 }

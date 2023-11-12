@@ -22,6 +22,7 @@ export const theoryModel = sequelize.define<
     activity_id: {
       type: DataTypes.STRING,
       allowNull: false,
+      primaryKey: true,
     },
     conceptualization_id: {
       type: DataTypes.STRING,
