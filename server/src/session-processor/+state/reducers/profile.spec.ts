@@ -10,10 +10,14 @@ import {
   setProfileActivityValue,
 } from "../actions";
 import { getUnixTime } from "date-fns";
-import { ActivityMode, InMemorySessionStage } from "../types";
+import { ActivityMode, ActivityType, InMemorySessionStage } from "../types";
 
 describe("Apollo > Resources > In Memory Profile Metadata", () => {
-  const activityIds = ["1", "2", "3"];
+  const activities: { id: string; type: ActivityType }[] = [
+    { id: "1", type: ActivityType.Question },
+    { id: "2", type: ActivityType.Question },
+    { id: "3", type: ActivityType.Question },
+  ];
   const participantProfileIds = ["profile1", "profile2", "profile3"];
   const questionIds = ["question1", "question2", "question3"];
   const sessionId = "Session-123";
@@ -31,7 +35,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
   beforeEach(() => {
     initialState = createProfileReducerInitialState({
-      activityIds,
+      activities,
       participantProfileIds,
       sessionId,
       sessionStage: InMemorySessionStage.ON_GOING,
@@ -42,8 +46,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
   describe("state creation", () => {
     it("should createProfileReducerInitialState initial", (done) => {
-      expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentProfileActivityId).to.equal(activityIds[0]);
+      expect(initialState.activities).to.deep.equal(activities);
+      expect(initialState.currentProfileActivityId).to.equal(activities[0].id);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId) => ({
           profileId,
@@ -69,8 +73,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
     });
 
     it("should createProfileReducerInitialState all activities ready", (done) => {
-      const activityMap = activityIds.reduce(
-        (acc, activityId) => ({
+      const activityMap = activities.reduce(
+        (acc, { id: activityId }) => ({
           ...acc,
           [activityId]: participantProfileIds.map((profileId, index) => ({
             profileId,
@@ -83,7 +87,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const timestamp = getUnixTime(new Date());
 
       initialState = createProfileReducerInitialState({
-        activityIds,
+        activities,
         participantProfileIds,
         activityMap,
         lastUpdateTimestamp: timestamp,
@@ -93,8 +97,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         sessionStage: InMemorySessionStage.ON_GOING,
       });
 
-      expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentProfileActivityId).to.equal(activityIds[2]);
+      expect(initialState.activities).to.deep.equal(activities);
+      expect(initialState.currentProfileActivityId).to.equal(activities[2].id);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -120,8 +124,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
     });
 
     it("should createProfileReducerInitialState two activities ready", (done) => {
-      const activityMap = activityIds.reduce(
-        (acc, activityId, index) => ({
+      const activityMap = activities.reduce(
+        (acc, { id: activityId }, index) => ({
           ...acc,
           [activityId]: participantProfileIds.map((profileId, pIndex) => ({
             profileId,
@@ -133,7 +137,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       );
       const timestamp = getUnixTime(new Date());
       initialState = createProfileReducerInitialState({
-        activityIds,
+        activities,
         participantProfileIds,
         activityMap,
         lastUpdateTimestamp: timestamp,
@@ -143,8 +147,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         sessionStage: InMemorySessionStage.ON_GOING,
       });
 
-      expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentProfileActivityId).to.equal(activityIds[2]);
+      expect(initialState.activities).to.deep.equal(activities);
+      expect(initialState.currentProfileActivityId).to.equal(activities[2].id);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -170,8 +174,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
     });
 
     it("should createProfileReducerInitialState one and half activities ready", (done) => {
-      const activityMap = activityIds.reduce(
-        (acc, activityId, index) => ({
+      const activityMap = activities.reduce(
+        (acc, { id: activityId }, index) => ({
           ...acc,
           [activityId]: participantProfileIds.map((profileId, pIndex) => ({
             profileId,
@@ -187,7 +191,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
 
       const timestamp = getUnixTime(new Date());
       initialState = createProfileReducerInitialState({
-        activityIds,
+        activities,
         participantProfileIds,
         activityMap,
         lastUpdateTimestamp: timestamp,
@@ -197,8 +201,8 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
         sessionStage: InMemorySessionStage.ON_GOING,
       });
 
-      expect(initialState.activityIds).to.deep.equal(activityIds);
-      expect(initialState.currentProfileActivityId).to.equal(activityIds[1]);
+      expect(initialState.activities).to.deep.equal(activities);
+      expect(initialState.currentProfileActivityId).to.equal(activities[1].id);
       expect(initialState.activityMap).to.deep.equal({
         "1": participantProfileIds.map((profileId, index) => ({
           profileId,
@@ -231,7 +235,7 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const result = dispatch(action);
       expect(
@@ -252,17 +256,17 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const result1 = dispatch(action1);
@@ -299,25 +303,25 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action2 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const result1 = dispatch(action1);
@@ -334,27 +338,27 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const timestamp = getUnixTime(new Date());
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const result1 = dispatch(action1);
@@ -394,30 +398,30 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action6 = profileActivityReady({
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const result1 = dispatch(action1);
@@ -464,88 +468,88 @@ describe("Apollo > Resources > In Memory Profile Metadata", () => {
       const action1 = setProfileActivityValue({
         value: questionIds[2],
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action2 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action3 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const action4 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action5 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
       const action6 = profileActivityReady({
         profileId: participantProfileIds[0],
-        activityId: activityIds[0],
+        activityId: activities[0].id,
       });
 
       const action7 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[0],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
       const action8 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[1],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
       const action9 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[2],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
 
       const action10 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
       const action11 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
       const action12 = profileActivityReady({
         profileId: participantProfileIds[0],
-        activityId: activityIds[1],
+        activityId: activities[1].id,
       });
 
       const action13 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[0],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
       const action14 = setProfileActivityValue({
         value: questionIds[1],
         profileId: participantProfileIds[1],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
       const action15 = setProfileActivityValue({
         value: questionIds[0],
         profileId: participantProfileIds[2],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
 
       const action16 = profileActivityReady({
         profileId: participantProfileIds[1],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
       const action17 = profileActivityReady({
         profileId: participantProfileIds[2],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
       const action18 = profileActivityReady({
         profileId: participantProfileIds[0],
-        activityId: activityIds[2],
+        activityId: activities[2].id,
       });
 
       const result1 = dispatch(action1);

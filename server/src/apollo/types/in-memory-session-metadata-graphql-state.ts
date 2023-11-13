@@ -1,6 +1,7 @@
 import { GraphQLActivityMap } from "./graphql-activity-map";
 import { InMemorySessionStage } from "../../session-processor/+state/types/in-memory-session-stage";
 import { ActivityMode } from "../../session-processor/types";
+import { ActivityType } from "../../database";
 
 export interface InMemorySessionMetadataGraphQLState {
   sessionId: string;
@@ -9,7 +10,7 @@ export interface InMemorySessionMetadataGraphQLState {
   connectedProfileIds: string[];
   teamName: string | null;
   currentStage: InMemorySessionStage;
-  activityIds: string[];
+  activities: { id: string; type: ActivityType }[];
   activityMode: ActivityMode;
   stages: {
     [InMemorySessionStage.WAITING]: string[];

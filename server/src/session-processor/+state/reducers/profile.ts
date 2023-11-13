@@ -8,7 +8,12 @@ import {
   setProfileActivityValue,
   setStartEmotion,
 } from "../actions";
-import { ActivityEntry, ActivityMode, InMemorySessionStage } from "../types";
+import {
+  ActivityEntry,
+  ActivityMode,
+  ActivityType,
+  InMemorySessionStage,
+} from "../types";
 import { createReducer, on } from "../utils/reducer-creator";
 import { diff } from "deep-diff";
 import { RemoveUnion } from "../../../types";
@@ -17,7 +22,7 @@ export interface InMemoryProfileMetadataState {
   // INFO:
   // activities: { [activityId]: { profileId: string, value: string }[] }
   readonly sessionId: string;
-  readonly activityIds: string[];
+  readonly activities: { id: string; type: ActivityType }[];
   readonly activityMap: Record<string, ActivityEntry[]>;
   readonly activityMode: ActivityMode;
   readonly currentProfileActivityId: string | null;
@@ -31,7 +36,7 @@ export interface InMemoryProfileMetadataState {
 export function createProfileReducerInitialState({
   sessionId,
   participantProfileIds,
-  activityIds,
+  activities,
   activityMap,
   startEmotions,
   endEmotions,
@@ -40,30 +45,30 @@ export function createProfileReducerInitialState({
 }: {
   sessionId: string;
   participantProfileIds: string[];
-  activityIds: string[];
+  activities: { id: string; type: ActivityType }[];
   activityMap?: InMemoryProfileMetadataState["activityMap"];
   startEmotions?: { emotion: number; profileId: string }[];
   endEmotions?: { emotion: number; profileId: string }[];
   lastUpdateTimestamp?: number | null;
   sessionStage: InMemorySessionStage;
 }) {
-  let currentActivityId = activityIds[0];
+  let currentActivityId = activities[0].id;
   if (activityMap) {
     let counter = -1;
-    for (const activityId of activityIds) {
+    for (const { id: activityId } of activities) {
       counter = counter + 1;
       const isActivityReady = activityMap[activityId].every((a) => a.ready);
       if (!isActivityReady) {
         break;
       }
     }
-    currentActivityId = activityIds[counter];
+    currentActivityId = activities[counter].id;
   }
 
   activityMap =
     activityMap ||
-    activityIds.reduce(
-      (acc, activityId) => ({
+    activities.reduce(
+      (acc, { id: activityId }) => ({
         ...acc,
         [activityId]: participantProfileIds.map((profileId) => ({
           profileId,
@@ -74,9 +79,11 @@ export function createProfileReducerInitialState({
       {}
     );
 
-  const currentActivityIndex = activityIds.indexOf(currentActivityId);
+  const currentActivityIndex = activities.findIndex(
+    (a) => a.id === currentActivityId
+  );
   const nextActivityIndex = currentActivityIndex + 1;
-  const nextActivity = activityIds[nextActivityIndex];
+  const nextActivity = activities[nextActivityIndex];
   const finished = !!(
     !nextActivity && activityMap[currentActivityId].every((a) => a.ready)
   );
@@ -84,7 +91,7 @@ export function createProfileReducerInitialState({
   const initialState: InMemoryProfileMetadataState = {
     sessionId,
     currentProfileActivityId: currentActivityId,
-    activityIds,
+    activities,
     activityMap,
     finished,
     activityMode: ActivityMode.PROFILE,
@@ -103,10 +110,10 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       return { ...state, activityMode };
     }),
     on(addParticipant, (state, { profileIds: ids }) => {
-      const { activityIds, activityMap } = state;
+      const { activities, activityMap } = state;
       const idArray = ([] as string[]).concat(ids);
       const updatedActivities: Record<string, ActivityEntry[]> = {};
-      for (const activityId of activityIds) {
+      for (const { id: activityId } of activities) {
         updatedActivities[activityId] = [...activityMap[activityId]];
         for (const id of idArray) {
           updatedActivities[activityId] = [
@@ -118,10 +125,10 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
       return { ...state, activityMap: updatedActivities };
     }),
     on(removeParticipant, (state, { profileIds: ids }) => {
-      const { activityIds, activityMap } = state;
+      const { activities, activityMap } = state;
       const idArray = ([] as string[]).concat(ids);
       const updatedActivities: Record<string, ActivityEntry[]> = {};
-      for (const activityId of activityIds) {
+      for (const { id: activityId } of activities) {
         updatedActivities[activityId] = [...activityMap[activityId]];
         for (const id of idArray) {
           updatedActivities[activityId] = updatedActivities[activityId].filter(
@@ -195,14 +202,14 @@ export function getProfileReducer(initialState: InMemoryProfileMetadataState) {
         : ActivityMode.PROFILE;
 
       if (isCurrentActivityReady) {
-        const currentActivityIndex = state.activityIds.indexOf(
-          currentActivityId!
+        const currentActivityIndex = state.activities.findIndex(
+          (a) => a.id === currentActivityId
         );
         const nextActivityIndex = currentActivityIndex + 1;
         currentActivityId =
-          nextActivityIndex === state.activityIds.length
+          nextActivityIndex === state.activities.length
             ? null
-            : state.activityIds[nextActivityIndex];
+            : state.activities[nextActivityIndex].id;
         finished = currentActivityId === null;
       }
 

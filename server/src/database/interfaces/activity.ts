@@ -28,11 +28,12 @@ export interface ActivityAttributes extends IBase {
 
   workshop?: WorkshopModelInstance;
   authorChallenges?: AuthorChallengeModelInstance[];
-  benchmark?: BenchmarkModelInstance;
   answers?: AnswerModelInstance[];
-  assignment?: AssignmentModelInstance[];
+
+  benchmark?: BenchmarkModelInstance;
+  assignment?: AssignmentModelInstance;
   concept?: ConceptModelInstance;
-  conceptualization?: ConceptModelInstance;
+  conceptualization?: ConceptualizationModelInstance;
   question?: QuestionModelInstance;
   theory?: TheoryModelInstance;
 }
@@ -40,7 +41,17 @@ export interface ActivityAttributes extends IBase {
 export interface ActivityCreationAttributes
   extends Optional<ActivityAttributes, IBaseKeys> {}
 
-export interface ActivityInstanceMethods {}
+export interface ActivityInstanceMethods {
+  isTheory: () => boolean;
+  isAssignment: () => boolean;
+  isQuestion: () => boolean;
+  isBenchmark: () => boolean;
+  isConceptualization: () => boolean;
+  isConcept: () => boolean;
+  getGroupDuration: () => number | null;
+  getProfileDuration: () => number | null;
+  getDuration: () => number | null;
+}
 
 export interface ActivityModelInstance
   extends Model<ActivityAttributes, ActivityCreationAttributes>,

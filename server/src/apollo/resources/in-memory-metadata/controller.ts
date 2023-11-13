@@ -35,6 +35,7 @@ import {
   startSessionProcessor,
 } from "../../../session-processor";
 import { ActivityMode } from "../../../session-processor/types";
+import { activityInstancesToStateActivityArray } from "../utils";
 
 export function readAndPublishInMemorySessionMetadataState(
   sessionId: string,
@@ -183,10 +184,9 @@ function uniqueConstraintErrorHandler(
             const inMemorySessionMetadataState =
               createSessionReducerInitialState({
                 sessionId: session!.id,
-                activityIds:
-                  slotWithWorkshopAndActivities.workshop!.activities!.map(
-                    (a) => a.id
-                  ),
+                activities: activityInstancesToStateActivityArray(
+                  slotWithWorkshopAndActivities.workshop!.activities!
+                ),
                 profileIds: [
                   "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
                   "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
@@ -205,10 +205,9 @@ function uniqueConstraintErrorHandler(
                   "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
                   "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
                 ], // Who is actually participating
-                activityIds:
-                  slotWithWorkshopAndActivities.workshop!.activities!.map(
-                    (a) => a.id
-                  ),
+                activities: activityInstancesToStateActivityArray(
+                  slotWithWorkshopAndActivities.workshop!.activities!
+                ),
                 sessionStage: inMemorySessionMetadataState.currentStage,
               });
             return Promise.all([
@@ -267,10 +266,9 @@ export function handleSessionSubscriptionWithSlotId(
           const inMemorySessionMetadataState = createSessionReducerInitialState(
             {
               sessionId: session!.id,
-              activityIds:
-                slotWithWorkshopAndActivities.workshop!.activities!.map(
-                  (a) => a.id
-                ),
+              activities: activityInstancesToStateActivityArray(
+                slotWithWorkshopAndActivities.workshop!.activities!
+              ),
               profileIds: [
                 "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
                 "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
@@ -290,10 +288,9 @@ export function handleSessionSubscriptionWithSlotId(
                 "d09c8aec-f7e6-40cf-9d3f-c095074722c6",
                 "d63ebbec-a7a5-4382-be09-d1db4cb9288a",
               ], // Who is actually participating
-              activityIds:
-                slotWithWorkshopAndActivities.workshop!.activities!.map(
-                  (a) => a.id
-                ),
+              activities: activityInstancesToStateActivityArray(
+                slotWithWorkshopAndActivities.workshop!.activities!
+              ),
               sessionStage: inMemorySessionMetadataState.currentStage,
             }
           );

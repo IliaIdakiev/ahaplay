@@ -11,6 +11,20 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     VIEW_RESULTS
   }
   
+  enum ActivityType {
+    Theory
+    Assignment
+    Question
+    Benchmark
+    Conceptualization
+    Concept
+  }
+  
+  type Activity {
+    id: String
+    type: ActivityType
+  }
+
   type ActivityEntry {
     profileId: String
     value: String
@@ -43,7 +57,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     participantProfileIds: [String]!
     teamName: String
     currentStage: InMemorySessionStage!
-    activityIds: [String]!
+    activities: [Activity]!
     stages: InMemoryProfileMetadataStages!
     activityMap: [ActivityMapArrayItem]!
     currentActivityId: String
@@ -53,7 +67,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
 
   type InMemoryProfileMetadataState {
     sessionId: String!
-    activityIds: [String]!
+    activities: [Activity]!
     activityMap: [ActivityMapArrayItem]!
     currentActivityId: String
     finished: Boolean

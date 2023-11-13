@@ -1,9 +1,9 @@
-import { ActivityMode } from "../../session-processor/types";
+import { ActivityMode, ActivityType } from "../../session-processor/types";
 import { GraphQLActivityMap } from "./graphql-activity-map";
 
 export interface InMemoryProfileMetadataGraphQLState {
   sessionId: string;
-  activityIds: string[];
+  activities: { id: string; type: ActivityType }[];
   activityMap: GraphQLActivityMap;
   currentProfileActivityId: string | null;
   finished: boolean;

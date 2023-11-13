@@ -13,14 +13,14 @@ import {
   saveInMemoryProfileMetadataState,
   saveInMemorySessionMetadataState,
 } from "./helpers/redis";
-import { ActivityMode } from "./types";
+import { ActivityMode, ActivityType } from "./types";
 
 export function setupSessionAndProfileMetadataInMemoryStates(
   sessionId: string,
   profileIds: string[],
   connectedProfileIds: string[],
   participantProfileIds: string[],
-  activityIds: string[]
+  activities: { id: string; type: ActivityType }[]
 ) {
   return Promise.all([
     readInMemorySessionMetadataState(sessionId, true),
@@ -35,7 +35,7 @@ export function setupSessionAndProfileMetadataInMemoryStates(
       sessionState = createSessionReducerInitialState({
         sessionId: sessionId,
         participantProfileIds: participantProfileIds,
-        activityIds: activityIds,
+        activities,
         profileIds,
         connectedProfileIds,
         activityMode: ActivityMode.PROFILE,
@@ -47,7 +47,7 @@ export function setupSessionAndProfileMetadataInMemoryStates(
       const profileState = createProfileReducerInitialState({
         sessionId: sessionId,
         participantProfileIds: participantProfileIds,
-        activityIds: activityIds,
+        activities,
         sessionStage: sessionState!.currentStage,
       });
 
@@ -73,7 +73,7 @@ export function createInMemoryDispatcher(
     const sessionState = createSessionReducerInitialState({
       sessionId: sessionId,
       participantProfileIds: sessionMetadataState.participantProfileIds,
-      activityIds: sessionMetadataState.activityIds,
+      activities: sessionMetadataState.activities,
       teamName: sessionMetadataState.teamName,
       stages: sessionMetadataState.stages,
       activityMap: sessionMetadataState.activityMap,
@@ -85,8 +85,8 @@ export function createInMemoryDispatcher(
     const profileState = createProfileReducerInitialState({
       sessionId: sessionId,
       participantProfileIds: sessionMetadataState.participantProfileIds,
-      activityIds:
-        profileMetadataState?.activityIds || sessionMetadataState.activityIds,
+      activities:
+        profileMetadataState?.activities || sessionMetadataState.activities,
       activityMap: profileMetadataState?.activityMap,
       startEmotions: profileMetadataState?.startEmotions,
       endEmotions: profileMetadataState?.endEmotions,

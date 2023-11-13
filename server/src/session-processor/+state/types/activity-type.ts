@@ -1,8 +1,8 @@
 export enum ActivityType {
-  Question = "Question",
-  Assignment = "Assignment",
   Theory = "Theory",
+  Assignment = "Assignment",
+  Question = "Question",
+  Benchmark = "Benchmark",
   Conceptualization = "Conceptualization",
   Concept = "Concept",
-  Benchmark = "Benchmark",
 }

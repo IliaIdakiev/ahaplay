@@ -16,7 +16,12 @@ import {
   teamNameReady,
 } from "../actions";
 import { createReducer, on } from "../utils/reducer-creator";
-import { InMemorySessionStage, ActivityEntry, ActivityMode } from "../types";
+import {
+  InMemorySessionStage,
+  ActivityEntry,
+  ActivityMode,
+  ActivityType,
+} from "../types";
 import { getUnixTime } from "date-fns";
 import { diff } from "deep-diff";
 import { RemoveUnion } from "../../../types";
@@ -31,7 +36,7 @@ export interface InMemorySessionMetadataState {
   readonly connectedProfileIds: string[]; // All profiles that are connected
   readonly teamName: string | null;
   readonly currentStage: InMemorySessionStage;
-  readonly activityIds: string[];
+  readonly activities: { id: string; type: ActivityType }[];
   readonly activityMode: ActivityMode;
   readonly stages: {
     [InMemorySessionStage.WAITING]: string[];
@@ -49,7 +54,7 @@ export interface InMemorySessionMetadataState {
 
 export function createSessionReducerInitialState({
   sessionId,
-  activityIds,
+  activities,
   teamName,
   stages,
   activityMap,
@@ -60,7 +65,7 @@ export function createSessionReducerInitialState({
   activityMode,
 }: {
   sessionId: string;
-  activityIds: string[];
+  activities: { id: string; type: ActivityType }[];
   profileIds: string[]; // All profiles that can access the workshop
   participantProfileIds: string[]; // Who is actually participating
   connectedProfileIds: string[]; // All profiles that are connected
@@ -71,18 +76,18 @@ export function createSessionReducerInitialState({
   activityMode: ActivityMode;
 }) {
   let currentStage = InMemorySessionStage.WAITING;
-  let currentActivityId = activityIds[0];
+  let currentActivityId = activities[0].id;
 
   if (activityMap) {
     let counter = -1;
-    for (const activityId of activityIds) {
+    for (const { id: activityId } of activities) {
       counter = counter + 1;
       const isActivityReady = activityMap[activityId].every((a) => a.ready);
       if (!isActivityReady) {
         break;
       }
     }
-    currentActivityId = activityIds[counter];
+    currentActivityId = activities[counter].id;
   }
   if (stages) {
     let stageKey = InMemorySessionStage.WAITING;
@@ -101,7 +106,10 @@ export function createSessionReducerInitialState({
 
   activityMap =
     activityMap ||
-    activityIds.reduce((acc, activityId) => ({ ...acc, [activityId]: [] }), {});
+    activities.reduce(
+      (acc, { id: activityId }) => ({ ...acc, [activityId]: [] }),
+      {}
+    );
 
   const isCurrentActivityReady =
     activityMap[currentActivityId].length === participantProfileIds.length &&
@@ -111,10 +119,12 @@ export function createSessionReducerInitialState({
     isCurrentActivityReady && activityMode === ActivityMode.GROUP
       ? ActivityMode.PROFILE
       : ActivityMode.GROUP;
-  const currentActivityIndex = activityIds.indexOf(currentActivityId);
+  const currentActivityIndex = activities.findIndex(
+    (a) => a.id === currentActivityId
+  );
   const nextActivityIndex = currentActivityIndex + 1;
   const allActivitiesFinished =
-    isCurrentActivityReady && nextActivityIndex === activityIds.length;
+    isCurrentActivityReady && nextActivityIndex === activities.length;
 
   if (allActivitiesFinished && currentStage === InMemorySessionStage.ON_GOING) {
     stages![InMemorySessionStage.ON_GOING] = participantProfileIds.slice();
@@ -125,7 +135,7 @@ export function createSessionReducerInitialState({
     participantProfileIds,
     connectedProfileIds,
     profileIds,
-    activityIds,
+    activities,
     teamName: teamName || null,
     currentStage: currentStage || InMemorySessionStage.WAITING,
     stages: stages || {
@@ -326,12 +336,12 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
       let activityMode = ActivityMode.GROUP;
       if (updatedValuesForCurrentActivity.every((a) => a.ready)) {
         activityMode = ActivityMode.PROFILE;
-        const currentActivityIndex = state.activityIds.indexOf(
-          currentActivityId!
+        const currentActivityIndex = state.activities.findIndex(
+          (a) => a.id === currentActivityId
         );
         const nextActivityId = currentActivityIndex + 1;
-        if (nextActivityId < state.activityIds.length) {
-          currentActivityId = state.activityIds[nextActivityId];
+        if (nextActivityId < state.activities.length) {
+          currentActivityId = state.activities[nextActivityId].id;
         } else {
           allActivitiesFinished = true;
         }
@@ -387,12 +397,12 @@ export function getSessionReducer(initialState: InMemorySessionMetadataState) {
       let currentActivityId = state.currentGroupActivityId;
       let allActivitiesFinished = state.allActivitiesFinished;
       if (updatedCurrentActivity.every((a) => a.ready)) {
-        const currentActivityIndex = state.activityIds.indexOf(
-          currentActivityId!
+        const currentActivityIndex = state.activities.findIndex(
+          (a) => a.id === currentActivityId
         );
         const nextActivityId = currentActivityIndex + 1;
-        if (nextActivityId < state.activityIds.length) {
-          currentActivityId = state.activityIds[nextActivityId];
+        if (nextActivityId < state.activities.length) {
+          currentActivityId = state.activities[nextActivityId].id;
         } else {
           allActivitiesFinished = true;
         }
