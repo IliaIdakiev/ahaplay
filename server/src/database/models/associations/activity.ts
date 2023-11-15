@@ -45,10 +45,10 @@ activityModel.hasOne(conceptualizationModel, {
   as: conceptualizationAssociationNames.singular,
 });
 
-activityModel.hasMany(questionModel, {
+activityModel.hasOne(questionModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
-  as: questionAssociationNames.plural,
+  as: questionAssociationNames.singular,
 });
 
 activityModel.hasOne(theoryModel, {

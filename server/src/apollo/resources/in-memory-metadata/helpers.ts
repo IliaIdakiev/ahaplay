@@ -158,7 +158,7 @@ export function readSlotWithWorkshopActivitiesAndRelatedQuestions(
             include: [
               {
                 model: models.question,
-                as: questionAssociationNames.plural,
+                as: questionAssociationNames.singular,
               },
               {
                 model: models.answer,

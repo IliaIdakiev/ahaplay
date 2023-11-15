@@ -79,7 +79,7 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
             include: [
               {
                 model: models.question,
-                as: questionAssociationNames.plural,
+                as: questionAssociationNames.singular,
               },
               {
                 model: models.answer,

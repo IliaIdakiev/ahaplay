@@ -20,7 +20,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     Concept
   }
   
-  type Activity {
+  type ActivityData {
     id: String
     type: ActivityType
   }
@@ -57,7 +57,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
     participantProfileIds: [String]!
     teamName: String
     currentStage: InMemorySessionStage!
-    activities: [Activity]!
+    activities: [ActivityData]!
     stages: InMemoryProfileMetadataStages!
     activityMap: [ActivityMapArrayItem]!
     currentActivityId: String
@@ -67,7 +67,7 @@ export const sessionAndProfileMetadataTypeDefs = gql`
 
   type InMemoryProfileMetadataState {
     sessionId: String!
-    activities: [Activity]!
+    activities: [ActivityData]!
     activityMap: [ActivityMapArrayItem]!
     currentActivityId: String
     finished: Boolean
