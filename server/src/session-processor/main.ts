@@ -95,7 +95,7 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
               },
               {
                 model: models.concept,
-                as: conceptAssociationNames.singular,
+                as: conceptAssociationNames.plural,
                 order: [["sequence_number", "ASC"]],
               },
               {

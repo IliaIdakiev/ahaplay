@@ -69,8 +69,8 @@ activityModel.hasMany(answerModel, {
   as: answerAssociationNames.plural,
 });
 
-activityModel.hasOne(conceptModel, {
+activityModel.hasMany(conceptModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
-  as: conceptAssociationNames.singular,
+  as: conceptAssociationNames.plural,
 });

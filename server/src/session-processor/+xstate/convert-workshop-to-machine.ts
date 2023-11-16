@@ -1,21 +1,13 @@
 import { createMachine, assign, interpret } from "xstate";
+import { WorkshopModelInstance } from "../../database";
 import {
-  ActivityModelInstance,
-  WorkshopModelInstance,
-  activityAssociationNames,
-  answerAssociationNames,
-  assignmentAssociationNames,
-  benchmarkAssociationNames,
-  conceptAssociationNames,
-  conceptualizationAssociationNames,
-  goalAssociationNames,
-  instructionAssociationNames,
-  models,
-  questionAssociationNames,
-  theoryAssociationNames,
-  typeAssociationNames,
-  workshopAssociationNames,
-} from "../../database";
+  createIndividualOnlyState,
+  createIndividualAndGroupState,
+  createMachineState,
+  getSessionWithWorkshopAndActivities,
+  createIndividualGroupAndReviewState,
+  createGroupOnlyOneValueState,
+} from "./helpers";
 
 interface SessionMachineContext {
   requiredActiveProfileCount: number;
@@ -24,7 +16,7 @@ interface SessionMachineContext {
   activityResult: Record<
     string,
     Record<
-      "individual" | "group",
+      "individual" | "group" | "review",
       {
         profileId: string;
         value: string;
@@ -36,6 +28,9 @@ interface SessionMachineContext {
 
 function createJoinAction(data: { profileId: string }) {
   return { type: "join" as const, ...data };
+}
+function createActivityTimeoutAction(data: { activityId: string }) {
+  return { type: "activityTimeout" as const, ...data };
 }
 function createDisconnectAction(data: { profileId: string }) {
   return { type: "disconnect" as const, ...data };
@@ -54,6 +49,7 @@ function createSetReadyAction(data: { profileId: string; activityId: string }) {
   return { type: "setReady" as const, ...data };
 }
 
+type ActivityTimeoutAction = ReturnType<typeof createActivityTimeoutAction>;
 type JoinAction = ReturnType<typeof createJoinAction>;
 type DisconnectAction = ReturnType<typeof createDisconnectAction>;
 type ReadyToStartAction = ReturnType<typeof createReadyToStartAction>;
@@ -65,7 +61,8 @@ type SessionMachineActions =
   | DisconnectAction
   | ReadyToStartAction
   | SetValueAction
-  | SetReadyAction;
+  | SetReadyAction
+  | ActivityTimeoutAction;
 
 function createSessionMachine(states: any, machineName: string) {
   return createMachine(
@@ -126,8 +123,50 @@ function createSessionMachine(states: any, machineName: string) {
             return {
               ...context.activityResult,
               [activity]: {
-                ...context.activityResult[activity],
+                ...(context.activityResult[activity] || {}),
                 [mode]: currentActivityResults,
+              },
+            };
+          },
+        }),
+        setOneValue: assign({
+          activityResult: (context, action, { state }) => {
+            if (action.type === "setValue") {
+              return context.activityResult;
+            }
+            const { value, profileId, activityId } =
+              action as unknown as SetValueAction;
+            const activity = Object.keys(state?.value || {})[0];
+            const mode = (state?.value as any)[activity] as
+              | "individual"
+              | "group"
+              | undefined;
+
+            if (!activity || mode === undefined || activityId !== activity) {
+              return context.activityResult;
+            }
+
+            let currentActivityResults =
+              context.activityResult?.[activity]?.[mode] || [];
+            if (
+              !currentActivityResults.find((a) => a.profileId === profileId)
+            ) {
+              currentActivityResults = currentActivityResults.concat({
+                profileId,
+                value,
+                ready: false,
+              });
+            }
+
+            return {
+              ...context.activityResult,
+              [activity]: {
+                ...(context.activityResult[activity] || {}),
+                [mode]: currentActivityResults.map((a) => ({
+                  ...a,
+                  value,
+                  ready: false,
+                })),
               },
             };
           },
@@ -139,6 +178,7 @@ function createSessionMachine(states: any, machineName: string) {
             const mode = (state?.value as any)[activity] as
               | "individual"
               | "group"
+              | "review"
               | undefined;
 
             if (!activity || mode === undefined || activityId !== activity) {
@@ -163,29 +203,69 @@ function createSessionMachine(states: any, machineName: string) {
             };
           },
         }),
+        activityTimeout: assign({
+          activityResult: (context, data: ActivityTimeoutAction, { state }) => {
+            const { activityId } = data;
+            const activity = Object.keys(state?.value || {})[0];
+            const mode = (state?.value as any)[activity] as
+              | "individual"
+              | "group"
+              | "review"
+              | undefined;
+
+            if (!activity || mode === undefined || activityId !== activity) {
+              return context.activityResult;
+            }
+
+            let currentActivityResults = context.currentActiveProfiles.map(
+              (profileId) => {
+                return (
+                  (context.activityResult?.[activity]?.[mode] || []).find(
+                    (a) => a.profileId === profileId
+                  ) || { profileId, value: "<TIMEOUT_NO_VALUE>", ready: true }
+                );
+              }
+            );
+
+            currentActivityResults = currentActivityResults.map((v) => ({
+              profileId: v.profileId,
+              value: v.value || "<TIMEOUT_NO_VALUE>",
+              ready: true,
+            }));
+
+            return {
+              ...context.activityResult,
+              [activity]: {
+                ...context.activityResult[activity],
+                [mode]: currentActivityResults,
+              },
+            };
+          },
+        }),
       },
       guards: {
-        isReadyToStart: (context, { profileId }) =>
-          context.readyActiveProfiles.concat(profileId).length ===
-          context.requiredActiveProfileCount,
-        isReadyToForNextStep: (context, { profileId }, { state }) => {
-          const activity = Object.keys(state.value)[0];
-          const mode = (state.value as any)[activity] as "individual" | "group";
-          if (mode === "individual") {
-            const isReady =
-              context.activityResult[activity][mode].length ===
-                context.requiredActiveProfileCount &&
-              context.activityResult[activity][mode]
-                .filter((val) => val.profileId !== profileId)
-                .every((a) => a.ready);
-            return isReady;
+        isReadyToStart: (context, action) =>
+          action &&
+          "profileId" in action &&
+          context.readyActiveProfiles.concat(action.profileId).length ===
+            context.requiredActiveProfileCount,
+        isReadyToForNextStep: (context, action, { state }) => {
+          if (!("profileId" in action)) {
+            return action.type === "activityTimeout";
           }
+          const activity = Object.keys(state.value)[0];
+          const mode = (state.value as any)[activity] as
+            | "individual"
+            | "group"
+            | "review";
+          const otherValues =
+            context.activityResult?.[activity]?.[mode]?.filter(
+              (val) => val.profileId !== action.profileId
+            ) || [];
           const isReady =
-            context.activityResult[activity][mode]?.length ===
-              context.requiredActiveProfileCount &&
-            context.activityResult[activity][mode]
-              .filter((val) => val.profileId !== profileId)
-              .every((a) => a.ready);
+            otherValues.length === context.requiredActiveProfileCount - 1 &&
+            otherValues.every((a) => a.ready);
+
           return isReady;
         },
       },
@@ -193,232 +273,20 @@ function createSessionMachine(states: any, machineName: string) {
   );
 }
 
-function createMachineState(
-  machineName: string,
-  stateAfterWaiting: string,
-  otherStates: any
-) {
-  return {
-    waiting: {
-      on: {
-        join: {
-          target: "waiting",
-          actions: ["join"],
-        },
-        disconnect: {
-          target: "waiting",
-          actions: ["disconnect"],
-        },
-        readyToStart: [
-          {
-            target: `#${machineName}.${stateAfterWaiting}`,
-            cond: "isReadyToStart",
-            actions: ["readyToStart"],
-          },
-          {
-            target: "waiting",
-            actions: ["readyToStart"],
-          },
-        ],
-      },
-    },
-    ...otherStates,
-    viewResults: {
-      type: "final",
-    },
-  };
-}
-
-function createIndividualOnlyState(
-  machineName: string,
-  activity: ActivityModelInstance,
-  nextActivity: ActivityModelInstance | undefined | null
-) {
-  return {
-    [activity.id]: {
-      initial: "individual",
-      states: {
-        individual: {
-          on: {
-            setValue: {
-              target: "individual",
-              actions: ["setValue"],
-            },
-            setReady: [
-              {
-                target: `#${machineName}.${nextActivity?.id || "viewResults"}`,
-                actions: ["setReady"],
-                cond: "isReadyToForNextStep",
-              },
-              {
-                target: "individual",
-                actions: ["setReady"],
-              },
-            ],
-          },
-        },
-      },
-    },
-  };
-}
-
-function createGroupOnlyState(
-  machineName: string,
-  activity: ActivityModelInstance,
-  nextActivity: ActivityModelInstance | undefined | null
-) {
-  return {
-    [activity.id]: {
-      initial: "group",
-      states: {
-        group: {
-          on: {
-            setValue: {
-              target: "group",
-              actions: ["setValue"],
-            },
-            setReady: [
-              {
-                target: `#${machineName}.${nextActivity?.id || "viewResults"}`,
-                cond: "isReadyToForNextStep",
-                actions: ["setReady"],
-              },
-              {
-                target: "group",
-                actions: ["setReady"],
-              },
-            ],
-          },
-        },
-      },
-    },
-  };
-}
-
-function createIndividualAndGroupState(
-  machineName: string,
-  activity: ActivityModelInstance,
-  nextActivity: ActivityModelInstance | undefined | null
-) {
-  return {
-    [activity.id]: {
-      initial: "individual",
-      states: {
-        individual: {
-          on: {
-            setValue: {
-              target: "individual",
-              actions: ["setValue"],
-            },
-            setReady: [
-              {
-                target: "group",
-                actions: ["setReady"],
-                cond: "isReadyToForNextStep",
-              },
-              {
-                target: "individual",
-                actions: ["setReady"],
-              },
-            ],
-          },
-        },
-        group: {
-          on: {
-            setValue: {
-              target: "group",
-              actions: ["setValue"],
-            },
-            setReady: [
-              {
-                target: `#${machineName}.${nextActivity?.id || "viewResults"}`,
-                cond: "isReadyToForNextStep",
-                actions: ["setReady"],
-              },
-              {
-                target: "group",
-                actions: ["setReady"],
-              },
-            ],
-          },
-        },
-      },
-    },
-  };
-}
-
-function getSessionWithWorkshopAndActivities(sessionId: string) {
-  return models.session.findByPk(sessionId, {
-    include: [
-      {
-        model: models.workshop,
-        as: workshopAssociationNames.singular,
-        include: [
-          {
-            model: models.goal,
-            as: goalAssociationNames.plural,
-            order: [["sequence_number", "ASC"]],
-          },
-          {
-            model: models.type,
-            as: typeAssociationNames.singular,
-            include: [
-              {
-                model: models.instruction,
-                as: instructionAssociationNames.plural,
-                order: [["sequence_number", "ASC"]],
-              },
-            ],
-          },
-          {
-            model: models.activity,
-            as: activityAssociationNames.plural,
-            order: [["sequence_number", "ASC"]],
-            include: [
-              {
-                model: models.question,
-                as: questionAssociationNames.singular,
-              },
-              {
-                model: models.answer,
-                as: answerAssociationNames.plural,
-              },
-              {
-                model: models.benchmark,
-                as: benchmarkAssociationNames.singular,
-              },
-              {
-                model: models.conceptualization,
-                as: conceptualizationAssociationNames.singular,
-              },
-              {
-                model: models.concept,
-                as: conceptAssociationNames.singular,
-                order: [["sequence_number", "ASC"]],
-              },
-              {
-                model: models.theory,
-                as: theoryAssociationNames.singular,
-              },
-              {
-                model: models.assignment,
-                as: assignmentAssociationNames.singular,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
-}
-
 function convertWorkshopToMachine(
   machineName: string,
   workshop: WorkshopModelInstance
 ) {
   const activities = workshop.activities!;
-  let states = {};
-  for (const activity of activities) {
+  let states = {
+    ...createIndividualOnlyState(machineName, "startEmotion", "teamName"),
+    ...createGroupOnlyOneValueState(machineName, "teamName", activities[0]),
+  };
+  const sortedActivities = activities.sort(
+    (a, b) => a.sequence_number - b.sequence_number
+  );
+  const isQuiz = workshop.typeInstance!.name === "Quiz";
+  for (const activity of sortedActivities) {
     const currentActivityIndex = activities.indexOf(activity);
     const nextActivity = activities[currentActivityIndex + 1];
     if (activity.theory) {
@@ -427,15 +295,15 @@ function convertWorkshopToMachine(
         ...states,
         ...createIndividualOnlyState(workshop.id, activity, nextActivity),
       };
-      continue;
     }
     if (activity.question) {
       // create individual and group part + third part that explains the answers
       states = {
         ...states,
-        ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
+        ...(isQuiz
+          ? createIndividualGroupAndReviewState
+          : createIndividualAndGroupState)(workshop.id, activity, nextActivity),
       };
-      continue;
     }
     if (activity.assignment) {
       // create individual part only
@@ -443,7 +311,6 @@ function convertWorkshopToMachine(
         ...states,
         ...createIndividualOnlyState(workshop.id, activity, nextActivity),
       };
-      continue;
     }
     if (activity.conceptualization) {
       // create individual and group part
@@ -451,7 +318,6 @@ function convertWorkshopToMachine(
         ...states,
         ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
       };
-      continue;
     }
     if (activity.benchmark) {
       // create individual and group part
@@ -459,19 +325,19 @@ function convertWorkshopToMachine(
         ...states,
         ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
       };
-      continue;
     }
   }
 
-  const machineState = createMachineState(
-    machineName,
-    activities[0].id,
-    states
-  );
+  states = {
+    ...states,
+    ...createIndividualOnlyState(machineName, "endEmotion", "viewResults"),
+  };
+
+  const machineState = createMachineState(machineName, "startEmotion", states);
   return createSessionMachine(machineState, machineName);
 }
 
-getSessionWithWorkshopAndActivities("e4beb40b-7140-48d5-9d9b-5cfe0f861cad")
+getSessionWithWorkshopAndActivities("2624bc0f-71a0-4e2f-a1a7-7bd80cb9ac05")
   .then(
     (session) =>
       [
@@ -492,6 +358,91 @@ getSessionWithWorkshopAndActivities("e4beb40b-7140-48d5-9d9b-5cfe0f861cad")
     service.send(createReadyToStartAction({ profileId: "1" }));
     service.send(createReadyToStartAction({ profileId: "2" }));
     service.send(createReadyToStartAction({ profileId: "3" }));
+
+    // start emotion
+    service.send(
+      createSetValueAction({
+        profileId: "3",
+        activityId: "startEmotion",
+        value: "Good",
+      })
+    );
+    service.send(
+      createSetValueAction({
+        profileId: "2",
+        activityId: "startEmotion",
+        value: "Better",
+      })
+    );
+    service.send(createActivityTimeoutAction({ activityId: "startEmotion" }));
+    // service.send(
+    //   createSetValueAction({
+    //     profileId: "1",
+    //     activityId: "startEmotion",
+    //     value: "Great",
+    //   })
+    // );
+
+    // service.send(
+    //   createSetReadyAction({
+    //     profileId: "3",
+    //     activityId: "startEmotion",
+    //   })
+    // );
+    // service.send(
+    //   createSetReadyAction({
+    //     profileId: "2",
+    //     activityId: "startEmotion",
+    //   })
+    // );
+    // service.send(
+    //   createSetReadyAction({
+    //     profileId: "1",
+    //     activityId: "startEmotion",
+    //   })
+    // );
+
+    // set team name
+    service.send(
+      createSetValueAction({
+        profileId: "3",
+        activityId: "teamName",
+        value: "Good team",
+      })
+    );
+    service.send(
+      createSetValueAction({
+        profileId: "2",
+        activityId: "teamName",
+        value: "Better team",
+      })
+    );
+    service.send(
+      createSetValueAction({
+        profileId: "1",
+        activityId: "teamName",
+        value: "The greatest team",
+      })
+    );
+
+    service.send(
+      createSetReadyAction({
+        profileId: "3",
+        activityId: "teamName",
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "2",
+        activityId: "teamName",
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "1",
+        activityId: "teamName",
+      })
+    );
 
     // first activity stuff
     service.send(
@@ -576,6 +527,26 @@ getSessionWithWorkshopAndActivities("e4beb40b-7140-48d5-9d9b-5cfe0f861cad")
       })
     );
 
+    // first activity review ready
+    service.send(
+      createSetReadyAction({
+        profileId: "3",
+        activityId: activities[0].id,
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "2",
+        activityId: activities[0].id,
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "1",
+        activityId: activities[0].id,
+      })
+    );
+
     // second activity stuff
     service.send(
       createSetValueAction({
@@ -618,5 +589,343 @@ getSessionWithWorkshopAndActivities("e4beb40b-7140-48d5-9d9b-5cfe0f861cad")
       })
     );
 
+    // end emotion
+    service.send(
+      createSetValueAction({
+        profileId: "3",
+        activityId: "endEmotion",
+        value: "Good",
+      })
+    );
+    service.send(
+      createSetValueAction({
+        profileId: "2",
+        activityId: "endEmotion",
+        value: "Better",
+      })
+    );
+    service.send(
+      createSetValueAction({
+        profileId: "1",
+        activityId: "endEmotion",
+        value: "Great",
+      })
+    );
+
+    service.send(
+      createSetReadyAction({
+        profileId: "3",
+        activityId: "endEmotion",
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "2",
+        activityId: "endEmotion",
+      })
+    );
+    service.send(
+      createSetReadyAction({
+        profileId: "1",
+        activityId: "endEmotion",
+      })
+    );
+
     console.log(service.getSnapshot().value, service.getSnapshot().context);
   });
+
+// getSessionWithWorkshopAndActivities("6bd51789-5a92-4475-9ba7-cd2750cbcaa0")
+//   .then(
+//     (session) =>
+//       [
+//         convertWorkshopToMachine(session!.workshop!.id, session!.workshop!),
+//         session!,
+//       ] as const
+//   )
+//   .then(([machine, session]) => {
+//     const activities = session.workshop!.activities!;
+//     let service = interpret(machine)
+//       .onTransition((state) => console.log(state.value, state.context))
+//       .start();
+
+//     service.send(createJoinAction({ profileId: "1" }));
+//     service.send(createJoinAction({ profileId: "2" }));
+//     service.send(createJoinAction({ profileId: "3" }));
+
+//     service.send(createReadyToStartAction({ profileId: "1" }));
+//     service.send(createReadyToStartAction({ profileId: "2" }));
+//     service.send(createReadyToStartAction({ profileId: "3" }));
+
+//     // start emotion
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: "startEmotion",
+//         value: "Good",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: "startEmotion",
+//         value: "Better",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: "startEmotion",
+//         value: "Great",
+//       })
+//     );
+
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: "startEmotion",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: "startEmotion",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: "startEmotion",
+//       })
+//     );
+
+//     // set team name
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: "teamName",
+//         value: "Good team",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: "teamName",
+//         value: "Better team",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: "teamName",
+//         value: "The greatest team",
+//       })
+//     );
+
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: "teamName",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: "teamName",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: "teamName",
+//       })
+//     );
+
+//     // first activity stuff
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//         value: "Hello from user 3 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//         value: "Hello from user 2 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//         value: "Hello from user 1 for first activity",
+//       })
+//     );
+
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//       })
+//     );
+
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//         value: "Hello from user 3 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//         value: "Hello from user 2 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//         value: "Hello from user 1 for first activity",
+//       })
+//     );
+
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//       })
+//     );
+
+//     // // first activity review ready
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "3",
+//     //     activityId: activities[0].id,
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "2",
+//     //     activityId: activities[0].id,
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "1",
+//     //     activityId: activities[0].id,
+//     //   })
+//     // );
+
+//     // // second activity stuff
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "3",
+//     //     activityId: activities[1].id,
+//     //     value: "Hello from user 3 for activity 2",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "2",
+//     //     activityId: activities[1].id,
+//     //     value: "Hello from user 2 for activity 2",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "1",
+//     //     activityId: activities[1].id,
+//     //     value: "Hello from user 1 for activity 2",
+//     //   })
+//     // );
+
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "3",
+//     //     activityId: activities[1].id,
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "2",
+//     //     activityId: activities[1].id,
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "1",
+//     //     activityId: activities[1].id,
+//     //   })
+//     // );
+
+//     // // end emotion
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "3",
+//     //     activityId: "endEmotion",
+//     //     value: "Good",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "2",
+//     //     activityId: "endEmotion",
+//     //     value: "Better",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "1",
+//     //     activityId: "endEmotion",
+//     //     value: "Great",
+//     //   })
+//     // );
+
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "3",
+//     //     activityId: "endEmotion",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "2",
+//     //     activityId: "endEmotion",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "1",
+//     //     activityId: "endEmotion",
+//     //   })
+//     // );
+
+//     console.log(service.getSnapshot().value, service.getSnapshot().context);
+//   });

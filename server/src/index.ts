@@ -9,6 +9,7 @@ import { connectRedis } from "./redis";
 import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
 import { generateRequestContext } from "./apollo";
+// import "./session-processor/+xstate/convert-workshop-to-machine";
 
 const cookieSecret = config.app.cookieSecret;
 
