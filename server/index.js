@@ -9,4 +9,16 @@ if (!exists) {
 console.log(`Setting base dir to ${__dirname}`);
 global.__basedir = __dirname;
 
+
+const args = process.argv.slice(2);
+const startSessionProcessor = args[1] === '--session-processor';
+const startTestDispatcher = args[1] === '--test-dispatcher';
+const sessionId = args[0];
+
+if (startSessionProcessor && sessionId) {
+  return require('./dist/session-processor/main-xstate');
+} else if (startTestDispatcher && sessionId) {
+  return require('./dist/session-processor/test-dispatcher');
+}
+
 require('./dist');

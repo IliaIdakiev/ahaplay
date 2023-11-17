@@ -37,6 +37,45 @@
         "${workspaceFolder}/dist/**",
         "!**/node_modules/**"
       ]
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug session processor (ONLY)",
+      "runtimeExecutable": "node",
+      "args": [
+        "e4beb40b-7140-48d5-9d9b-5cfe0f861cad",
+        "--session-processor"
+      ],
+      "program": "${workspaceFolder}/index.js",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "dev"
+      },
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "runtimeArgs": ["-r", "tsconfig-paths/register"],
+      "preLaunchTask": "build:app",
+      "console": "integratedTerminal"
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug test dispatcher and session processor (ONLY)",
+      "runtimeExecutable": "node",
+      "args": [
+        "e4beb40b-7140-48d5-9d9b-5cfe0f861cad",
+        "--test-dispatcher"
+      ],
+      "program": "${workspaceFolder}/index.js",
+      "sourceMaps": true,
+      "env": {
+        "NODE_ENV": "dev"
+      },
+      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "runtimeArgs": ["-r", "tsconfig-paths/register"],
+      "preLaunchTask": "build:app",
+      "console": "integratedTerminal"
+    },
   ]
 }
+

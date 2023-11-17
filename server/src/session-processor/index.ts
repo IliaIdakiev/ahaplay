@@ -4,8 +4,8 @@ import { redisClient, pubSub } from "../redis";
 import {
   generateRedisSessionProcessorPidKey,
   generateRedisSessionProcessorSessionIdKey,
-  generateRedisSessionProcessListenerName,
-  generateRedisSessionProcessReceiverName,
+  generateRedisSessionClientName,
+  generateRedisSessionProcessorName,
 } from "./utils";
 import { Unpack } from "../types";
 import { InMemoryMetadataActions, createInMemoryDispatcher } from "./+state";
@@ -16,10 +16,7 @@ import {
   SessionProcessorMessage,
 } from "./types";
 
-const pathToSessionProcessorScript = path.join(
-  __basedir,
-  "session-processor.js"
-);
+const pathToSessionProcessorScript = path.join(__basedir, "index.js");
 
 const childProcesses: ChildProcessWithoutNullStreams[] = [];
 
@@ -45,7 +42,11 @@ export function startSessionProcessor(sessionId: string) {
 
       let childProcess;
       try {
-        childProcess = spawn("node", [pathToSessionProcessorScript, sessionId]);
+        childProcess = spawn("node", [
+          pathToSessionProcessorScript,
+          sessionId,
+          "--session-processor",
+        ]);
       } catch (e) {
         throw new Error("Cannot spawn process!");
       }
@@ -68,9 +69,8 @@ export function startSessionProcessor(sessionId: string) {
 
       const connected = new Promise<void>((res) => {
         let resolved = false;
-        console.log(`Tapped session processor pid: ${pid}`);
         pubSub.subscribe(
-          generateRedisSessionProcessReceiverName(pid),
+          generateRedisSessionClientName({ sessionId }),
           (event) => {
             console.log(`PID: ${pid}:`, event);
             if (
@@ -97,11 +97,14 @@ export function startSessionProcessor(sessionId: string) {
     });
 }
 
-export function messageSessionProcessor(sessionId: string, message: any) {
-  return pubSub.publish(
-    generateRedisSessionProcessListenerName(sessionId),
-    message
-  );
+export function messageSessionProcessor({
+  pid,
+  message,
+}: {
+  pid: string;
+  message: any;
+}) {
+  return pubSub.publish(generateRedisSessionProcessorName({ pid }), message);
 }
 
 export function dispatchActionToProcessor(
@@ -115,9 +118,9 @@ export function dispatchActionToProcessor(
   return redisClient
     .get(redisSessionProcessorSessionIdKey)
     .then((pid) =>
-      pid ? pid : startSessionProcessor(sessionId).then(([pid]) => pid)
+      pid ? pid : startSessionProcessor(sessionId).then(([, , pid]) => pid)
     )
-    .then(() => {
+    .then((pid) => {
       const message: PubSubActionMessage = {
         type: SessionProcessorMessage.DISPATCH_ACTION,
         data: {
@@ -125,7 +128,7 @@ export function dispatchActionToProcessor(
           allowNullProfile,
         },
       };
-      return messageSessionProcessor(sessionId, message).then(() =>
+      return messageSessionProcessor({ pid, message }).then(() =>
         listenForSessionProcessorActionResult(sessionId, action)
       );
     });
@@ -165,7 +168,7 @@ export function listenForSessionProcessorActionResult(
     };
 
     pubSub
-      .subscribe(generateRedisSessionProcessReceiverName(sessionId), handler)
+      .subscribe(generateRedisSessionClientName({ sessionId }), handler)
       .then((id) => (subscriptionId = id));
   });
 }

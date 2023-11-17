@@ -6,10 +6,14 @@ export function generateRedisSessionProcessorSessionIdKey(sessionId: string) {
   return `session->processor-pid:${sessionId}`;
 }
 
-export function generateRedisSessionProcessListenerName(sessionId: string) {
+export function generateRedisSessionClientName({
+  sessionId,
+}: {
+  sessionId: string;
+}) {
   return `ahaplay-session-processor-${sessionId}`;
 }
 
-export function generateRedisSessionProcessReceiverName(pid: string) {
+export function generateRedisSessionProcessorName({ pid }: { pid: string }) {
   return `ahaplay-session-processor-${pid}`;
 }

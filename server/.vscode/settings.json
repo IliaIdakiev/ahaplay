@@ -1,7 +1,8 @@
 {
   "cSpell.words": [
     "expiery",
-    "sendgrid"
+    "sendgrid",
+    "xstate"
   ],
   "javascript.preferences.importModuleSpecifier": "relative",
   "typescript.preferences.importModuleSpecifier": "relative"

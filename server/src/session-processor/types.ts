@@ -1,5 +1,7 @@
+import { StateValue } from "xstate";
 import { Unpack } from "../types";
 import { InMemoryMetadataActions, createInMemoryDispatcher } from "./+state";
+import { SessionMachineActions, SessionMachineContext } from "./+xstate";
 
 export * from "./+state/types";
 
@@ -26,6 +28,23 @@ export interface PubSubActionMessage
   }> {
   type: SessionProcessorMessage.DISPATCH_ACTION;
 }
+
+export interface PubSubXActionMessage
+  extends PubSubMessage<{
+    action: SessionMachineActions;
+  }> {
+  type: SessionProcessorMessage.DISPATCH_ACTION;
+}
+
+export interface PubSubXActionMessageResult
+  extends PubSubMessage<{
+    context: SessionMachineContext;
+    stateValue: StateValue;
+    action: SessionMachineActions;
+  }> {
+  type: SessionProcessorMessage.ACTION_RESULT;
+}
+
 export interface PubSubActionMessageResult
   extends PubSubMessage<{
     result: Unpack<

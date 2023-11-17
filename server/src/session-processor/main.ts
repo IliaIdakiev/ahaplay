@@ -30,7 +30,7 @@ import {
   workshopAssociationNames,
 } from "../database";
 import {
-  generateRedisSessionProcessListenerName,
+  generateRedisSessionClientName,
   generateRedisSessionProcessorPidKey,
   generateRedisSessionProcessorSessionIdKey,
 } from "./utils";
@@ -43,10 +43,7 @@ if (!sessionId) {
 }
 
 function publishMessage(payload: any) {
-  return pubSub.publish(
-    generateRedisSessionProcessListenerName(sessionId),
-    payload
-  );
+  return pubSub.publish(generateRedisSessionClientName({ sessionId }), payload);
 }
 
 function getSessionWithWorkshopAndActivities(sessionId: string) {
@@ -59,7 +56,6 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
           {
             model: models.goal,
             as: goalAssociationNames.plural,
-            order: [["sequence_number", "ASC"]],
           },
           {
             model: models.type,
@@ -68,14 +64,12 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
               {
                 model: models.instruction,
                 as: instructionAssociationNames.plural,
-                order: [["sequence_number", "ASC"]],
               },
             ],
           },
           {
             model: models.activity,
             as: activityAssociationNames.plural,
-            order: [["sequence_number", "ASC"]],
             include: [
               {
                 model: models.question,
@@ -96,7 +90,6 @@ function getSessionWithWorkshopAndActivities(sessionId: string) {
               {
                 model: models.concept,
                 as: conceptAssociationNames.plural,
-                order: [["sequence_number", "ASC"]],
               },
               {
                 model: models.theory,
@@ -173,7 +166,7 @@ Promise.all([
   // }, 5000);
 
   pubSub.subscribe(
-    generateRedisSessionProcessListenerName(sessionId),
+    generateRedisSessionClientName({ sessionId }),
     (message: PubSubMessage<any>) => {
       if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
         const actionMessage = message as PubSubActionMessage;

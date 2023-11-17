@@ -4,67 +4,25 @@ import {
   createIndividualOnlyState,
   createIndividualAndGroupState,
   createMachineState,
-  getSessionWithWorkshopAndActivities,
   createIndividualGroupAndReviewState,
   createGroupOnlyOneValueState,
+  getSessionWithWorkshopAndActivities,
 } from "./helpers";
+import { getUnixTime } from "date-fns";
+import {
+  SessionMachineActions,
+  SessionMachineContext,
+  JoinAction,
+  DisconnectAction,
+  ReadyToStartAction,
+  SetValueAction,
+  SetReadyAction,
+  ActivityTimeoutAction,
+  SessionMachineSnapshot,
+  SessionMachine,
+} from "./types";
 
-interface SessionMachineContext {
-  requiredActiveProfileCount: number;
-  currentActiveProfiles: string[];
-  readyActiveProfiles: string[];
-  activityResult: Record<
-    string,
-    Record<
-      "individual" | "group" | "review",
-      {
-        profileId: string;
-        value: string;
-        ready: boolean;
-      }[]
-    >
-  >;
-}
-
-function createJoinAction(data: { profileId: string }) {
-  return { type: "join" as const, ...data };
-}
-function createActivityTimeoutAction(data: { activityId: string }) {
-  return { type: "activityTimeout" as const, ...data };
-}
-function createDisconnectAction(data: { profileId: string }) {
-  return { type: "disconnect" as const, ...data };
-}
-function createReadyToStartAction(data: { profileId: string }) {
-  return { type: "readyToStart" as const, ...data };
-}
-function createSetValueAction(data: {
-  profileId: string;
-  activityId: string;
-  value: string;
-}) {
-  return { type: "setValue" as const, ...data };
-}
-function createSetReadyAction(data: { profileId: string; activityId: string }) {
-  return { type: "setReady" as const, ...data };
-}
-
-type ActivityTimeoutAction = ReturnType<typeof createActivityTimeoutAction>;
-type JoinAction = ReturnType<typeof createJoinAction>;
-type DisconnectAction = ReturnType<typeof createDisconnectAction>;
-type ReadyToStartAction = ReturnType<typeof createReadyToStartAction>;
-type SetValueAction = ReturnType<typeof createSetValueAction>;
-type SetReadyAction = ReturnType<typeof createSetReadyAction>;
-
-type SessionMachineActions =
-  | JoinAction
-  | DisconnectAction
-  | ReadyToStartAction
-  | SetValueAction
-  | SetReadyAction
-  | ActivityTimeoutAction;
-
-function createSessionMachine(states: any, machineName: string) {
+export function createSessionMachine(states: any, machineName: string) {
   return createMachine(
     {
       id: machineName,
@@ -73,6 +31,7 @@ function createSessionMachine(states: any, machineName: string) {
         currentActiveProfiles: [],
         readyActiveProfiles: [],
         activityResult: {},
+        lastUpdatedTimestamp: null,
       },
       initial: "waiting",
       states,
@@ -85,15 +44,20 @@ function createSessionMachine(states: any, machineName: string) {
       actions: {
         join: assign({
           currentActiveProfiles: (context, { profileId }: JoinAction) =>
-            context.currentActiveProfiles.concat(profileId),
+            context.currentActiveProfiles.includes(profileId)
+              ? context.currentActiveProfiles || []
+              : context.currentActiveProfiles.concat(profileId),
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         disconnect: assign({
           currentActiveProfiles: (context, { profileId }: DisconnectAction) =>
             context.currentActiveProfiles.filter((id) => id !== profileId),
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         readyToStart: assign({
           readyActiveProfiles: (context, { profileId }: ReadyToStartAction) =>
             context.readyActiveProfiles.concat(profileId),
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         setValue: assign({
           activityResult: (
@@ -128,6 +92,7 @@ function createSessionMachine(states: any, machineName: string) {
               },
             };
           },
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         setOneValue: assign({
           activityResult: (context, action, { state }) => {
@@ -170,6 +135,7 @@ function createSessionMachine(states: any, machineName: string) {
               },
             };
           },
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         setReady: assign({
           activityResult: (context, data: SetReadyAction, { state }) => {
@@ -202,6 +168,7 @@ function createSessionMachine(states: any, machineName: string) {
               },
             };
           },
+          lastUpdatedTimestamp: () => performance.now(),
         }),
         activityTimeout: assign({
           activityResult: (context, data: ActivityTimeoutAction, { state }) => {
@@ -241,6 +208,7 @@ function createSessionMachine(states: any, machineName: string) {
               },
             };
           },
+          lastUpdatedTimestamp: () => performance.now(),
         }),
       },
       guards: {
@@ -273,10 +241,13 @@ function createSessionMachine(states: any, machineName: string) {
   );
 }
 
-function convertWorkshopToMachine(
-  machineName: string,
-  workshop: WorkshopModelInstance
-) {
+export function createMachineServiceFromWorkshop({
+  machineName,
+  workshop,
+}: {
+  machineName: string;
+  workshop: WorkshopModelInstance;
+}) {
   const activities = workshop.activities!;
   let states = {
     ...createIndividualOnlyState(machineName, "startEmotion", "teamName"),
@@ -334,305 +305,311 @@ function convertWorkshopToMachine(
   };
 
   const machineState = createMachineState(machineName, "startEmotion", states);
-  return createSessionMachine(machineState, machineName);
+  const sessionMachine = createSessionMachine(machineState, machineName);
+  const service = interpret(sessionMachine)
+    // .onTransition((state) => console.log(state))
+    .start();
+  return service;
 }
 
-getSessionWithWorkshopAndActivities("2624bc0f-71a0-4e2f-a1a7-7bd80cb9ac05")
-  .then(
-    (session) =>
-      [
-        convertWorkshopToMachine(session!.workshop!.id, session!.workshop!),
-        session!,
-      ] as const
-  )
-  .then(([machine, session]) => {
-    const activities = session.workshop!.activities!;
-    let service = interpret(machine)
-      .onTransition((state) => console.log(state.value, state.context))
-      .start();
+// getSessionWithWorkshopAndActivities("2624bc0f-71a0-4e2f-a1a7-7bd80cb9ac05")
+//   .then(
+//     (session) =>
+//       [
+//         convertWorkshopToMachine(session!.workshop!.id, session!.workshop!),
+//         session!,
+//       ] as const
+//   )
+//   .then(([machine, session]) => {
+//     const activities = session.workshop!.activities!;
+//     let service = interpret(machine)
+//       .onTransition((state) => console.log(state.value, state.context))
+//       .start();
 
-    service.send(createJoinAction({ profileId: "1" }));
-    service.send(createJoinAction({ profileId: "2" }));
-    service.send(createJoinAction({ profileId: "3" }));
+//     service.getSnapshot();
 
-    service.send(createReadyToStartAction({ profileId: "1" }));
-    service.send(createReadyToStartAction({ profileId: "2" }));
-    service.send(createReadyToStartAction({ profileId: "3" }));
+//     service.send(createJoinAction({ profileId: "1" }));
+//     service.send(createJoinAction({ profileId: "2" }));
+//     service.send(createJoinAction({ profileId: "3" }));
 
-    // start emotion
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: "startEmotion",
-        value: "Good",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: "startEmotion",
-        value: "Better",
-      })
-    );
-    service.send(createActivityTimeoutAction({ activityId: "startEmotion" }));
-    // service.send(
-    //   createSetValueAction({
-    //     profileId: "1",
-    //     activityId: "startEmotion",
-    //     value: "Great",
-    //   })
-    // );
+//     service.send(createReadyToStartAction({ profileId: "1" }));
+//     service.send(createReadyToStartAction({ profileId: "2" }));
+//     service.send(createReadyToStartAction({ profileId: "3" }));
 
-    // service.send(
-    //   createSetReadyAction({
-    //     profileId: "3",
-    //     activityId: "startEmotion",
-    //   })
-    // );
-    // service.send(
-    //   createSetReadyAction({
-    //     profileId: "2",
-    //     activityId: "startEmotion",
-    //   })
-    // );
-    // service.send(
-    //   createSetReadyAction({
-    //     profileId: "1",
-    //     activityId: "startEmotion",
-    //   })
-    // );
+//     // start emotion
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: "startEmotion",
+//         value: "Good",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: "startEmotion",
+//         value: "Better",
+//       })
+//     );
+//     service.send(createActivityTimeoutAction({ activityId: "startEmotion" }));
+//     // service.send(
+//     //   createSetValueAction({
+//     //     profileId: "1",
+//     //     activityId: "startEmotion",
+//     //     value: "Great",
+//     //   })
+//     // );
 
-    // set team name
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: "teamName",
-        value: "Good team",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: "teamName",
-        value: "Better team",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "1",
-        activityId: "teamName",
-        value: "The greatest team",
-      })
-    );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "3",
+//     //     activityId: "startEmotion",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "2",
+//     //     activityId: "startEmotion",
+//     //   })
+//     // );
+//     // service.send(
+//     //   createSetReadyAction({
+//     //     profileId: "1",
+//     //     activityId: "startEmotion",
+//     //   })
+//     // );
 
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: "teamName",
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: "teamName",
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: "teamName",
-      })
-    );
+//     // set team name
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: "teamName",
+//         value: "Good team",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: "teamName",
+//         value: "Better team",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: "teamName",
+//         value: "The greatest team",
+//       })
+//     );
 
-    // first activity stuff
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: activities[0].id,
-        value: "Hello from user 3 for first activity",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: activities[0].id,
-        value: "Hello from user 2 for first activity",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "1",
-        activityId: activities[0].id,
-        value: "Hello from user 1 for first activity",
-      })
-    );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: "teamName",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: "teamName",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: "teamName",
+//       })
+//     );
 
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: activities[0].id,
-      })
-    );
+//     // first activity stuff
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//         value: "Hello from user 3 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//         value: "Hello from user 2 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//         value: "Hello from user 1 for first activity",
+//       })
+//     );
 
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: activities[0].id,
-        value: "Hello from user 3 for first activity",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: activities[0].id,
-        value: "Hello from user 2 for first activity",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "1",
-        activityId: activities[0].id,
-        value: "Hello from user 1 for first activity",
-      })
-    );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//       })
+//     );
 
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: activities[0].id,
-      })
-    );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//         value: "Hello from user 3 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//         value: "Hello from user 2 for first activity",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//         value: "Hello from user 1 for first activity",
+//       })
+//     );
 
-    // first activity review ready
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: activities[0].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: activities[0].id,
-      })
-    );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//       })
+//     );
 
-    // second activity stuff
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: activities[1].id,
-        value: "Hello from user 3 for activity 2",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: activities[1].id,
-        value: "Hello from user 2 for activity 2",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "1",
-        activityId: activities[1].id,
-        value: "Hello from user 1 for activity 2",
-      })
-    );
+//     // first activity review ready
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[0].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[0].id,
+//       })
+//     );
 
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: activities[1].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: activities[1].id,
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: activities[1].id,
-      })
-    );
+//     // second activity stuff
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: activities[1].id,
+//         value: "Hello from user 3 for activity 2",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: activities[1].id,
+//         value: "Hello from user 2 for activity 2",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: activities[1].id,
+//         value: "Hello from user 1 for activity 2",
+//       })
+//     );
 
-    // end emotion
-    service.send(
-      createSetValueAction({
-        profileId: "3",
-        activityId: "endEmotion",
-        value: "Good",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "2",
-        activityId: "endEmotion",
-        value: "Better",
-      })
-    );
-    service.send(
-      createSetValueAction({
-        profileId: "1",
-        activityId: "endEmotion",
-        value: "Great",
-      })
-    );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: activities[1].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: activities[1].id,
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: activities[1].id,
+//       })
+//     );
 
-    service.send(
-      createSetReadyAction({
-        profileId: "3",
-        activityId: "endEmotion",
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "2",
-        activityId: "endEmotion",
-      })
-    );
-    service.send(
-      createSetReadyAction({
-        profileId: "1",
-        activityId: "endEmotion",
-      })
-    );
+//     // end emotion
+//     service.send(
+//       createSetValueAction({
+//         profileId: "3",
+//         activityId: "endEmotion",
+//         value: "Good",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "2",
+//         activityId: "endEmotion",
+//         value: "Better",
+//       })
+//     );
+//     service.send(
+//       createSetValueAction({
+//         profileId: "1",
+//         activityId: "endEmotion",
+//         value: "Great",
+//       })
+//     );
 
-    console.log(service.getSnapshot().value, service.getSnapshot().context);
-  });
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "3",
+//         activityId: "endEmotion",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "2",
+//         activityId: "endEmotion",
+//       })
+//     );
+//     service.send(
+//       createSetReadyAction({
+//         profileId: "1",
+//         activityId: "endEmotion",
+//       })
+//     );
+
+//     console.log(service.getSnapshot().value, service.getSnapshot().context);
+//   });
 
 // getSessionWithWorkshopAndActivities("6bd51789-5a92-4475-9ba7-cd2750cbcaa0")
 //   .then(
