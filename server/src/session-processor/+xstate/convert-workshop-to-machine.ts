@@ -6,9 +6,8 @@ import {
   createMachineState,
   createIndividualGroupAndReviewState,
   createGroupOnlyOneValueState,
-  getSessionWithWorkshopAndActivities,
+  createIndividualAndGroupOneValueState,
 } from "./helpers";
-import { getUnixTime } from "date-fns";
 import {
   SessionMachineActions,
   SessionMachineContext,
@@ -18,8 +17,6 @@ import {
   SetValueAction,
   SetReadyAction,
   ActivityTimeoutAction,
-  SessionMachineSnapshot,
-  SessionMachine,
 } from "./types";
 
 export function createSessionMachine(states: any, machineName: string) {
@@ -60,11 +57,8 @@ export function createSessionMachine(states: any, machineName: string) {
           lastUpdatedTimestamp: () => performance.now(),
         }),
         setValue: assign({
-          activityResult: (
-            context,
-            { value, profileId, activityId }: SetValueAction,
-            { state }
-          ) => {
+          activityResult: (context, action, { state }) => {
+            const { value, profileId, activityId } = action as SetValueAction;
             const activity = Object.keys(state?.value || {})[0];
             const mode = (state?.value as any)[activity] as
               | "individual"
@@ -261,14 +255,12 @@ export function createMachineServiceFromWorkshop({
     const currentActivityIndex = activities.indexOf(activity);
     const nextActivity = activities[currentActivityIndex + 1];
     if (activity.theory) {
-      // create individual part only
       states = {
         ...states,
         ...createIndividualOnlyState(workshop.id, activity, nextActivity),
       };
     }
     if (activity.question) {
-      // create individual and group part + third part that explains the answers
       states = {
         ...states,
         ...(isQuiz
@@ -277,21 +269,22 @@ export function createMachineServiceFromWorkshop({
       };
     }
     if (activity.assignment) {
-      // create individual part only
       states = {
         ...states,
         ...createIndividualOnlyState(workshop.id, activity, nextActivity),
       };
     }
     if (activity.conceptualization) {
-      // create individual and group part
       states = {
         ...states,
-        ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
+        ...createIndividualAndGroupOneValueState(
+          workshop.id,
+          activity,
+          nextActivity
+        ),
       };
     }
     if (activity.benchmark) {
-      // create individual and group part
       states = {
         ...states,
         ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
@@ -307,7 +300,7 @@ export function createMachineServiceFromWorkshop({
   const machineState = createMachineState(machineName, "startEmotion", states);
   const sessionMachine = createSessionMachine(machineState, machineName);
   const service = interpret(sessionMachine)
-    // .onTransition((state) => console.log(state))
+    .onTransition((state) => console.log(state))
     .start();
   return service;
 }
