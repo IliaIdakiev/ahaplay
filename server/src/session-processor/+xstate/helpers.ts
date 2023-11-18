@@ -68,10 +68,12 @@ export function createIndividualReadyOnlyState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -114,10 +116,12 @@ export function createIndividualOnlyState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -160,10 +164,12 @@ export function createGroupOnlyState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -206,10 +212,12 @@ export function createGroupOnlyOneValueState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -252,10 +260,12 @@ export function createIndividualAndGroupState({
             activityPartTimeout: {
               target: "group",
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -279,10 +289,12 @@ export function createIndividualAndGroupState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -325,10 +337,12 @@ export function createIndividualAndGroupOneValueState({
             activityPartTimeout: {
               target: "group",
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -352,10 +366,12 @@ export function createIndividualAndGroupOneValueState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -398,10 +414,12 @@ export function createIndividualGroupAndReviewState({
             activityPartTimeout: {
               target: "group",
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -425,10 +443,12 @@ export function createIndividualGroupAndReviewState({
             activityPartTimeout: {
               target: "review",
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },
@@ -448,10 +468,12 @@ export function createIndividualGroupAndReviewState({
             activityPartTimeout: {
               target: nextTarget,
               actions: ["timeout"],
+              cond: "partTimeoutReady",
             },
             activityTimeout: {
               target: "group",
               actions: ["timeout"],
+              cond: "timeoutReady",
             },
           },
         },

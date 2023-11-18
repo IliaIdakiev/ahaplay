@@ -156,9 +156,8 @@ export function createSessionMachine({
           lastUpdatedTimestamp: () => performance.now(),
         }),
         setReady: assign({
-          activityResult: (context, action, { state }) => {
-            const setReadyAction = action as SetReadyAction;
-            const { profileId, activityId } = setReadyAction;
+          activityResult: (context, data: SetReadyAction, { state }) => {
+            const { profileId, activityId } = data;
             const activity = Object.keys(state?.value || {})[0];
             const mode = (state?.value as any)[activity] as
               | "individual"
@@ -191,8 +190,8 @@ export function createSessionMachine({
         }),
         timeout: assign({
           activityResult: (context, action, { state }) => {
-            const states = state!.machine!.config.states!;
-            // if (!states) return context.activityResult; < cond
+            const states = state?.machine?.config.states;
+            if (!states) return context.activityResult;
             const timeoutAction = action as
               | ActivityTimeoutAction
               | ActivityPartTimeoutAction;
@@ -201,26 +200,27 @@ export function createSessionMachine({
             const currentMode = (state?.value as any)[activity] as
               | "individual"
               | "group"
-              | "review";
+              | "review"
+              | undefined;
 
-            // if (
-            //   !activity ||
-            //   currentMode === undefined ||
-            //   activityId !== activity ||
-            //   (type === "activityTimeout" &&
-            //     !context.timeouts?.activity?.[activity]
-            //       ?.activityMinuteTimeout) ||
-            //   (type === "activityPartTimeout" &&
-            //     (currentMode === "individual"
-            //       ? !context.timeouts?.activity?.[activity]
-            //           ?.individualMinuteTimeout
-            //       : currentMode === "group"
-            //       ? !context.timeouts?.activity?.[activity]?.groupMinuteTimeout
-            //       : !context.timeouts?.activity?.[activity]
-            //           ?.reviewMinuteTimeout))
-            // ) {
-            //   return context.activityResult; <<<< cond
-            // }
+            if (
+              !activity ||
+              currentMode === undefined ||
+              activityId !== activity ||
+              (type === "activityTimeout" &&
+                !context.timeouts?.activity?.[activity]
+                  ?.activityMinuteTimeout) ||
+              (type === "activityPartTimeout" &&
+                (currentMode === "individual"
+                  ? !context.timeouts?.activity?.[activity]
+                      ?.individualMinuteTimeout
+                  : currentMode === "group"
+                  ? !context.timeouts?.activity?.[activity]?.groupMinuteTimeout
+                  : !context.timeouts?.activity?.[activity]
+                      ?.reviewMinuteTimeout))
+            ) {
+              return context.activityResult;
+            }
             const activityStates = states[activityId].states;
             const modes: ("individual" | "group" | "review")[] =
               action.type === "activityPartTimeout"
@@ -294,6 +294,14 @@ export function createSessionMachine({
             otherValues.every((a) => a.ready);
 
           return isReady;
+        },
+        partTimeoutReady: (context, action) => {
+          // TODO: Implement check
+          return false;
+        },
+        timeoutReady: (context, action) => {
+          // TODO: Implement check
+          return false;
         },
       },
     }
