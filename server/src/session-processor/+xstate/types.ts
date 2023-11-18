@@ -1,5 +1,6 @@
 import { StateMachine, interpret } from "xstate";
 import {
+  createActivityPartTimeoutAction,
   createActivityTimeoutAction,
   createDisconnectAction,
   createJoinAction,
@@ -24,11 +25,28 @@ export interface SessionMachineContext {
     >
   >;
   lastUpdatedTimestamp: number | null;
-  workshopMinuteTimeout: number | null;
+
+  timeouts?: Timeouts;
+}
+
+export interface Timeouts {
+  workshopMinuteTimeout?: number;
+  activity?: Record<
+    string,
+    {
+      activityMinuteTimeout?: number;
+      individualMinuteTimeout?: number;
+      groupMinuteTimeout?: number;
+      reviewMinuteTimeout?: number;
+    }
+  >;
 }
 
 export type ActivityTimeoutAction = ReturnType<
   typeof createActivityTimeoutAction
+>;
+export type ActivityPartTimeoutAction = ReturnType<
+  typeof createActivityPartTimeoutAction
 >;
 export type JoinAction = ReturnType<typeof createJoinAction>;
 export type DisconnectAction = ReturnType<typeof createDisconnectAction>;
@@ -42,7 +60,8 @@ export type SessionMachineActions =
   | ReadyToStartAction
   | SetValueAction
   | SetReadyAction
-  | ActivityTimeoutAction;
+  | ActivityTimeoutAction
+  | ActivityPartTimeoutAction;
 
 export type SessionMachineSchema = {
   events: SessionMachineActions;

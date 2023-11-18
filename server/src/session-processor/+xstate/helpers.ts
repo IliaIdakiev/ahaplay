@@ -395,14 +395,14 @@ export function createIndividualGroupAndReviewState({
                 actions: ["setReady"],
               },
             ],
-          },
-          activityPartTimeout: {
-            target: "group",
-            actions: ["timeout"],
-          },
-          activityTimeout: {
-            target: nextTarget,
-            actions: ["timeout"],
+            activityPartTimeout: {
+              target: "group",
+              actions: ["timeout"],
+            },
+            activityTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
           },
         },
         group: {

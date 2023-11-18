@@ -39,56 +39,56 @@ export class Scheduler extends EventEmitter {
   }
 
   sessionStateChangeHandler() {
-    const currentSnapshot =
-      this.service.getSnapshot() as unknown as SessionMachineSnapshot;
-    const activityId = this.getActivityIdFromStateValue(currentSnapshot.value);
-    if (activityId !== this.activityIdForTimer) {
-      if (this.activityTimerId) {
-        clearInterval(this.activityTimerId);
-        this.activityTimerId = null;
-      }
-      if (this.activityModeTimerId) {
-        clearInterval(this.activityModeTimerId);
-        this.activityModeForTimer = null;
-      }
-      if (currentSnapshot.context.activityMinuteTimeout) {
-        this.activityIdForTimer = activityId;
-        this.activityTimerId = setTimeout(() => {
-          this.progressUntil(
-            (value) =>
-              this.getActivityIdFromStateValue(value) !==
-              this.activityIdForTimer
-          );
-          this.activityTimerId = null;
-          this.activityIdForTimer = null;
-        }, minutesToMilliseconds(currentSnapshot.context.activityMinuteTimeout));
-      }
-      const innerState = this.getInnerStateFromStateValue(
-        currentSnapshot.value
-      );
-      if (
-        !activityId ||
-        innerState === null ||
-        typeof innerState !== "string" ||
-        innerState === this.activityModeForTimer
-      )
-        return;
-      const {
-        individualMinuteTimeout,
-        groupMinuteTimeout,
-        readyActiveProfiles,
-      } = currentSnapshot.context;
-      const minuteTimeout =
-        individualMinuteTimeout || groupMinuteTimeout || readyActiveProfiles;
-      if (minuteTimeout) return;
-      this.activityModeForTimer = innerState as
-        | "individual"
-        | "group"
-        | "review";
-      this.activityModeTimerId = setTimeout(() => {
-        this.service.send(createActivityTimeoutAction({ activityId }));
-      }, minutesToMilliseconds(minuteTimeout));
-    }
+    // const currentSnapshot =
+    //   this.service.getSnapshot() as unknown as SessionMachineSnapshot;
+    // const activityId = this.getActivityIdFromStateValue(currentSnapshot.value);
+    // if (activityId !== this.activityIdForTimer) {
+    //   if (this.activityTimerId) {
+    //     clearInterval(this.activityTimerId);
+    //     this.activityTimerId = null;
+    //   }
+    //   if (this.activityModeTimerId) {
+    //     clearInterval(this.activityModeTimerId);
+    //     this.activityModeForTimer = null;
+    //   }
+    //   if (currentSnapshot.context.activityMinuteTimeout) {
+    //     this.activityIdForTimer = activityId;
+    //     this.activityTimerId = setTimeout(() => {
+    //       this.progressUntil(
+    //         (value) =>
+    //           this.getActivityIdFromStateValue(value) !==
+    //           this.activityIdForTimer
+    //       );
+    //       this.activityTimerId = null;
+    //       this.activityIdForTimer = null;
+    //     }, minutesToMilliseconds(currentSnapshot.context.activityMinuteTimeout));
+    //   }
+    //   const innerState = this.getInnerStateFromStateValue(
+    //     currentSnapshot.value
+    //   );
+    //   if (
+    //     !activityId ||
+    //     innerState === null ||
+    //     typeof innerState !== "string" ||
+    //     innerState === this.activityModeForTimer
+    //   )
+    //     return;
+    //   const {
+    //     individualMinuteTimeout,
+    //     groupMinuteTimeout,
+    //     activityMinuteTimeout,
+    //   } = currentSnapshot.context;
+    //   const minuteTimeout =
+    //     individualMinuteTimeout || groupMinuteTimeout || activityMinuteTimeout;
+    //   if (!minuteTimeout) return;
+    //   this.activityModeForTimer = innerState as
+    //     | "individual"
+    //     | "group"
+    //     | "review";
+    //   this.activityModeTimerId = setTimeout(() => {
+    //     this.service.send(createActivityTimeoutAction({ activityId }));
+    //   }, minutesToMilliseconds(minuteTimeout));
+    // }
   }
 
   getActivityIdFromStateValue(value: StateValue) {
