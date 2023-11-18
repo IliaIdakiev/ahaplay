@@ -4,9 +4,10 @@
     {
       "label": "build:app",
       "type": "shell",
-      "command": "./node_modules/.bin/tsc",
+      "command": "yarn",
       "args": [
-        "-p", "tsconfig.app.json"
+        "run",
+        "build:app",
       ],
       "group": {
         "kind": "build",

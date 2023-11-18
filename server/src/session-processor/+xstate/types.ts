@@ -24,6 +24,7 @@ export interface SessionMachineContext {
     >
   >;
   lastUpdatedTimestamp: number | null;
+  workshopMinuteTimeout: number | null;
 }
 
 export type ActivityTimeoutAction = ReturnType<

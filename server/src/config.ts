@@ -6,16 +6,9 @@ import {
   IRedisConfig,
   IWorkshopConfig,
 } from "./types";
+import { environment } from "./env";
 
 const configPath = path.resolve(__basedir, "config");
-const supportedEnvironments = ["dev", "prod", "test"];
-
-const environment =
-  (process.env.NODE_ENV?.toLocaleLowerCase() as "dev" | "prod" | "test") ||
-  "dev";
-if (!supportedEnvironments.includes(environment)) {
-  throw new Error(`Supported environments are: ${supportedEnvironments}`);
-}
 
 const appConfig = require(path.join(
   configPath,

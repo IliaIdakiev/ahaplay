@@ -19,7 +19,11 @@ import {
   ActivityTimeoutAction,
 } from "./types";
 
-export function createSessionMachine(states: any, machineName: string) {
+export function createSessionMachine(
+  states: any,
+  machineName: string,
+  workshopMinuteTimeout?: number
+) {
   return createMachine(
     {
       id: machineName,
@@ -29,6 +33,7 @@ export function createSessionMachine(states: any, machineName: string) {
         readyActiveProfiles: [],
         activityResult: {},
         lastUpdatedTimestamp: null,
+        workshopMinuteTimeout: workshopMinuteTimeout || null,
       },
       initial: "waiting",
       states,
@@ -164,7 +169,7 @@ export function createSessionMachine(states: any, machineName: string) {
           },
           lastUpdatedTimestamp: () => performance.now(),
         }),
-        activityTimeout: assign({
+        timeout: assign({
           activityResult: (context, data: ActivityTimeoutAction, { state }) => {
             const { activityId } = data;
             const activity = Object.keys(state?.value || {})[0];
@@ -244,8 +249,16 @@ export function createMachineServiceFromWorkshop({
 }) {
   const activities = workshop.activities!;
   let states = {
-    ...createIndividualOnlyState(machineName, "startEmotion", "teamName"),
-    ...createGroupOnlyOneValueState(machineName, "teamName", activities[0]),
+    ...createIndividualOnlyState({
+      machineName,
+      activityName: "startEmotion",
+      nextActivityName: "teamName",
+    }),
+    ...createGroupOnlyOneValueState({
+      machineName,
+      activityName: "teamName",
+      nextActivityName: activities[0].id,
+    }),
   };
   const sortedActivities = activities.sort(
     (a, b) => a.sequence_number - b.sequence_number
@@ -257,7 +270,11 @@ export function createMachineServiceFromWorkshop({
     if (activity.theory) {
       states = {
         ...states,
-        ...createIndividualOnlyState(workshop.id, activity, nextActivity),
+        ...createIndividualOnlyState({
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity.id,
+        }),
       };
     }
     if (activity.question) {
@@ -265,39 +282,59 @@ export function createMachineServiceFromWorkshop({
         ...states,
         ...(isQuiz
           ? createIndividualGroupAndReviewState
-          : createIndividualAndGroupState)(workshop.id, activity, nextActivity),
+          : createIndividualAndGroupState)({
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity.id,
+        }),
       };
     }
     if (activity.assignment) {
       states = {
         ...states,
-        ...createIndividualOnlyState(workshop.id, activity, nextActivity),
+        ...createIndividualOnlyState({
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity.id,
+        }),
       };
     }
     if (activity.conceptualization) {
       states = {
         ...states,
-        ...createIndividualAndGroupOneValueState(
-          workshop.id,
-          activity,
-          nextActivity
-        ),
+        ...createIndividualAndGroupOneValueState({
+          machineName: workshop.id,
+          activityName: activity.id,
+          nextActivityName: nextActivity.id,
+        }),
       };
     }
     if (activity.benchmark) {
       states = {
         ...states,
-        ...createIndividualAndGroupState(workshop.id, activity, nextActivity),
+        ...createIndividualAndGroupState({
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity.id,
+        }),
       };
     }
   }
 
   states = {
     ...states,
-    ...createIndividualOnlyState(machineName, "endEmotion", "viewResults"),
+    ...createIndividualOnlyState({
+      machineName,
+      activityName: "endEmotion",
+      nextActivityName: "viewResults",
+    }),
   };
 
-  const machineState = createMachineState(machineName, "startEmotion", states);
+  const machineState = createMachineState({
+    machineName,
+    stateAfterWaiting: "startEmotion",
+    states,
+  });
   const sessionMachine = createSessionMachine(machineState, machineName);
   const service = interpret(sessionMachine)
     .onTransition((state) => console.log(state))

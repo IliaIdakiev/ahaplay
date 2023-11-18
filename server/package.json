@@ -4,10 +4,12 @@
   "main": "index.js",
   "license": "MIT",
   "scripts": {
-    "start": "node -r tsconfig-paths/register dist/index.js",
-    "build:app": "tsc -p tsconfig.app.json",
-    "build:spec": "tsc -p tsconfig.spec.json",
-    "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js"
+    "start": "node -r tsconfig-paths/register index.js",
+    "build:app": "yarn cdc && yarn clean && tsc -p tsconfig.app.json",
+    "build:spec": "yarn clean && tsc -p tsconfig.spec.json",
+    "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js",
+    "cdc": "madge --circular ./src/**/*.ts",
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@apollo/server": "^4.9.4",
@@ -52,10 +54,14 @@
     "@types/redis": "^4.0.11",
     "@types/redux": "^3.6.0",
     "@types/sequelize": "^4.28.16",
+    "@types/sinon": "^17.0.1",
     "@types/uuid": "^9.0.5",
     "@types/ws": "^8.5.8",
     "chai": "^4.3.10",
+    "madge": "^6.1.0",
     "mocha": "^10.2.0",
+    "rimraf": "^5.0.5",
+    "sinon": "^17.0.1",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.2.2"
   }

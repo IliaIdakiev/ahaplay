@@ -2,7 +2,7 @@ import { DataTypes } from "sequelize";
 import { SlotModelInstance, SlotCreationAttributes } from "../interfaces/slot";
 import { baseFields, baseModelConfig } from "./base";
 import config from "../../config";
-import { sequelize } from "../sequelize";
+import { sequelize } from "../sequelize-instance";
 import { getUnixTime, subMinutes } from "date-fns";
 
 export const slotModel = sequelize.define<

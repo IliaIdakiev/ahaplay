@@ -1,9 +1,5 @@
 import { StateValue } from "xstate";
-import { Unpack } from "../types";
-import { InMemoryMetadataActions, createInMemoryDispatcher } from "./+state";
 import { SessionMachineActions, SessionMachineContext } from "./+xstate";
-
-export * from "./+state/types";
 
 export enum SessionProcessorMessage {
   SESSION_PROCESSOR_STARTED = "SESSION_PROCESSOR_STARTED",
@@ -21,14 +17,6 @@ export interface PubSubMessage<T = void> {
   data: T;
 }
 
-export interface PubSubActionMessage
-  extends PubSubMessage<{
-    action: InMemoryMetadataActions;
-    allowNullProfile: boolean;
-  }> {
-  type: SessionProcessorMessage.DISPATCH_ACTION;
-}
-
 export interface PubSubXActionMessage
   extends PubSubMessage<{
     action: SessionMachineActions;
@@ -41,16 +29,6 @@ export interface PubSubXActionMessageResult
     context: SessionMachineContext;
     stateValue: StateValue;
     action: SessionMachineActions;
-  }> {
-  type: SessionProcessorMessage.ACTION_RESULT;
-}
-
-export interface PubSubActionMessageResult
-  extends PubSubMessage<{
-    result: Unpack<
-      ReturnType<Unpack<ReturnType<typeof createInMemoryDispatcher>>>
-    >;
-    action: InMemoryMetadataActions;
   }> {
   type: SessionProcessorMessage.ACTION_RESULT;
 }

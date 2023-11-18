@@ -8,6 +8,7 @@
       "runtimeExecutable": "node",
       "program": "${workspaceFolder}/index.js",
       "sourceMaps": true,
+      "stopOnEntry": true,
       "env": {
         "NODE_ENV": "dev"
       },

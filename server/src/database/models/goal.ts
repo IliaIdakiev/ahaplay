@@ -1,5 +1,5 @@
 import { DataTypes } from "sequelize";
-import { sequelize } from "../sequelize";
+import { sequelize } from "../sequelize-instance";
 import { GoalModelInstance, GoalCreationAttributes } from "../interfaces/goal";
 import { baseFields, baseModelConfig } from "./base";
 

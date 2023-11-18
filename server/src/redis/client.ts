@@ -1,6 +1,9 @@
 import { RedisClientOptions, createClient } from "redis";
 import config from "../config";
-import { generateRedisKey } from "./utils";
+
+export function generateRedisKey(key: string) {
+  return `${config.redis.prefix}::${key}`;
+}
 
 const redisUrl = config.redis.url;
 

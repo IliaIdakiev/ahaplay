@@ -4,7 +4,7 @@ import {
   RegistrationCreationAttributes,
 } from "../interfaces/registration";
 import { baseFields, baseModelConfig } from "./base";
-import { sequelize } from "../sequelize";
+import { sequelize } from "../sequelize-instance";
 
 export const registrationModel = sequelize.define<
   RegistrationModelInstance,

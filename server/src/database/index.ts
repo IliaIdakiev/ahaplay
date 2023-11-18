@@ -1,4 +1,4 @@
-export * from "./sequelize";
+export * from "./sequelize-instance";
 export * from "./connect";
 export * from "./enums";
 export * from "./models";

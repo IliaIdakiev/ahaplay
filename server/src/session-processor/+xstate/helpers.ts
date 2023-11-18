@@ -1,25 +1,12 @@
-import {
-  ActivityModelInstance,
-  models,
-  workshopAssociationNames,
-  goalAssociationNames,
-  typeAssociationNames,
-  instructionAssociationNames,
-  activityAssociationNames,
-  questionAssociationNames,
-  answerAssociationNames,
-  benchmarkAssociationNames,
-  conceptualizationAssociationNames,
-  conceptAssociationNames,
-  theoryAssociationNames,
-  assignmentAssociationNames,
-} from "../../database";
-
-export function createMachineState(
-  machineName: string,
-  stateAfterWaiting: string,
-  otherStates: any
-) {
+export function createMachineState({
+  machineName,
+  stateAfterWaiting,
+  states,
+}: {
+  machineName: string;
+  stateAfterWaiting: string;
+  states: any;
+}) {
   return {
     waiting: {
       on: {
@@ -44,31 +31,32 @@ export function createMachineState(
         ],
       },
     },
-    ...otherStates,
+    ...states,
     viewResults: {
       type: "final",
     },
   };
 }
 
-export function createIndividualReadyOnlyState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
+export function createIndividualReadyOnlyState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "individual",
       states: {
         individual: {
           on: {
             setReady: [
               {
-                target: `#${machineName}.${
-                  typeof nextActivity === "string"
-                    ? nextActivity
-                    : nextActivity?.id || "endEmotion"
-                }`,
+                target: nextTarget,
                 actions: ["setReady"],
                 cond: "isReadyToForNextStep",
               },
@@ -77,6 +65,14 @@ export function createIndividualReadyOnlyState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
+            activityTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
           },
         },
       },
@@ -84,18 +80,18 @@ export function createIndividualReadyOnlyState(
   };
 }
 
-export function createIndividualOnlyState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createIndividualOnlyState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "individual",
       states: {
         individual: {
@@ -115,9 +111,13 @@ export function createIndividualOnlyState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: nextTarget,
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
@@ -126,18 +126,18 @@ export function createIndividualOnlyState(
   };
 }
 
-export function createGroupOnlyState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createGroupOnlyState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "group",
       states: {
         group: {
@@ -157,9 +157,13 @@ export function createGroupOnlyState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: nextTarget,
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
@@ -168,18 +172,18 @@ export function createGroupOnlyState(
   };
 }
 
-export function createGroupOnlyOneValueState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createGroupOnlyOneValueState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "group",
       states: {
         group: {
@@ -199,9 +203,13 @@ export function createGroupOnlyOneValueState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: nextTarget,
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
@@ -210,18 +218,18 @@ export function createGroupOnlyOneValueState(
   };
 }
 
-export function createIndividualAndGroupState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createIndividualAndGroupState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "individual",
       states: {
         individual: {
@@ -241,9 +249,13 @@ export function createIndividualAndGroupState(
                 actions: ["setReady"],
               },
             ],
-            activityTimeout: {
+            activityPartTimeout: {
               target: "group",
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
+            },
+            activityTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
             },
           },
         },
@@ -255,7 +267,7 @@ export function createIndividualAndGroupState(
             },
             setReady: [
               {
-                target: nextActivity,
+                target: nextTarget,
                 cond: "isReadyToForNextStep",
                 actions: ["setReady"],
               },
@@ -264,9 +276,13 @@ export function createIndividualAndGroupState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: nextTarget,
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
@@ -275,18 +291,18 @@ export function createIndividualAndGroupState(
   };
 }
 
-export function createIndividualAndGroupOneValueState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createIndividualAndGroupOneValueState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "individual",
       states: {
         individual: {
@@ -306,9 +322,13 @@ export function createIndividualAndGroupOneValueState(
                 actions: ["setReady"],
               },
             ],
-            activityTimeout: {
+            activityPartTimeout: {
               target: "group",
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
+            },
+            activityTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
             },
           },
         },
@@ -329,9 +349,13 @@ export function createIndividualAndGroupOneValueState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: nextTarget,
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
@@ -340,18 +364,18 @@ export function createIndividualAndGroupOneValueState(
   };
 }
 
-export function createIndividualGroupAndReviewState(
-  machineName: string,
-  activity: ActivityModelInstance | string,
-  nextActivity?: ActivityModelInstance | string | undefined | null
-) {
-  const nextTarget = `#${machineName}.${
-    typeof nextActivity === "string"
-      ? nextActivity
-      : nextActivity?.id || "endEmotion"
-  }`;
+export function createIndividualGroupAndReviewState({
+  machineName,
+  activityName,
+  nextActivityName,
+}: {
+  machineName: string;
+  activityName: string;
+  nextActivityName?: string;
+}) {
+  const nextTarget = `#${machineName}.${nextActivityName || "endEmotion"}`;
   return {
-    [typeof activity === "string" ? activity : activity.id]: {
+    [activityName]: {
       initial: "individual",
       states: {
         individual: {
@@ -371,10 +395,14 @@ export function createIndividualGroupAndReviewState(
                 actions: ["setReady"],
               },
             ],
+          },
+          activityPartTimeout: {
+            target: "group",
+            actions: ["timeout"],
           },
           activityTimeout: {
-            target: "group",
-            actions: ["activityTimeout"],
+            target: nextTarget,
+            actions: ["timeout"],
           },
         },
         group: {
@@ -394,9 +422,13 @@ export function createIndividualGroupAndReviewState(
                 actions: ["setReady"],
               },
             ],
-            activityTimeout: {
+            activityPartTimeout: {
               target: "review",
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
+            },
+            activityTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
             },
           },
         },
@@ -413,75 +445,17 @@ export function createIndividualGroupAndReviewState(
                 actions: ["setReady"],
               },
             ],
+            activityPartTimeout: {
+              target: nextTarget,
+              actions: ["timeout"],
+            },
             activityTimeout: {
               target: "group",
-              actions: ["activityTimeout"],
+              actions: ["timeout"],
             },
           },
         },
       },
     },
   };
-}
-
-export function getSessionWithWorkshopAndActivities(sessionId: string) {
-  return models.session.findByPk(sessionId, {
-    include: [
-      {
-        model: models.workshop,
-        as: workshopAssociationNames.singular,
-        include: [
-          {
-            model: models.goal,
-            as: goalAssociationNames.plural,
-          },
-          {
-            model: models.type,
-            as: typeAssociationNames.singular,
-            include: [
-              {
-                model: models.instruction,
-                as: instructionAssociationNames.plural,
-              },
-            ],
-          },
-          {
-            model: models.activity,
-            as: activityAssociationNames.plural,
-            order: [["sequence_number", "ASC"]],
-            include: [
-              {
-                model: models.question,
-                as: questionAssociationNames.singular,
-              },
-              {
-                model: models.answer,
-                as: answerAssociationNames.plural,
-              },
-              {
-                model: models.benchmark,
-                as: benchmarkAssociationNames.singular,
-              },
-              {
-                model: models.conceptualization,
-                as: conceptualizationAssociationNames.singular,
-              },
-              {
-                model: models.concept,
-                as: conceptAssociationNames.plural,
-              },
-              {
-                model: models.theory,
-                as: theoryAssociationNames.singular,
-              },
-              {
-                model: models.assignment,
-                as: assignmentAssociationNames.singular,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
 }

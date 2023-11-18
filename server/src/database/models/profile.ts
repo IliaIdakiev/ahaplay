@@ -4,7 +4,7 @@ import {
   ProfileCreationAttributes,
 } from "../interfaces/profile";
 import { baseFields, baseModelConfig } from "./base";
-import { sequelize } from "../sequelize";
+import { sequelize } from "../sequelize-instance";
 import { hashPassword } from "../utils";
 import { compare } from "bcrypt";
 

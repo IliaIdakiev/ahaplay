@@ -8,11 +8,12 @@ import {
   activityQueryResolvers,
   activityTypeDefs,
   subscriptionResolvers,
+  sessionTypeDefs,
   sessionSubscriptionDefs,
-  sessionAndProfileMetadataTypeDefs,
-  sessionMutationDefs,
   mutationResolvers,
+  sessionMutationDefs,
 } from "./resources";
+
 import { mergeTypeDefs } from "@graphql-tools/merge";
 import { extractMutation, extractQuery, extractSubscription } from "./utils";
 
@@ -61,5 +62,5 @@ export const typeDefs = mergeTypeDefs([
   workshopTypeDefs,
   activityTypeDefs,
   activityQueryDefs,
-  sessionAndProfileMetadataTypeDefs,
+  sessionTypeDefs,
 ]);

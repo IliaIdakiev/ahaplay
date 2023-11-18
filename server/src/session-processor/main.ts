@@ -1,40 +1,21 @@
+import { generateSessionRedisKey } from "../apollo/resources/session/helpers";
+import { connectSequelize } from "../database";
+import { getSessionWithWorkshopActivitiesAndRelations } from "../helpers/get-session-with-workshop-activities-and-relations";
+import { connectRedis, pubSub } from "../redis";
+import { readFromRedis, saveInRedis } from "../redis/utils";
 import {
-  getUnixTime,
-  minutesToMilliseconds,
-  differenceInMinutes,
-  fromUnixTime,
-} from "date-fns";
-import { connectRedis, pubSub, redisClient } from "../redis";
+  SessionMachineSnapshot,
+  createMachineServiceForActivities,
+} from "./+xstate";
 import {
-  ActivityMode,
-  InMemorySessionStage,
-  PubSubActionMessage,
-  PubSubActionMessageResult,
   PubSubMessage,
+  PubSubXActionMessageResult,
   SessionProcessorMessage,
 } from "./types";
 import {
-  activityAssociationNames,
-  answerAssociationNames,
-  assignmentAssociationNames,
-  benchmarkAssociationNames,
-  conceptAssociationNames,
-  conceptualizationAssociationNames,
-  connectSequelize,
-  goalAssociationNames,
-  instructionAssociationNames,
-  models,
-  questionAssociationNames,
-  theoryAssociationNames,
-  typeAssociationNames,
-  workshopAssociationNames,
-} from "../database";
-import {
   generateRedisSessionClientName,
-  generateRedisSessionProcessorPidKey,
-  generateRedisSessionProcessorSessionIdKey,
+  generateRedisSessionProcessorName,
 } from "./utils";
-import { createInMemoryDispatcher } from "./+state";
 
 const args = process.argv.slice(2);
 const sessionId = args[0];
@@ -42,222 +23,84 @@ if (!sessionId) {
   throw new Error("No session id provided");
 }
 
+const sessionRedisKey = generateSessionRedisKey({ sessionId });
+
 function publishMessage(payload: any) {
   return pubSub.publish(generateRedisSessionClientName({ sessionId }), payload);
 }
 
-function getSessionWithWorkshopAndActivities(sessionId: string) {
-  return models.session.findByPk(sessionId, {
-    include: [
-      {
-        model: models.workshop,
-        as: workshopAssociationNames.singular,
-        include: [
-          {
-            model: models.goal,
-            as: goalAssociationNames.plural,
-          },
-          {
-            model: models.type,
-            as: typeAssociationNames.singular,
-            include: [
-              {
-                model: models.instruction,
-                as: instructionAssociationNames.plural,
-              },
-            ],
-          },
-          {
-            model: models.activity,
-            as: activityAssociationNames.plural,
-            include: [
-              {
-                model: models.question,
-                as: questionAssociationNames.singular,
-              },
-              {
-                model: models.answer,
-                as: answerAssociationNames.plural,
-              },
-              {
-                model: models.benchmark,
-                as: benchmarkAssociationNames.singular,
-              },
-              {
-                model: models.conceptualization,
-                as: conceptualizationAssociationNames.singular,
-              },
-              {
-                model: models.concept,
-                as: conceptAssociationNames.plural,
-              },
-              {
-                model: models.theory,
-                as: theoryAssociationNames.singular,
-              },
-              {
-                model: models.assignment,
-                as: assignmentAssociationNames.singular,
-              },
-            ],
-          },
-        ],
-      },
-    ],
-  });
-}
-
-const scheduler = {
-  isSessionTimerRunning: false,
-  timerIds: {
-    session: null as NodeJS.Timeout | null,
-    profile: null as NodeJS.Timeout | null,
-    group: null as NodeJS.Timeout | null,
-  },
-  timestamps: {
-    session: null as number | null,
-    profile: null as number | null,
-    group: null as number | null,
-  },
-  startSessionTimer(durationInMinutes: number, sessionEndCallback: () => void) {
-    this.timestamps.session = getUnixTime(new Date());
-    this.isSessionTimerRunning = true;
-    this.timerIds.session = setTimeout(() => {
-      this.timestamps.session = null;
-      this.timerIds.session = null;
-      sessionEndCallback();
-    }, minutesToMilliseconds(durationInMinutes));
-  },
-  startProfileActivityTimer(
-    durationInMinutes: number,
-    profileActivityEndCallback: () => void
+const scheduleSnapshotSave = (() => {
+  let lastUpdatedSnapshot: SessionMachineSnapshot | null = null;
+  let isSaveScheduled = false;
+  return function saveCurrentSnapshotForFrameHandler(
+    snapshot: SessionMachineSnapshot
   ) {
-    this.timestamps.profile = getUnixTime(new Date());
-    this.timerIds.profile = setTimeout(() => {
-      this.timestamps.session = null;
-      this.timerIds.session = null;
-      profileActivityEndCallback();
-    }, minutesToMilliseconds(durationInMinutes));
-  },
-  startGroupActivityTimer(
-    durationInMinutes: number,
-    groupActivityEndCallback: () => void
-  ) {
-    this.timestamps.group = getUnixTime(new Date());
-    this.timerIds.group = setTimeout(() => {
-      this.timestamps.session = null;
-      this.timerIds.session = null;
-      groupActivityEndCallback();
-    }, minutesToMilliseconds(durationInMinutes));
-  },
-};
+    if (!snapshot) return;
+    lastUpdatedSnapshot = snapshot;
+    if (isSaveScheduled) return;
+    Promise.resolve().then(() => {
+      isSaveScheduled = false;
+      lastUpdatedSnapshot = null;
+      saveInRedis(sessionRedisKey, lastUpdatedSnapshot).then(() => {
+        console.log(
+          `%cSession Snapshot saved in redis at ${new Date()}`,
+          "color: green"
+        );
+      });
+    });
+  };
+})();
 
 Promise.all([
-  connectSequelize().then(() => getSessionWithWorkshopAndActivities(sessionId)),
-  connectRedis(),
-]).then(([session]) => {
-  if (!session) {
-    throw new Error("Session with provided id not found!");
-  }
-  publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
-
-  // setTimeout(() => {
-  //   process.exit();
-  // }, 5000);
-
-  pubSub.subscribe(
-    generateRedisSessionClientName({ sessionId }),
-    (message: PubSubMessage<any>) => {
-      if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
-        const actionMessage = message as PubSubActionMessage;
-        createInMemoryDispatcher(sessionId, {
-          allowNullProfile: actionMessage.data.allowNullProfile,
-        })
-          .then((dispatch) => dispatch(actionMessage.data.action))
-          .then((result) => {
-            if (
-              result[0].state.currentStage === InMemorySessionStage.ON_GOING &&
-              !scheduler.isSessionTimerRunning
-            ) {
-              scheduler.startSessionTimer(session.workshop!.duration, () => {
-                // TODO: Create functionality to force end of workshop
-                console.log("Session ended!");
-              });
-            }
-
-            if (
-              result[0].state.currentStage ===
-              InMemorySessionStage.END_EMOTION_CHECK
-            ) {
-              const endTimestamp = getUnixTime(new Date());
-              clearTimeout(scheduler.timerIds.session!);
-              // Create functionality to set the workshop end time
-              const timeSpend = differenceInMinutes(
-                fromUnixTime(scheduler.timestamps.session!),
-                fromUnixTime(endTimestamp)
-              );
-              console.log(
-                "Session finished successfully in time (" +
-                  timeSpend +
-                  "). Unix end timestamp: " +
-                  getUnixTime(new Date())
-              );
-            }
-
-            const currentGroupActivity = session.workshop!.activities!.find(
-              (a) => a.id === result[0].state.currentGroupActivityId
-            );
-            const currentProfileActivity = session.workshop!.activities!.find(
-              (a) => a.id === result[1].state.currentProfileActivityId
-            );
-
-            // if (
-            //   result[0].state.currentStage === InMemorySessionStage.ON_GOING &&
-            //   result[0].state.activityMode === ActivityMode.GROUP &&
-            //   result[0].differences?.find((d) =>
-            //     d.path?.includes("currentGroupActivityId")
-            //   ) &&
-
-            // ) {
-            // }
-
-            const actionResult: PubSubActionMessageResult = {
-              type: SessionProcessorMessage.ACTION_RESULT,
-              data: { result, action: actionMessage.data.action },
-            };
-            publishMessage(actionResult);
-          });
-      }
+  connectSequelize().then(() =>
+    getSessionWithWorkshopActivitiesAndRelations(sessionId)
+  ),
+  connectRedis().then(() =>
+    readFromRedis<SessionMachineSnapshot>(sessionRedisKey)
+  ),
+])
+  .then(([session, snapshot]) => {
+    if (!session || !session.workshop) return null;
+    const activities = session.workshop.activities!;
+    const service = createMachineServiceForActivities({
+      machineName: session.workshop.id,
+      activities,
+      snapshot,
+      isQuiz: session.workshop.typeInstance!.name === "Quiz",
+    });
+    return service;
+  })
+  .then((service) => {
+    if (!service) {
+      throw new Error("Session with provided id not found!");
     }
-  );
-});
+    publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
 
-process.on("exit", () => {
-  publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STOPPED });
-  const sessionIdSessionProcessorPidKey =
-    generateRedisSessionProcessorSessionIdKey(sessionId);
-  const sessionProcessorPidSessionIdKey = generateRedisSessionProcessorPidKey(
-    process.pid.toString()
-  );
+    pubSub.subscribe(
+      generateRedisSessionProcessorName({ sessionId }),
+      (message: PubSubMessage<any>) => {
+        if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
+          const { context, value: stateValue } = service.send(
+            message.data.action
+          );
+          scheduleSnapshotSave(
+            service.getSnapshot() as unknown as SessionMachineSnapshot
+          );
+          const actionResult: PubSubXActionMessageResult = {
+            type: SessionProcessorMessage.ACTION_RESULT,
+            data: { context, stateValue, action: message.data.action },
+          };
+          publishMessage(actionResult);
+        }
+      }
+    );
 
-  redisClient.del([
-    sessionIdSessionProcessorPidKey,
-    sessionProcessorPidSessionIdKey,
-  ]);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  console.error("Unhandled Rejection at:", promise, "reason:", reason);
-  publishMessage({
-    type: SessionProcessorMessage.UNHANDLED_REJECTION,
-    data: reason,
+    process.on("exit", () => {
+      console.log(
+        `%cChild process for sessionId: ${sessionId} stopped!`,
+        "color: red"
+      );
+      // clear name from db
+      // save last state ?
+    });
   });
-});
-
-process.on("uncaughtException", (error) => {
-  console.error("Uncaught Exception:", error);
-  publishMessage({
-    type: SessionProcessorMessage.UNCAUGHT_EXCEPTION,
-    data: error,
-  });
-});

@@ -1,6 +1,9 @@
 export function createJoinAction(data: { profileId: string }) {
   return { type: "join" as const, ...data };
 }
+export function createActivityPartTimeoutAction(data: { activityId: string }) {
+  return { type: "activityPartTimeout" as const, ...data };
+}
 export function createActivityTimeoutAction(data: { activityId: string }) {
   return { type: "activityTimeout" as const, ...data };
 }

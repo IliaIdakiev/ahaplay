@@ -49,7 +49,7 @@ export interface ActivityInstanceMethods {
   isConceptualization: () => boolean;
   isConcept: () => boolean;
   getGroupDuration: () => number | null;
-  getProfileDuration: () => number | null;
+  getIndividualDuration: () => number | null;
   getDuration: () => number | null;
 }
 

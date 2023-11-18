@@ -1,4 +1,4 @@
-import { sequelize } from "./sequelize";
+import { sequelize } from "./sequelize-instance";
 import "./models";
 
 export const connectSequelize = () =>
