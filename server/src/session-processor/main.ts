@@ -5,10 +5,12 @@ import { connectRedis, pubSub } from "../redis";
 import { readFromRedis, saveInRedis } from "../redis/utils";
 import {
   SessionMachineSnapshot,
-  createMachineServiceForActivities,
+  createMachineServiceFromWorkshop,
 } from "./+xstate";
+import { Scheduler } from "./scheduler";
 import {
   PubSubMessage,
+  PubSubXActionInnerMessageResult,
   PubSubXActionMessageResult,
   SessionProcessorMessage,
 } from "./types";
@@ -51,6 +53,16 @@ const scheduleSnapshotSave = (() => {
   };
 })();
 
+function innerActionHandler(snapshot: SessionMachineSnapshot) {
+  const { context, value } = snapshot;
+  const actionResult: PubSubXActionInnerMessageResult = {
+    type: SessionProcessorMessage.INNER_ACTION_RESULT,
+    data: { context, stateValue: value },
+  };
+  scheduleSnapshotSave(snapshot);
+  publishMessage(actionResult);
+}
+
 Promise.all([
   connectSequelize().then(() =>
     getSessionWithWorkshopActivitiesAndRelations(sessionId)
@@ -61,19 +73,22 @@ Promise.all([
 ])
   .then(([session, snapshot]) => {
     if (!session || !session.workshop) return null;
-    const activities = session.workshop.activities!;
-    const service = createMachineServiceForActivities({
+    const service = createMachineServiceFromWorkshop({
       machineName: session.workshop.id,
-      activities,
+      workshop: session.workshop,
       snapshot,
-      isQuiz: session.workshop.typeInstance!.name === "Quiz",
     });
-    return service;
+    return { service, workshop: session.workshop! };
   })
-  .then((service) => {
-    if (!service) {
+  .then((data) => {
+    if (!data) {
       throw new Error("Session with provided id not found!");
     }
+    const { service, workshop } = data;
+    const scheduler = new Scheduler(service as any, workshop.duration);
+    scheduler.on("workshopTimeout", innerActionHandler);
+    scheduler.on("activityTimeout", innerActionHandler);
+    scheduler.on("activityPartTimeout", innerActionHandler);
     publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
 
     pubSub.subscribe(

@@ -1,4 +1,4 @@
-import { createMachine, assign, interpret } from "xstate";
+import { createMachine, assign, interpret, State } from "xstate";
 import { WorkshopModelInstance } from "../../database";
 import {
   createIndividualOnlyState,
@@ -19,6 +19,7 @@ import {
   ActivityTimeoutAction,
   ActivityPartTimeoutAction,
   Timeouts,
+  SessionMachineSnapshot,
 } from "./types";
 
 export function createSessionMachine({
@@ -318,9 +319,11 @@ export function createSessionMachine({
 export function createMachineServiceFromWorkshop({
   machineName,
   workshop,
+  snapshot,
 }: {
   machineName: string;
   workshop: WorkshopModelInstance;
+  snapshot?: SessionMachineSnapshot | undefined | null;
 }) {
   const activities = workshop.activities!;
   let states = {
@@ -433,10 +436,12 @@ export function createMachineServiceFromWorkshop({
     machineName,
     states: machineState,
   });
-  const service = interpret(sessionMachine)
-    .onTransition((state) => console.log(state))
-    .start();
-  return service;
+  const service = interpret(sessionMachine).onTransition((state) =>
+    console.log(state)
+  );
+
+  if (!snapshot) return service.start();
+  return service.start(State.from(snapshot));
 }
 
 // getSessionWithWorkshopAndActivities("2624bc0f-71a0-4e2f-a1a7-7bd80cb9ac05")

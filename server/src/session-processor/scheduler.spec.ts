@@ -20,7 +20,7 @@ import {
   createSetValueAction,
 } from "./+xstate";
 import { Scheduler } from "./scheduler";
-import { useFakeTimers, stub, SinonFakeTimers } from "sinon";
+import { useFakeTimers, stub, SinonFakeTimers, spy } from "sinon";
 import { minutesToMilliseconds } from "date-fns";
 import { expect } from "chai";
 
@@ -211,7 +211,7 @@ describe.only("Test machine scheduler", () => {
   };
   let sessionMachine: ReturnType<typeof createSessionMachine>;
   let sessionMachineService: ReturnType<typeof createMachineService>;
-  let scheduler: Scheduler;
+  let scheduler: Scheduler | null;
 
   describe("scheduler tests", () => {
     let clock: SinonFakeTimers;
@@ -256,17 +256,26 @@ describe.only("Test machine scheduler", () => {
           createSetReadyAction({ profileId, activityId: "teamName" })
         );
       });
-
-      scheduler = new Scheduler(sessionMachineService as any, workshopDuration);
     });
     afterEach(() => {
+      scheduler = null;
       clock.restore();
     });
 
     it("should test workshop timeout", (done) => {
+      scheduler = new Scheduler(sessionMachineService as any, workshopDuration);
       const getSnapshotStub = stub(sessionMachineService, "getSnapshot");
       const snapshotValue = { value: { individualOnlyState: "individual" } };
       getSnapshotStub.callsFake(() => snapshotValue as any);
+
+      const workshopTimeoutCallbackSpy = spy();
+      scheduler.on("workshopTimeout", workshopTimeoutCallbackSpy);
+
+      const activityPartTimeoutCallbackSpy = spy();
+      scheduler.on("activityPartTimeout", activityPartTimeoutCallbackSpy);
+
+      const activityTimeoutCallbackSpy = spy();
+      scheduler.on("activityTimeout", activityTimeoutCallbackSpy);
 
       const sendStub = stub(sessionMachineService, "send");
       const returnValues: any[] = [
@@ -301,154 +310,94 @@ describe.only("Test machine scheduler", () => {
 
       const actualActions = sendStub.getCalls().map((a) => a.args);
       expect(actualActions).to.deep.equal(expectedActions);
+      expect(workshopTimeoutCallbackSpy.callCount).to.equal(1);
+      expect(workshopTimeoutCallbackSpy.getCall(0).args).to.deep.equal([
+        {
+          value: "viewResults",
+        },
+      ]);
+      expect(activityPartTimeoutCallbackSpy.callCount).to.equal(0);
+      expect(activityTimeoutCallbackSpy.callCount).to.equal(0);
       done();
     });
 
-    // it("should test activity part timeout", (done) => {
-    //   const sendStub = stub(sessionMachineService, "send");
-    //   const returnValues: any[] = [
-    //     { value: { individualOnlyState: "individual" } },
-    //     { value: { groupOnlyState: "group" } },
-    //     { value: { individualAndGroupOneValueState: "individual" } },
-    //     { value: { individualAndGroupState: "individual" } },
-    //     { value: { individualGroupAndReviewState: "individual" } },
-    //     { value: { individualReadyOnlyState: "individual" } },
-    //     { value: { groupOnlyOneValueState: "group" } },
-    //     { value: "viewResults" },
-    //   ];
-    //   sendStub.callsFake(() => returnValues.shift());
-    //   clock.tick(minutesToMilliseconds(workshopDuration));
+    it("should test activity timeout", (done) => {
+      timeoutValues.activity.individualOnlyState.activityMinuteTimeout = 1;
+      scheduler = new Scheduler(sessionMachineService as any, workshopDuration);
 
-    //   expect(sendStub.getCalls().length).to.equal(8);
-    //   done();
-    // });
+      const sendStub = stub(sessionMachineService, "send");
+      const returnValues: any[] = [{ value: { groupOnlyState: "group" } }];
 
-    // it("should test workshop timeout", (done) => {
-    //   timeoutValues.activity.individualOnlyState.individualMinuteTimeout = 1;
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({ activityId: "individualOnlyState" })
-    //   );
-    //   const snapshot1 = sessionMachineService.getSnapshot();
+      const workshopTimeoutCallbackSpy = spy();
+      scheduler.on("workshopTimeout", workshopTimeoutCallbackSpy);
 
-    //   timeoutValues.activity.groupOnlyState.groupMinuteTimeout = 1;
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "groupOnlyState",
-    //     })
-    //   );
+      const activityPartTimeoutCallbackSpy = spy();
+      scheduler.on("activityPartTimeout", activityPartTimeoutCallbackSpy);
 
-    //   const snapshot2 = sessionMachineService.getSnapshot();
+      const activityTimeoutCallbackSpy = spy();
+      scheduler.on("activityTimeout", activityTimeoutCallbackSpy);
 
-    //   timeoutValues.activity.individualAndGroupOneValueState.individualMinuteTimeout = 1;
-    //   timeoutValues.activity.individualAndGroupOneValueState.groupMinuteTimeout = 1;
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualAndGroupOneValueState",
-    //     })
-    //   );
+      const expectedActions = [
+        [
+          createActivityTimeoutAction({
+            activityId: "individualOnlyState",
+          }),
+        ],
+      ];
 
-    //   const snapshot3 = sessionMachineService.getSnapshot();
+      sendStub.callsFake(() => returnValues.shift());
+      clock.tick(minutesToMilliseconds(1));
 
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualAndGroupOneValueState",
-    //     })
-    //   );
-    //   const snapshot4 = sessionMachineService.getSnapshot();
+      const actualActions = sendStub.getCalls().map((a) => a.args);
+      expect(actualActions).to.deep.equal(expectedActions);
+      expect(workshopTimeoutCallbackSpy.callCount).to.equal(0);
+      expect(activityPartTimeoutCallbackSpy.callCount).to.equal(0);
+      expect(activityTimeoutCallbackSpy.callCount).to.equal(1);
+      expect(activityTimeoutCallbackSpy.getCall(0).args).to.deep.equal([
+        { value: { groupOnlyState: "group" } },
+      ]);
 
-    //   timeoutValues.activity.individualAndGroupState.individualMinuteTimeout = 1;
-    //   timeoutValues.activity.individualAndGroupState.groupMinuteTimeout = 1;
+      done();
+      timeoutValues.activity.individualOnlyState.activityMinuteTimeout = 0;
+    });
 
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualAndGroupState",
-    //     })
-    //   );
-    //   const snapshot5 = sessionMachineService.getSnapshot();
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualAndGroupState",
-    //     })
-    //   );
-    //   const snapshot6 = sessionMachineService.getSnapshot();
+    it("should test activity part timeout", (done) => {
+      timeoutValues.activity.individualOnlyState.individualMinuteTimeout = 1;
+      scheduler = new Scheduler(sessionMachineService as any, workshopDuration);
 
-    //   timeoutValues.activity.individualGroupAndReviewState.individualMinuteTimeout = 1;
-    //   timeoutValues.activity.individualGroupAndReviewState.groupMinuteTimeout = 1;
-    //   timeoutValues.activity.individualGroupAndReviewState.reviewMinuteTimeout = 1;
+      const sendStub = stub(sessionMachineService, "send");
+      const returnValues: any[] = [{ value: { groupOnlyState: "group" } }];
 
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualGroupAndReviewState",
-    //     })
-    //   );
-    //   const snapshot7 = sessionMachineService.getSnapshot();
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualGroupAndReviewState",
-    //     })
-    //   );
-    //   const snapshot8 = sessionMachineService.getSnapshot();
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualGroupAndReviewState",
-    //     })
-    //   );
-    //   const snapshot9 = sessionMachineService.getSnapshot();
+      const workshopTimeoutCallbackSpy = spy();
+      scheduler.on("workshopTimeout", workshopTimeoutCallbackSpy);
 
-    //   timeoutValues.activity.individualReadyOnlyState.individualMinuteTimeout = 1;
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "individualReadyOnlyState",
-    //     })
-    //   );
-    //   const snapshot10 = sessionMachineService.getSnapshot();
-    //   timeoutValues.activity.groupOnlyOneValueState.groupMinuteTimeout = 1;
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "groupOnlyOneValueState",
-    //     })
-    //   );
-    //   const snapshot11 = sessionMachineService.getSnapshot();
-    //   sessionMachineService.send(
-    //     createActivityPartTimeoutAction({
-    //       activityId: "endEmotion",
-    //       force: false,
-    //     })
-    //   );
-    //   const snapshot12 = sessionMachineService.getSnapshot();
+      const activityPartTimeoutCallbackSpy = spy();
+      scheduler.on("activityPartTimeout", activityPartTimeoutCallbackSpy);
 
-    //   expect(snapshot1.value).to.deep.equal({ groupOnlyState: "group" });
-    //   expect(snapshot2.value).to.deep.equal({
-    //     individualAndGroupOneValueState: "individual",
-    //   });
-    //   expect(snapshot3.value).to.deep.equal({
-    //     individualAndGroupOneValueState: "group",
-    //   });
-    //   expect(snapshot4.value).to.deep.equal({
-    //     individualAndGroupState: "individual",
-    //   });
-    //   expect(snapshot5.value).to.deep.equal({
-    //     individualAndGroupState: "group",
-    //   });
-    //   expect(snapshot6.value).to.deep.equal({
-    //     individualGroupAndReviewState: "individual",
-    //   });
-    //   expect(snapshot7.value).to.deep.equal({
-    //     individualGroupAndReviewState: "group",
-    //   });
-    //   expect(snapshot8.value).to.deep.equal({
-    //     individualGroupAndReviewState: "review",
-    //   });
-    //   expect(snapshot9.value).to.deep.equal({
-    //     individualReadyOnlyState: "individual",
-    //   });
-    //   expect(snapshot10.value).to.deep.equal({
-    //     groupOnlyOneValueState: "group",
-    //   });
-    //   expect(snapshot11.value).to.deep.equal({ endEmotion: "individual" });
-    //   expect(snapshot12.value).to.deep.equal({ endEmotion: "individual" });
+      const activityTimeoutCallbackSpy = spy();
+      scheduler.on("activityTimeout", activityTimeoutCallbackSpy);
 
-    //   done();
-    // });
+      const expectedActions = [
+        [
+          createActivityPartTimeoutAction({
+            activityId: "individualOnlyState",
+          }),
+        ],
+      ];
+
+      sendStub.callsFake(() => returnValues.shift());
+      clock.tick(minutesToMilliseconds(1));
+
+      const actualActions = sendStub.getCalls().map((a) => a.args);
+      expect(actualActions).to.deep.equal(expectedActions);
+      expect(workshopTimeoutCallbackSpy.callCount).to.equal(0);
+      expect(activityTimeoutCallbackSpy.callCount).to.equal(0);
+      expect(activityPartTimeoutCallbackSpy.callCount).to.equal(1);
+      expect(activityPartTimeoutCallbackSpy.getCall(0).args).to.deep.equal([
+        { value: { groupOnlyState: "group" } },
+      ]);
+      done();
+      timeoutValues.activity.individualOnlyState.individualMinuteTimeout = 0;
+    });
   });
 });

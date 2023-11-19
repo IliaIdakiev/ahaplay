@@ -8,6 +8,8 @@ export enum SessionProcessorMessage {
   DISPATCH_ACTION = "DISPATCH_ACTION",
   ACTION_RESULT = "ACTION_RESULT",
 
+  INNER_ACTION_RESULT = "INNER_ACTION_RESULT",
+
   UNHANDLED_REJECTION = "UNHANDLED_REJECTION",
   UNCAUGHT_EXCEPTION = "UNCAUGHT_EXCEPTION",
 }
@@ -31,4 +33,12 @@ export interface PubSubXActionMessageResult
     action: SessionMachineActions;
   }> {
   type: SessionProcessorMessage.ACTION_RESULT;
+}
+
+export interface PubSubXActionInnerMessageResult
+  extends PubSubMessage<{
+    context: SessionMachineContext;
+    stateValue: StateValue;
+  }> {
+  type: SessionProcessorMessage.INNER_ACTION_RESULT;
 }

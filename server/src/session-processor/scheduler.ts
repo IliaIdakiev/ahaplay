@@ -7,7 +7,7 @@ import {
 } from "./+xstate";
 import EventEmitter from "events";
 
-type EventNames = "workshopTimeout" | "activityTimeout";
+type EventNames = "workshopTimeout" | "activityTimeout" | "activityPartTimeout";
 
 export class Scheduler extends EventEmitter {
   workshopDurationTimerId: NodeJS.Timeout | null = null;
@@ -59,9 +59,10 @@ export class Scheduler extends EventEmitter {
       setTimeout(() => {
         this.activityTimerId = null;
         this.activityModeTimerId = null;
-        this.service.send(
+        const snapshot = this.service.send(
           createActivityTimeoutAction({ activityId: activity })
         );
+        this.emit("activityTimeout", snapshot);
       }, minutesToMilliseconds(activityMinuteTimeout));
     }
     const modeMinuteTimeout =
@@ -80,14 +81,18 @@ export class Scheduler extends EventEmitter {
       setTimeout(() => {
         this.activityModeTimerId = null;
         this.activityModeForTimer = null;
-        this.service.send(
+        const snapshot = this.service.send(
           createActivityPartTimeoutAction({ activityId: activity })
         );
+        this.emit("activityPartTimeout", snapshot);
       }, minutesToMilliseconds(modeMinuteTimeout));
     }
   }
 
-  on(event: EventNames, listener: (...args: any[]) => void): this {
+  on(
+    event: EventNames,
+    listener: (snapshot: SessionMachineSnapshot) => void
+  ): this {
     return super.on(event, listener);
   }
 
@@ -108,18 +113,18 @@ export class Scheduler extends EventEmitter {
   }
 
   progressUntil(whileValueCheckFn: (stateValue: StateValue) => boolean) {
-    let { value } = this.service.getSnapshot();
-    while (whileValueCheckFn(value)) {
-      const activityId = this.getActivityIdFromStateValue(value);
-      const state = this.service.send(
+    let snapshot = this.service.getSnapshot();
+    while (whileValueCheckFn(snapshot.value)) {
+      const activityId = this.getActivityIdFromStateValue(snapshot.value);
+      snapshot = this.service.send(
         createActivityTimeoutAction({ activityId, force: true })
       );
-      value = state.value;
     }
+    return snapshot;
   }
 
   workshopTimeout() {
-    this.progressUntil((value) => value !== "viewResults");
-    // notify someone
+    const snapshot = this.progressUntil((value) => value !== "viewResults");
+    this.emit("workshopTimeout", snapshot);
   }
 }
