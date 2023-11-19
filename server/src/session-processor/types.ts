@@ -1,6 +1,13 @@
 import { StateValue } from "xstate";
 import { SessionMachineActions, SessionMachineContext } from "./+xstate";
 
+export enum SessionProcessorStatus {
+  STARTING = "STARTING",
+  STARTED = "STARTED",
+  STOPPED = "STOPPED",
+  FINISHED = "FINISHED",
+}
+
 export enum SessionProcessorMessage {
   SESSION_PROCESSOR_STARTED = "SESSION_PROCESSOR_STARTED",
   SESSION_PROCESSOR_STOPPED = "SESSION_PROCESSOR_STOPPED",
