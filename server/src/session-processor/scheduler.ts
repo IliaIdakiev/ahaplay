@@ -1,12 +1,17 @@
 import { minutesToMilliseconds } from "date-fns";
 import { StateValue, interpret } from "xstate";
-import { SessionMachineSnapshot, createActivityTimeoutAction } from "./+xstate";
+import {
+  SessionMachineSnapshot,
+  createActivityPartTimeoutAction,
+  createActivityTimeoutAction,
+} from "./+xstate";
 import EventEmitter from "events";
 
 type EventNames = "workshopTimeout" | "activityTimeout";
 
 export class Scheduler extends EventEmitter {
   workshopDurationTimerId: NodeJS.Timeout | null = null;
+
   activityTimerId: NodeJS.Timeout | null = null;
   activityIdForTimer: string | null = null;
 
@@ -18,16 +23,68 @@ export class Scheduler extends EventEmitter {
     workshopMinuteDuration?: number
   ) {
     super();
-    if (workshopMinuteDuration) {
-      const durationInMilliseconds = minutesToMilliseconds(
-        workshopMinuteDuration
-      );
-      this.workshopDurationTimerId = setTimeout(
-        this.workshopTimeout.bind(this),
-        durationInMilliseconds
-      );
-    }
+    if (workshopMinuteDuration)
+      this.setupWorkshopTimeout(workshopMinuteDuration);
     this.service.subscribe(this.sessionStateChangeHandler.bind(this));
+  }
+
+  setupWorkshopTimeout(workshopMinuteDuration: number) {
+    const durationInMilliseconds = minutesToMilliseconds(
+      workshopMinuteDuration
+    );
+    this.workshopDurationTimerId = setTimeout(
+      this.workshopTimeout.bind(this),
+      durationInMilliseconds
+    );
+  }
+
+  setupCurrentActivityTimeouts() {
+    const state =
+      this.service.getSnapshot() as unknown as SessionMachineSnapshot;
+    const activity = Object.keys(state?.value || {})[0];
+    if (!activity) return;
+    const currentMode = (state?.value as any)[activity] as
+      | "individual"
+      | "group"
+      | "review"
+      | undefined;
+    if (!currentMode || !state.machine) return;
+    const activityMinuteTimeout =
+      state.context.timeouts?.activity?.[activity]?.activityMinuteTimeout;
+    if (activityMinuteTimeout && this.activityIdForTimer !== activity) {
+      if (this.activityTimerId) {
+        clearTimeout(this.activityTimerId);
+        this.activityTimerId = null;
+      }
+      setTimeout(() => {
+        this.activityTimerId = null;
+        this.activityModeTimerId = null;
+        this.service.send(
+          createActivityTimeoutAction({ activityId: activity })
+        );
+      }, minutesToMilliseconds(activityMinuteTimeout));
+    }
+    const modeMinuteTimeout =
+      state.context.timeouts?.activity?.[activity]?.[
+        currentMode === "individual"
+          ? "individualMinuteTimeout"
+          : currentMode === "group"
+          ? "groupMinuteTimeout"
+          : "reviewMinuteTimeout"
+      ];
+    if (modeMinuteTimeout && this.activityModeForTimer !== currentMode) {
+      if (this.activityModeTimerId) {
+        clearTimeout(this.activityModeTimerId);
+        this.activityModeTimerId = null;
+      }
+      setTimeout(() => {
+        this.activityModeTimerId = null;
+        this.activityModeForTimer = null;
+        this.service.send(
+          createActivityPartTimeoutAction({ activityId: activity })
+        );
+      }, minutesToMilliseconds(modeMinuteTimeout));
+    }
   }
 
   on(event: EventNames, listener: (...args: any[]) => void): this {
@@ -39,56 +96,7 @@ export class Scheduler extends EventEmitter {
   }
 
   sessionStateChangeHandler() {
-    // const currentSnapshot =
-    //   this.service.getSnapshot() as unknown as SessionMachineSnapshot;
-    // const activityId = this.getActivityIdFromStateValue(currentSnapshot.value);
-    // if (activityId !== this.activityIdForTimer) {
-    //   if (this.activityTimerId) {
-    //     clearInterval(this.activityTimerId);
-    //     this.activityTimerId = null;
-    //   }
-    //   if (this.activityModeTimerId) {
-    //     clearInterval(this.activityModeTimerId);
-    //     this.activityModeForTimer = null;
-    //   }
-    //   if (currentSnapshot.context.activityMinuteTimeout) {
-    //     this.activityIdForTimer = activityId;
-    //     this.activityTimerId = setTimeout(() => {
-    //       this.progressUntil(
-    //         (value) =>
-    //           this.getActivityIdFromStateValue(value) !==
-    //           this.activityIdForTimer
-    //       );
-    //       this.activityTimerId = null;
-    //       this.activityIdForTimer = null;
-    //     }, minutesToMilliseconds(currentSnapshot.context.activityMinuteTimeout));
-    //   }
-    //   const innerState = this.getInnerStateFromStateValue(
-    //     currentSnapshot.value
-    //   );
-    //   if (
-    //     !activityId ||
-    //     innerState === null ||
-    //     typeof innerState !== "string" ||
-    //     innerState === this.activityModeForTimer
-    //   )
-    //     return;
-    //   const {
-    //     individualMinuteTimeout,
-    //     groupMinuteTimeout,
-    //     activityMinuteTimeout,
-    //   } = currentSnapshot.context;
-    //   const minuteTimeout =
-    //     individualMinuteTimeout || groupMinuteTimeout || activityMinuteTimeout;
-    //   if (!minuteTimeout) return;
-    //   this.activityModeForTimer = innerState as
-    //     | "individual"
-    //     | "group"
-    //     | "review";
-    //   this.activityModeTimerId = setTimeout(() => {
-    //     this.service.send(createActivityTimeoutAction({ activityId }));
-    //   }, minutesToMilliseconds(minuteTimeout));
-    // }
+    this.setupCurrentActivityTimeouts();
   }
 
   getActivityIdFromStateValue(value: StateValue) {
@@ -103,9 +111,10 @@ export class Scheduler extends EventEmitter {
     let { value } = this.service.getSnapshot();
     while (whileValueCheckFn(value)) {
       const activityId = this.getActivityIdFromStateValue(value);
-      value = this.service.send(
-        createActivityTimeoutAction({ activityId })
-      ).value;
+      const state = this.service.send(
+        createActivityTimeoutAction({ activityId, force: true })
+      );
+      value = state.value;
     }
   }
 

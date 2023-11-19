@@ -12,6 +12,7 @@ import {
 import {
   Timeouts,
   createActivityPartTimeoutAction,
+  createActivityTimeoutAction,
   createJoinAction,
   createMachineService,
   createReadyToStartAction,
@@ -23,7 +24,6 @@ import { expect } from "chai";
 describe("Test machine scheduler", () => {
   const machineName = "testMachine";
   const players = ["player-1", "player-2", "player-3"];
-  const workshopMinuteTimeout = 10;
   const timeoutValues = {
     workshopMinuteTimeout: 0,
     activity: {
@@ -208,7 +208,7 @@ describe("Test machine scheduler", () => {
   let sessionMachine: ReturnType<typeof createSessionMachine>;
   let sessionMachineService: ReturnType<typeof createMachineService>;
 
-  describe("dynamic activities tests", () => {
+  describe("configurable activities tests", () => {
     beforeEach(() => {
       const sessionMachineStates = createMachineState({
         machineName,
@@ -251,7 +251,7 @@ describe("Test machine scheduler", () => {
       });
     });
 
-    it("should test workshop duration timeout", (done) => {
+    it("should test activity part timeout action", (done) => {
       timeoutValues.activity.individualOnlyState.individualMinuteTimeout = 1;
       sessionMachineService.send(
         createActivityPartTimeoutAction({ activityId: "individualOnlyState" })
@@ -337,10 +337,10 @@ describe("Test machine scheduler", () => {
         })
       );
       const snapshot11 = sessionMachineService.getSnapshot();
-      timeoutValues.activity.groupOnlyOneValueState.groupMinuteTimeout = 1;
       sessionMachineService.send(
         createActivityPartTimeoutAction({
           activityId: "endEmotion",
+          force: false,
         })
       );
       const snapshot12 = sessionMachineService.getSnapshot();
@@ -377,22 +377,488 @@ describe("Test machine scheduler", () => {
       expect(snapshot12.value).to.deep.equal({ endEmotion: "individual" });
 
       done();
-      // const scheduler = new Scheduler(
-      //   sessionMachineService as any,
-      //   workshopMinuteTimeout
-      // );
-      // const clock = useFakeTimers();
-      // delayedFunction((result) => {
-      //   // Assert that the callback was called with the expected result
-      //   assert.strictEqual(result, "Done");
-      //   // Assert that the timer was called after the simulated time has passed
-      //   assert.strictEqual(clock.now, 1000);
-      //   // Restore the original timers
-      //   clock.restore();
-      //   // Complete the test
-      //   done();
-      // });
-      // clock.tick(1000);
+    });
+    it("should test activity part timeout action checks", (done) => {
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({ activityId: "individualOnlyState" })
+      );
+      const snapshot1_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualOnlyState.individualMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({ activityId: "individualOnlyState" })
+      );
+      const snapshot1 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "groupOnlyState",
+        })
+      );
+
+      const snapshot2_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyState.groupMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "groupOnlyState",
+        })
+      );
+
+      const snapshot2 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+
+      const snapshot3_noChange = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+      const snapshot4_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupOneValueState.individualMinuteTimeout = 1;
+      timeoutValues.activity.individualAndGroupOneValueState.groupMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+
+      const snapshot3 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+      const snapshot4 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot5_noChange = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot6_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupState.individualMinuteTimeout = 1;
+      timeoutValues.activity.individualAndGroupState.groupMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot5 = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot6 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot7_noChange = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot8_noChange = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot9_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualGroupAndReviewState.individualMinuteTimeout = 1;
+      timeoutValues.activity.individualGroupAndReviewState.groupMinuteTimeout = 1;
+      timeoutValues.activity.individualGroupAndReviewState.reviewMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot7 = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot8 = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot9 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualReadyOnlyState",
+        })
+      );
+      const snapshot10_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualReadyOnlyState.individualMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "individualReadyOnlyState",
+        })
+      );
+      const snapshot10 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "groupOnlyOneValueState",
+        })
+      );
+      const snapshot11_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyOneValueState.groupMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "groupOnlyOneValueState",
+        })
+      );
+      const snapshot11 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityPartTimeoutAction({
+          activityId: "endEmotion",
+          force: false,
+        })
+      );
+      const snapshot12 = sessionMachineService.getSnapshot();
+
+      expect(snapshot1_noChange.value).to.deep.equal({
+        individualOnlyState: "individual",
+      });
+      expect(snapshot1.value).to.deep.equal({ groupOnlyState: "group" });
+      expect(snapshot2_noChange.value).to.deep.equal({
+        groupOnlyState: "group",
+      });
+      expect(snapshot2.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot3_noChange.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot3.value).to.deep.equal({
+        individualAndGroupOneValueState: "group",
+      });
+      expect(snapshot4_noChange.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot4.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot5_noChange.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot5.value).to.deep.equal({
+        individualAndGroupState: "group",
+      });
+      expect(snapshot6_noChange.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot6.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot7_noChange.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot7.value).to.deep.equal({
+        individualGroupAndReviewState: "group",
+      });
+      expect(snapshot8_noChange.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot8.value).to.deep.equal({
+        individualGroupAndReviewState: "review",
+      });
+      expect(snapshot9_noChange.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot9.value).to.deep.equal({
+        individualReadyOnlyState: "individual",
+      });
+      expect(snapshot10_noChange.value).to.deep.equal({
+        individualReadyOnlyState: "individual",
+      });
+      expect(snapshot10.value).to.deep.equal({
+        groupOnlyOneValueState: "group",
+      });
+      expect(snapshot11_noChange.value).to.deep.equal({
+        groupOnlyOneValueState: "group",
+      });
+      expect(snapshot11.value).to.deep.equal({ endEmotion: "individual" });
+      expect(snapshot12.value).to.deep.equal({ endEmotion: "individual" });
+
+      done();
+    });
+    it("should test activity timeout action", (done) => {
+      timeoutValues.activity.individualOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({ activityId: "individualOnlyState" })
+      );
+      const snapshot1 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyState",
+        })
+      );
+
+      const snapshot2 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupOneValueState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+
+      const snapshot3 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupState.activityMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot4 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualGroupAndReviewState.activityMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot5 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualReadyOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualReadyOnlyState",
+        })
+      );
+      const snapshot6 = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyOneValueState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyOneValueState",
+        })
+      );
+      const snapshot7 = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "endEmotion",
+        })
+      );
+      const snapshot8 = sessionMachineService.getSnapshot();
+
+      expect(snapshot1.value).to.deep.equal({ groupOnlyState: "group" });
+      expect(snapshot2.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot3.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot4.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot5.value).to.deep.equal({
+        individualReadyOnlyState: "individual",
+      });
+      expect(snapshot6.value).to.deep.equal({
+        groupOnlyOneValueState: "group",
+      });
+      expect(snapshot7.value).to.deep.equal({
+        endEmotion: "individual",
+      });
+      expect(snapshot8.value).to.deep.equal({ endEmotion: "individual" });
+
+      done();
+    });
+    it("should test activity timeout action checks", (done) => {
+      sessionMachineService.send(
+        createActivityTimeoutAction({ activityId: "individualOnlyState" })
+      );
+      const snapshot1_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({ activityId: "individualOnlyState" })
+      );
+      const snapshot1 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyState",
+        })
+      );
+
+      const snapshot2_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyState",
+        })
+      );
+
+      const snapshot2 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+
+      const snapshot3_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupOneValueState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupOneValueState",
+        })
+      );
+
+      const snapshot3 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot4_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualAndGroupState.activityMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualAndGroupState",
+        })
+      );
+      const snapshot4 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot5_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualGroupAndReviewState.activityMinuteTimeout = 1;
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualGroupAndReviewState",
+        })
+      );
+      const snapshot5 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualReadyOnlyState",
+        })
+      );
+      const snapshot6_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.individualReadyOnlyState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "individualReadyOnlyState",
+        })
+      );
+      const snapshot6 = sessionMachineService.getSnapshot();
+
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyOneValueState",
+        })
+      );
+      const snapshot7_noChange = sessionMachineService.getSnapshot();
+
+      timeoutValues.activity.groupOnlyOneValueState.activityMinuteTimeout = 1;
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "groupOnlyOneValueState",
+        })
+      );
+      const snapshot7 = sessionMachineService.getSnapshot();
+      sessionMachineService.send(
+        createActivityTimeoutAction({
+          activityId: "endEmotion",
+        })
+      );
+      const snapshot8 = sessionMachineService.getSnapshot();
+
+      expect(snapshot1_noChange.value).to.deep.equal({
+        individualOnlyState: "individual",
+      });
+      expect(snapshot1.value).to.deep.equal({ groupOnlyState: "group" });
+      expect(snapshot2_noChange.value).to.deep.equal({
+        groupOnlyState: "group",
+      });
+      expect(snapshot2.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot3_noChange.value).to.deep.equal({
+        individualAndGroupOneValueState: "individual",
+      });
+      expect(snapshot3.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot4_noChange.value).to.deep.equal({
+        individualAndGroupState: "individual",
+      });
+      expect(snapshot4.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot5_noChange.value).to.deep.equal({
+        individualGroupAndReviewState: "individual",
+      });
+      expect(snapshot5.value).to.deep.equal({
+        individualReadyOnlyState: "individual",
+      });
+      expect(snapshot6_noChange.value).to.deep.equal({
+        individualReadyOnlyState: "individual",
+      });
+      expect(snapshot6.value).to.deep.equal({
+        groupOnlyOneValueState: "group",
+      });
+      expect(snapshot7_noChange.value).to.deep.equal({
+        groupOnlyOneValueState: "group",
+      });
+      expect(snapshot7.value).to.deep.equal({
+        endEmotion: "individual",
+      });
+      expect(snapshot8.value).to.deep.equal({ endEmotion: "individual" });
+
+      done();
     });
   });
 });

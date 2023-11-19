@@ -190,38 +190,18 @@ export function createSessionMachine({
         }),
         timeout: assign({
           activityResult: (context, action, { state }) => {
-            const states = state?.machine?.config.states;
-            if (!states) return context.activityResult;
+            const states = state!.machine!.config.states;
             const timeoutAction = action as
               | ActivityTimeoutAction
               | ActivityPartTimeoutAction;
-            const { activityId, type } = timeoutAction;
+            const { activityId } = timeoutAction;
             const activity = Object.keys(state?.value || {})[0];
             const currentMode = (state?.value as any)[activity] as
               | "individual"
               | "group"
-              | "review"
-              | undefined;
+              | "review";
 
-            if (
-              !activity ||
-              currentMode === undefined ||
-              activityId !== activity ||
-              (type === "activityTimeout" &&
-                !context.timeouts?.activity?.[activity]
-                  ?.activityMinuteTimeout) ||
-              (type === "activityPartTimeout" &&
-                (currentMode === "individual"
-                  ? !context.timeouts?.activity?.[activity]
-                      ?.individualMinuteTimeout
-                  : currentMode === "group"
-                  ? !context.timeouts?.activity?.[activity]?.groupMinuteTimeout
-                  : !context.timeouts?.activity?.[activity]
-                      ?.reviewMinuteTimeout))
-            ) {
-              return context.activityResult;
-            }
-            const activityStates = states[activityId].states;
+            const activityStates = states![activityId].states;
             const modes: ("individual" | "group" | "review")[] =
               action.type === "activityPartTimeout"
                 ? [currentMode]
@@ -295,13 +275,40 @@ export function createSessionMachine({
 
           return isReady;
         },
-        partTimeoutReady: (context, action) => {
-          // TODO: Implement check
-          return false;
-        },
-        timeoutReady: (context, action) => {
-          // TODO: Implement check
-          return false;
+        timeoutCheck: (context, action, { state }) => {
+          const states = state?.machine?.config.states;
+          if (!states) return false;
+          const timeoutAction = action as
+            | ActivityTimeoutAction
+            | ActivityPartTimeoutAction;
+          const { activityId, type, force = false } = timeoutAction;
+          const activity = Object.keys(state?.value || {})[0];
+          const currentMode = (state?.value as any)[activity] as
+            | "individual"
+            | "group"
+            | "review"
+            | undefined;
+
+          if (
+            !activity ||
+            currentMode === undefined ||
+            activityId !== activity ||
+            (type === "activityTimeout" &&
+              !context.timeouts?.activity?.[activity]?.activityMinuteTimeout &&
+              force === false) ||
+            (type === "activityPartTimeout" &&
+              (currentMode === "individual"
+                ? !context.timeouts?.activity?.[activity]
+                    ?.individualMinuteTimeout
+                : currentMode === "group"
+                ? !context.timeouts?.activity?.[activity]?.groupMinuteTimeout
+                : !context.timeouts?.activity?.[activity]
+                    ?.reviewMinuteTimeout) &&
+              force === false)
+          ) {
+            return false;
+          }
+          return true;
         },
       },
     }
