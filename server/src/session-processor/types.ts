@@ -34,11 +34,3 @@ export interface PubSubXActionMessageResult
   }> {
   type: SessionProcessorMessage.ACTION_RESULT;
 }
-
-export interface PubSubXActionInnerMessageResult
-  extends PubSubMessage<{
-    context: SessionMachineContext;
-    stateValue: StateValue;
-  }> {
-  type: SessionProcessorMessage.INNER_ACTION_RESULT;
-}

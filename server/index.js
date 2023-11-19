@@ -18,9 +18,9 @@ global.__basedir = __dirname;
 
 
 const args = process.argv.slice(2);
-const startSessionProcessor = args[1] === '--session-processor';
-const startTestDispatcher = args[1] === '--test-dispatcher';
-const sessionId = args[0];
+const startSessionProcessor = args[0] === '--session-processor';
+const startTestDispatcher = args[0] === '--test-dispatcher';
+const sessionId = args[1];
 
 if (startSessionProcessor && sessionId) {
   console.log('%cStarting xstate session processor', "color: red");

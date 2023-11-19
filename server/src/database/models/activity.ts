@@ -73,7 +73,7 @@ activityModel.prototype.getGroupDuration = function (
   );
 };
 
-activityModel.prototype.getProfileDuration = function (
+activityModel.prototype.getIndividualDuration = function (
   this: ActivityModelInstance
 ) {
   return (

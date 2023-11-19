@@ -1,4 +1,9 @@
-import { generateSessionRedisKey } from "../apollo/resources/session/helpers";
+import { RedisPubSub } from "graphql-redis-subscriptions";
+import {
+  generateSessionRedisKey,
+  generateSessionUpdateSubscriptionEvent,
+  graphqlInMemorySessionStateSerializer,
+} from "../apollo/resources/session/helpers";
 import { connectSequelize } from "../database";
 import { getSessionWithWorkshopActivitiesAndRelations } from "../helpers/get-session-with-workshop-activities-and-relations";
 import { connectRedis, pubSub } from "../redis";
@@ -10,7 +15,6 @@ import {
 import { Scheduler } from "./scheduler";
 import {
   PubSubMessage,
-  PubSubXActionInnerMessageResult,
   PubSubXActionMessageResult,
   SessionProcessorMessage,
 } from "./types";
@@ -20,12 +24,36 @@ import {
 } from "./utils";
 
 const args = process.argv.slice(2);
-const sessionId = args[0];
+const sessionId = args[1];
 if (!sessionId) {
   throw new Error("No session id provided");
 }
 
 const sessionRedisKey = generateSessionRedisKey({ sessionId });
+
+export function publishSessionState(config: {
+  sessionId: string;
+  snapshot: SessionMachineSnapshot;
+}): void {
+  const {
+    sessionId,
+    snapshot: { context, value },
+  } = config;
+  const stateValue = typeof value === "string" ? value : JSON.stringify(value);
+
+  const sessionStateGraphQL = graphqlInMemorySessionStateSerializer({
+    context,
+    stateValue,
+  });
+
+  const eventName = generateSessionUpdateSubscriptionEvent({
+    sessionId,
+  });
+
+  pubSub.publish(eventName, {
+    sessionState: sessionStateGraphQL,
+  });
+}
 
 function publishMessage(payload: any) {
   return pubSub.publish(generateRedisSessionClientName({ sessionId }), payload);
@@ -54,13 +82,8 @@ const scheduleSnapshotSave = (() => {
 })();
 
 function innerActionHandler(snapshot: SessionMachineSnapshot) {
-  const { context, value } = snapshot;
-  const actionResult: PubSubXActionInnerMessageResult = {
-    type: SessionProcessorMessage.INNER_ACTION_RESULT,
-    data: { context, stateValue: value },
-  };
   scheduleSnapshotSave(snapshot);
-  publishMessage(actionResult);
+  publishSessionState({ sessionId, snapshot });
 }
 
 Promise.all([
@@ -95,9 +118,10 @@ Promise.all([
       generateRedisSessionProcessorName({ sessionId }),
       (message: PubSubMessage<any>) => {
         if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
-          const { context, value: stateValue } = service.send(
+          const snapshot = service.send(
             message.data.action
-          );
+          ) as unknown as SessionMachineSnapshot;
+          const { context, value: stateValue } = snapshot;
           scheduleSnapshotSave(
             service.getSnapshot() as unknown as SessionMachineSnapshot
           );
@@ -106,6 +130,7 @@ Promise.all([
             data: { context, stateValue, action: message.data.action },
           };
           publishMessage(actionResult);
+          publishSessionState({ sessionId, snapshot });
         }
       }
     );

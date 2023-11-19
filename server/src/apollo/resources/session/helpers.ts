@@ -41,19 +41,3 @@ export function generateSessionKey(config: { slotId: string }) {
 export function generateSessionRedisKey(config: { sessionId: string }) {
   return `sessionId:${config.sessionId}::session`;
 }
-
-export function publishSessionState(config: {
-  sessionId: string;
-  pubSub: RedisPubSub;
-  sessionStateGraphQL: SessionStateGraphQL;
-}) {
-  const { sessionId, pubSub, sessionStateGraphQL } = config;
-  const eventName = generateSessionUpdateSubscriptionEvent({
-    sessionId,
-  });
-
-  pubSub.publish(eventName, {
-    sessionState: sessionStateGraphQL,
-  });
-  return sessionStateGraphQL;
-}

@@ -31,13 +31,31 @@ export function startSessionProcessor({
     if (existingEntry) {
       return Promise.resolve(sessionProcessorName);
     }
+    redisClient.set(sessionProcessorName, sessionProcessorName); // TODO: Figure out a better way to keep the session processors and their state
 
     let childProcess: ChildProcessWithoutNullStreams;
+
+    const connected = new Promise<void>((res) => {
+      let resolved = false;
+      pubSub.subscribe(
+        generateRedisSessionClientName({ sessionId }),
+        (event) => {
+          if (
+            event?.type === SessionProcessorMessage.SESSION_PROCESSOR_STARTED &&
+            resolved === false
+          ) {
+            resolved = true;
+            res();
+          }
+        }
+      );
+    });
+
     try {
       childProcess = spawn("node", [
         pathToSessionProcessorScript,
-        sessionId,
         "--session-processor",
+        sessionId,
       ]);
     } catch (e) {
       throw new Error("Cannot spawn process!");
@@ -78,15 +96,15 @@ export function startSessionProcessor({
         childProcess.kill(signal);
       }
     });
-    // This signal immediately terminates a process.
-    // Unlike other signals, it cannot be caught or ignored. It's a forceful termination.
-    process.on("SIGKILL", (signal) => {
-      console.log("SIGKILL");
-      cleanup();
-      if (environment !== "prod") {
-        childProcess.kill(signal);
-      }
-    });
+    // // This signal immediately terminates a process.
+    // // Unlike other signals, it cannot be caught or ignored. It's a forceful termination.
+    // process.on("SIGKILL", (signal) => {
+    //   console.log("SIGKILL");
+    //   cleanup();
+    //   if (environment !== "prod") {
+    //     childProcess.kill(signal);
+    //   }
+    // });
 
     // This signal is a request for termination.
     // Processes can listen for this signal and perform cleanup operations before exiting. It's often used for a graceful shutdown.
@@ -103,25 +121,6 @@ export function startSessionProcessor({
     process.on("SIGCHLD", (signal) => {
       console.log("Child process stopped or killed");
       childProcessCleanup();
-    });
-
-    const pid = childProcess.pid!.toString();
-
-    const connected = new Promise<void>((res) => {
-      let resolved = false;
-      pubSub.subscribe(
-        generateRedisSessionClientName({ sessionId }),
-        (event) => {
-          console.log(`PID: ${pid}:`, event);
-          if (
-            event?.type === SessionProcessorMessage.SESSION_PROCESSOR_STARTED &&
-            resolved === false
-          ) {
-            resolved = true;
-            res();
-          }
-        }
-      );
     });
 
     return connected.then(() => sessionProcessorName);
@@ -190,9 +189,14 @@ export function listenForSessionProcessorActionResult({
 
       const actionResultMessage =
         message as unknown as PubSubXActionMessageResult;
+      const stateValue = actionResultMessage.data.stateValue;
+
       res({
         context: actionResultMessage.data.context,
-        stateValue: actionResultMessage.data.stateValue as any,
+        stateValue:
+          typeof stateValue === "string"
+            ? stateValue
+            : JSON.stringify(stateValue),
       });
       pubSub.unsubscribe(subscriptionId!);
     };

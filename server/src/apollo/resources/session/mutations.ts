@@ -10,10 +10,7 @@ import {
   createSetValueAction,
 } from "../../../session-processor/+xstate";
 import { AuthenticatedAppContext, SessionStateGraphQL } from "../../types";
-import {
-  graphqlInMemorySessionStateSerializer,
-  publishSessionState,
-} from "./helpers";
+import { graphqlInMemorySessionStateSerializer } from "./helpers";
 
 export const mutationResolvers = {
   join(
@@ -30,10 +27,7 @@ export const mutationResolvers = {
 
     return startSessionProcessor({ sessionId })
       .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer)
-      .then((sessionStateGraphQL) =>
-        publishSessionState({ sessionId, pubSub, sessionStateGraphQL })
-      );
+      .then(graphqlInMemorySessionStateSerializer);
   },
 
   disconnect(
@@ -49,10 +43,7 @@ export const mutationResolvers = {
     });
     return startSessionProcessor({ sessionId })
       .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer)
-      .then((sessionStateGraphQL) =>
-        publishSessionState({ sessionId, pubSub, sessionStateGraphQL })
-      );
+      .then(graphqlInMemorySessionStateSerializer);
   },
 
   readyToStart(
@@ -68,10 +59,7 @@ export const mutationResolvers = {
     });
     return startSessionProcessor({ sessionId })
       .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer)
-      .then((sessionStateGraphQL) =>
-        publishSessionState({ sessionId, pubSub, sessionStateGraphQL })
-      );
+      .then(graphqlInMemorySessionStateSerializer);
   },
 
   setActivityValue(
@@ -89,10 +77,7 @@ export const mutationResolvers = {
     });
     return startSessionProcessor({ sessionId })
       .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer)
-      .then((sessionStateGraphQL) =>
-        publishSessionState({ sessionId, pubSub, sessionStateGraphQL })
-      );
+      .then(graphqlInMemorySessionStateSerializer);
   },
 
   setActivityReady(
@@ -109,9 +94,6 @@ export const mutationResolvers = {
     });
     return startSessionProcessor({ sessionId })
       .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer)
-      .then((sessionStateGraphQL) =>
-        publishSessionState({ sessionId, pubSub, sessionStateGraphQL })
-      );
+      .then(graphqlInMemorySessionStateSerializer);
   },
 };

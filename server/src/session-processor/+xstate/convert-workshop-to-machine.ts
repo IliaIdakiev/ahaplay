@@ -1,5 +1,5 @@
 import { createMachine, assign, interpret, State } from "xstate";
-import { WorkshopModelInstance } from "../../database";
+import { ActivityModelInstance, WorkshopModelInstance } from "../../database";
 import {
   createIndividualOnlyState,
   createIndividualAndGroupState,
@@ -47,6 +47,7 @@ export function createSessionMachine({
   return createMachine(
     {
       id: machineName,
+      predictableActionArguments: true,
       context: {
         requiredActiveProfileCount: 3,
         currentActiveProfiles: [],
@@ -363,14 +364,16 @@ export function createMachineServiceFromWorkshop({
     }
 
     const currentActivityIndex = activities.indexOf(activity);
-    const nextActivity = activities[currentActivityIndex + 1];
+    const nextActivity = activities[currentActivityIndex + 1] as
+      | ActivityModelInstance
+      | undefined;
     if (activity.theory) {
       states = {
         ...states,
         ...createIndividualOnlyState({
           machineName,
           activityName: activity.id,
-          nextActivityName: nextActivity.id,
+          nextActivityName: nextActivity?.id,
         }),
       };
     }
@@ -382,7 +385,7 @@ export function createMachineServiceFromWorkshop({
           : createIndividualAndGroupState)({
           machineName,
           activityName: activity.id,
-          nextActivityName: nextActivity.id,
+          nextActivityName: nextActivity?.id,
         }),
       };
     }
@@ -392,7 +395,7 @@ export function createMachineServiceFromWorkshop({
         ...createIndividualOnlyState({
           machineName,
           activityName: activity.id,
-          nextActivityName: nextActivity.id,
+          nextActivityName: nextActivity?.id,
         }),
       };
     }
@@ -402,7 +405,7 @@ export function createMachineServiceFromWorkshop({
         ...createIndividualAndGroupOneValueState({
           machineName: workshop.id,
           activityName: activity.id,
-          nextActivityName: nextActivity.id,
+          nextActivityName: nextActivity?.id,
         }),
       };
     }
@@ -412,7 +415,7 @@ export function createMachineServiceFromWorkshop({
         ...createIndividualAndGroupState({
           machineName,
           activityName: activity.id,
-          nextActivityName: nextActivity.id,
+          nextActivityName: nextActivity?.id,
         }),
       };
     }

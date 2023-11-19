@@ -3,7 +3,7 @@ export function generateRedisSessionClientName({
 }: {
   sessionId: string;
 }) {
-  return `ahaplay-session-processor-${sessionId}`;
+  return `ahaplay-session-client-${sessionId}`;
 }
 
 export function generateRedisSessionProcessorName({
