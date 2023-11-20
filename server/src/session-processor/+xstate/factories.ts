@@ -11,6 +11,7 @@ import {
   ActivityPartTimeoutAction,
   SessionMachineSnapshot,
   Timeouts,
+  SessionMachine,
 } from "./types";
 import { WorkshopModelInstance, ActivityModelInstance } from "../../database";
 import {
@@ -21,6 +22,19 @@ import {
   createIndividualAndGroupOneValueState,
   createMachineState,
 } from "./helpers";
+
+export function machineServiceFactory(
+  machine: SessionMachine,
+  serviceSnapshot?: SessionMachineSnapshot
+) {
+  const initialState = serviceSnapshot ? State.create(serviceSnapshot) : null;
+
+  const service = interpret(machine).onTransition((state) =>
+    console.log(state.value, state.context)
+  );
+  if (!initialState) return service.start();
+  return service.start(initialState);
+}
 
 export function sessionMachineFactory({
   states,
