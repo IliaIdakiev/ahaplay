@@ -23,19 +23,6 @@ import {
   createMachineState,
 } from "./helpers";
 
-export function machineServiceFactory(
-  machine: SessionMachine,
-  serviceSnapshot?: SessionMachineSnapshot
-) {
-  const initialState = serviceSnapshot ? State.create(serviceSnapshot) : null;
-
-  const service = interpret(machine).onTransition((state) =>
-    console.log(state.value, state.context)
-  );
-  if (!initialState) return service.start();
-  return service.start(initialState);
-}
-
 export function sessionMachineFactory({
   states,
   machineName,
@@ -331,7 +318,20 @@ export function sessionMachineFactory({
   );
 }
 
-export function sessionMachineFromWorkshopFactory({
+export function sessionMachineServiceFactory(
+  machine: SessionMachine,
+  serviceSnapshot?: SessionMachineSnapshot | undefined | null
+) {
+  const initialState = serviceSnapshot ? State.create(serviceSnapshot) : null;
+
+  const service = interpret(machine).onTransition((state) =>
+    console.log(state.value, state.context)
+  );
+  if (!initialState) return service.start();
+  return service.start(initialState);
+}
+
+export function sessionMachineServiceFromWorkshopFactory({
   machineName,
   workshop,
   snapshot,
@@ -453,10 +453,5 @@ export function sessionMachineFromWorkshopFactory({
     machineName,
     states: machineState,
   });
-  const service = interpret(sessionMachine).onTransition((state) =>
-    console.log(state)
-  );
-
-  if (!snapshot) return service.start();
-  return service.start(State.from(snapshot));
+  return sessionMachineServiceFactory(sessionMachine, snapshot || null);
 }

@@ -14,7 +14,7 @@ import {
   createActivityPartTimeoutAction,
   createActivityTimeoutAction,
   createJoinAction,
-  machineServiceFactory,
+  sessionMachineServiceFactory,
   createReadyToStartAction,
   createSetReadyAction,
   createSetValueAction,
@@ -206,7 +206,7 @@ describe("Test machine scheduler", () => {
     }),
   };
   let sessionMachine: ReturnType<typeof sessionMachineFactory>;
-  let sessionMachineService: ReturnType<typeof machineServiceFactory>;
+  let sessionMachineService: ReturnType<typeof sessionMachineServiceFactory>;
 
   describe("configurable activities tests", () => {
     beforeEach(() => {
@@ -220,7 +220,7 @@ describe("Test machine scheduler", () => {
         states: sessionMachineStates,
         timeouts,
       });
-      sessionMachineService = machineServiceFactory(sessionMachine);
+      sessionMachineService = sessionMachineServiceFactory(sessionMachine);
       players.forEach((profileId) => {
         sessionMachineService.send(createJoinAction({ profileId }));
         sessionMachineService.send(createReadyToStartAction({ profileId }));
