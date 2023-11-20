@@ -10,7 +10,7 @@ import { connectRedis, pubSub } from "../redis";
 import { readFromRedis, saveInRedis } from "../redis/utils";
 import {
   SessionMachineSnapshot,
-  createMachineServiceFromWorkshop,
+  sessionMachineFromWorkshopFactory,
 } from "./+xstate";
 import { Scheduler } from "./scheduler";
 import {
@@ -96,7 +96,7 @@ Promise.all([
 ])
   .then(([session, snapshot]) => {
     if (!session || !session.workshop) return null;
-    const service = createMachineServiceFromWorkshop({
+    const service = sessionMachineFromWorkshopFactory({
       machineName: session.workshop.id,
       workshop: session.workshop,
       snapshot,

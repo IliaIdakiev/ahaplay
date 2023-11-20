@@ -1,8 +1,7 @@
 import { State, interpret } from "xstate";
 import { SessionMachine, SessionMachineSnapshot } from "./types";
-export * from "./action-creators";
+export * from "./actions";
 export * from "./types";
-export * from "./convert-workshop-to-machine";
 
 export function createMachineService(
   machine: SessionMachine,

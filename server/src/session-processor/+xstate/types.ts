@@ -7,7 +7,7 @@ import {
   createReadyToStartAction,
   createSetReadyAction,
   createSetValueAction,
-} from "./action-creators";
+} from "./actions";
 
 export interface SessionMachineContext {
   requiredActiveProfileCount: number;

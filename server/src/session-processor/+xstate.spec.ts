@@ -1,4 +1,4 @@
-import { createSessionMachine } from "./+xstate/convert-workshop-to-machine";
+import { sessionMachineFactory } from "./+xstate/factories";
 import {
   createGroupOnlyOneValueState,
   createIndividualOnlyState,
@@ -205,7 +205,7 @@ describe("Test machine scheduler", () => {
       nextActivityName: "viewResults",
     }),
   };
-  let sessionMachine: ReturnType<typeof createSessionMachine>;
+  let sessionMachine: ReturnType<typeof sessionMachineFactory>;
   let sessionMachineService: ReturnType<typeof createMachineService>;
 
   describe("configurable activities tests", () => {
@@ -215,7 +215,7 @@ describe("Test machine scheduler", () => {
         stateAfterWaiting: "startEmotion",
         states,
       });
-      sessionMachine = createSessionMachine({
+      sessionMachine = sessionMachineFactory({
         machineName,
         states: sessionMachineStates,
         timeouts,
