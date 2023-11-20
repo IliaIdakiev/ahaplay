@@ -1,14 +1,12 @@
 import {
-  dispatchActionToProcessor,
-  startSessionProcessor,
-} from "../../../session-processor";
-import {
   createDisconnectAction,
   createJoinAction,
   createReadyToStartAction,
   createSetReadyAction,
   createSetValueAction,
 } from "../../../session-processor/+xstate";
+import { dispatchActionToProcessor } from "../../../session-processor/communication";
+import { startSessionProcess } from "../../../session-processor/process";
 import { AuthenticatedAppContext, SessionStateGraphQL } from "../../types";
 import { graphqlInMemorySessionStateSerializer } from "./helpers";
 
@@ -25,9 +23,9 @@ export const mutationResolvers = {
       profileId: context.authenticatedProfile.profileId,
     });
 
-    return startSessionProcessor({ sessionId })
-      .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer);
+    return startSessionProcess({ sessionId, pubSub })
+      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
+      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
   },
 
   disconnect(
@@ -41,9 +39,9 @@ export const mutationResolvers = {
     const action = createDisconnectAction({
       profileId: context.authenticatedProfile.profileId,
     });
-    return startSessionProcessor({ sessionId })
-      .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer);
+    return startSessionProcess({ sessionId, pubSub })
+      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
+      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
   },
 
   readyToStart(
@@ -57,9 +55,9 @@ export const mutationResolvers = {
     const action = createReadyToStartAction({
       profileId: context.authenticatedProfile.profileId,
     });
-    return startSessionProcessor({ sessionId })
-      .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer);
+    return startSessionProcess({ sessionId, pubSub })
+      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
+      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
   },
 
   setActivityValue(
@@ -75,9 +73,9 @@ export const mutationResolvers = {
       activityId,
       value,
     });
-    return startSessionProcessor({ sessionId })
-      .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer);
+    return startSessionProcess({ sessionId, pubSub })
+      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
+      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
   },
 
   setActivityReady(
@@ -92,8 +90,8 @@ export const mutationResolvers = {
       profileId: context.authenticatedProfile.profileId,
       activityId,
     });
-    return startSessionProcessor({ sessionId })
-      .then(() => dispatchActionToProcessor({ sessionId, action }))
-      .then(graphqlInMemorySessionStateSerializer);
+    return startSessionProcess({ sessionId, pubSub })
+      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
+      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
   },
 };

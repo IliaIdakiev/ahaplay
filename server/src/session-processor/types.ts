@@ -21,6 +21,7 @@ export enum SessionProcessorMessage {
 }
 
 export interface PubSubMessage<T = void> {
+  uuid: string;
   type: SessionProcessorMessage;
   data: T;
 }
@@ -36,7 +37,6 @@ export interface PubSubXActionMessageResult
   extends PubSubMessage<{
     context: SessionMachineContext;
     stateValue: StateValue;
-    action: SessionMachineActions;
   }> {
   type: SessionProcessorMessage.ACTION_RESULT;
 }

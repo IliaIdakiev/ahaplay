@@ -30,6 +30,7 @@ export interface IAppConfig {
   refreshTokenName: string;
   hashSaltRounds: number;
   allowGraphqlSandbox: boolean;
+  sessionProcessDebug: null | "--inspect" | "--inspect-brk=9229";
 }
 
 export interface IDatabaseConfig {

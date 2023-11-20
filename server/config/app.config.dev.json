@@ -29,5 +29,6 @@
   "authHeaderName": "Authorization",
   "refreshTokenName": "refresh",
   "hashSaltRounds": 10,
-  "allowGraphqlSandbox": true
+  "allowGraphqlSandbox": true,
+  "sessionProcessDebug": "--inspect-brk=9229"
 }

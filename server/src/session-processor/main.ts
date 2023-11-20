@@ -1,4 +1,3 @@
-import { RedisPubSub } from "graphql-redis-subscriptions";
 import {
   generateSessionRedisKey,
   generateSessionUpdateSubscriptionEvent,
@@ -127,7 +126,8 @@ Promise.all([
           );
           const actionResult: PubSubXActionMessageResult = {
             type: SessionProcessorMessage.ACTION_RESULT,
-            data: { context, stateValue, action: message.data.action },
+            data: { context, stateValue },
+            uuid: message.uuid,
           };
           publishMessage(actionResult);
           publishSessionState({ sessionId, snapshot });

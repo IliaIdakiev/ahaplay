@@ -1,13 +1,13 @@
-import { RedisPubSub } from "graphql-redis-subscriptions";
 import { SubscriptionAction, SessionStateGraphQL } from "../../types";
 import { SessionMachineContext } from "../../../session-processor/+xstate";
+import { StateValue } from "xstate";
 
 export function graphqlInMemorySessionStateSerializer({
   context,
   stateValue,
 }: {
   context: SessionMachineContext;
-  stateValue: string;
+  stateValue: StateValue;
 }): SessionStateGraphQL {
   const { activityResult, lastUpdatedTimestamp, ...others } = context;
   const graphQLActivityResult = Object.entries(activityResult).map(
@@ -23,7 +23,8 @@ export function graphqlInMemorySessionStateSerializer({
       activityResult: graphQLActivityResult,
       lastUpdatedTimestamp: lastUpdatedTimestamp!,
     },
-    value: stateValue,
+    value:
+      typeof stateValue === "string" ? stateValue : JSON.stringify(stateValue),
   };
 }
 
