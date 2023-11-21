@@ -350,7 +350,7 @@ export function sessionMachineServiceFromWorkshopFactory({
     ...createGroupOnlyOneValueState({
       machineName,
       activityName: "teamName",
-      nextActivityName: activities[0].id,
+      nextActivityName: sortedActivities[0].id,
     }),
   };
   const isQuiz = workshop.typeInstance!.name === "Quiz";
@@ -374,8 +374,8 @@ export function sessionMachineServiceFromWorkshopFactory({
       currentActivityTimeouts.groupMinuteTimeout = groupDuration;
     }
 
-    const currentActivityIndex = activities.indexOf(activity);
-    const nextActivity = activities[currentActivityIndex + 1] as
+    const currentActivityIndex = sortedActivities.indexOf(activity);
+    const nextActivity = sortedActivities[currentActivityIndex + 1] as
       | ActivityModelInstance
       | undefined;
     if (activity.theory) {
