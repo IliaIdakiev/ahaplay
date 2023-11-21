@@ -18,7 +18,7 @@ const pm2List = promisify(pm2.list.bind(pm2)) as unknown as () => Promise<
 >;
 
 export const processManager = {
-  startProcess({
+  startOrReturnExistingOneProcess({
     scriptLocation,
     processName,
     args,
@@ -31,7 +31,12 @@ export const processManager = {
   }) {
     return pm2Connect()
       .then(() =>
-        this._startProcess(scriptLocation, processName, args, nodeArgs)
+        this._startOrReturnExistingOneProcess(
+          scriptLocation,
+          processName,
+          args,
+          nodeArgs
+        )
       )
       .then((returnValue) => pm2Disconnect().then(() => returnValue));
   },
@@ -46,21 +51,21 @@ export const processManager = {
       .then((returnValue) => pm2Disconnect().then(() => returnValue));
   },
 
-  _startProcess(
+  _startOrReturnExistingOneProcess(
     scriptLocation: string,
     processName: string,
     args?: string | string[],
     nodeArgs?: string | string[]
   ) {
     return this._findProcessByName(processName).then((existingProcess) => {
-      if (existingProcess) return existingProcess;
+      if (existingProcess) return { isNew: false, process: existingProcess };
       return pm2Start({
         script: scriptLocation,
         name: processName,
         args,
         autorestart: true,
         node_args: nodeArgs,
-      }).then(([process]) => process);
+      }).then(([process]) => ({ isNew: true, process }));
     });
   },
 

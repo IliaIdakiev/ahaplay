@@ -48,9 +48,9 @@ export function sessionMachineFactory({
   return createMachine(
     {
       id: machineName,
-      predictableActionArguments: true,
+      // predictableActionArguments: true,
       context: {
-        requiredActiveProfileCount: 3,
+        requiredActiveProfileCount: 1,
         currentActiveProfiles: [],
         readyActiveProfiles: [],
         activityResult: {},
@@ -87,7 +87,7 @@ export function sessionMachineFactory({
           activityResult: (context, action, { state }) => {
             const { value, profileId, activityId } = action as SetValueAction;
             const activity = Object.keys(state?.value || {})[0];
-            const mode = (state?.value as any)[activity] as
+            const mode = (state?.value as any)?.[activity] as
               | "individual"
               | "group"
               | undefined;
@@ -117,9 +117,6 @@ export function sessionMachineFactory({
         }),
         setOneValue: assign({
           activityResult: (context, action, { state }) => {
-            if (action.type === "setValue") {
-              return context.activityResult;
-            }
             const { value, profileId, activityId } =
               action as unknown as SetValueAction;
             const activity = Object.keys(state?.value || {})[0];

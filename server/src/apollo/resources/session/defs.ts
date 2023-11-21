@@ -1,22 +1,27 @@
 import gql from "graphql-tag";
 
 export const sessionTypeDefs = gql`
-  type MapItem {
-    key: String
-    value: [ActivityEntry]
-  }
-
   type ActivityEntry {
     profileId: String
     value: String
     ready: Boolean
   }
 
+  type MapItem {
+    key: String
+    value: [ActivityEntry]
+  }
+
+  type ActivityMapItem {
+    key: String
+    value: [MapItem]
+  }
+
   type SessionContext {
     currentActiveProfiles: [String]!
     readyActiveProfiles: [String]!
-    activityResult: [MapItem]!
-    lastUpdatedTimestamp: Float!
+    activityResult: [ActivityMapItem]!
+    lastUpdatedTimestamp: Float
   }
 
   type SessionState {

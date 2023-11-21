@@ -30,13 +30,25 @@ export function startSessionProcess({
     messageCheckFn,
   });
 
+  let existingProcessResolve: () => void;
+  const existingProcess = new Promise<void>((res) => {
+    existingProcessResolve = res;
+  });
+
   return Promise.all([
-    processManager.startProcess({
-      scriptLocation: sessionProcessorStartScript,
-      processName: processorName,
-      args: sessionProcessorStaticArgs.concat([sessionId]),
-      nodeArgs,
-    }),
-    sessionProcessorStarted,
+    processManager
+      .startOrReturnExistingOneProcess({
+        scriptLocation: sessionProcessorStartScript,
+        processName: processorName,
+        args: sessionProcessorStaticArgs.concat([sessionId]),
+        nodeArgs,
+      })
+      .then(({ process, isNew }) => {
+        if (!isNew) {
+          existingProcessResolve();
+        }
+        return process;
+      }),
+    Promise.race([sessionProcessorStarted, existingProcess]),
   ]);
 }

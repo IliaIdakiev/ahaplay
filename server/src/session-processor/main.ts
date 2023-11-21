@@ -117,20 +117,29 @@ Promise.all([
       generateRedisSessionProcessorName({ sessionId }),
       (message: PubSubMessage<any>) => {
         if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
-          const snapshot = service.send(
-            message.data.action
-          ) as unknown as SessionMachineSnapshot;
-          const { context, value: stateValue } = snapshot;
-          scheduleSnapshotSave(
-            service.getSnapshot() as unknown as SessionMachineSnapshot
-          );
-          const actionResult: PubSubXActionMessageResult = {
-            type: SessionProcessorMessage.ACTION_RESULT,
-            data: { context, stateValue },
-            uuid: message.uuid,
-          };
-          publishMessage(actionResult);
-          publishSessionState({ sessionId, snapshot });
+          try {
+            const snapshot = service.send(
+              message.data.action
+            ) as unknown as SessionMachineSnapshot;
+            const { context, value: stateValue } = snapshot;
+            scheduleSnapshotSave(
+              service.getSnapshot() as unknown as SessionMachineSnapshot
+            );
+            const actionResult: PubSubXActionMessageResult = {
+              type: SessionProcessorMessage.ACTION_RESULT,
+              data: { context, stateValue },
+              uuid: message.uuid,
+            };
+            publishMessage(actionResult);
+            publishSessionState({ sessionId, snapshot });
+          } catch (error: any) {
+            const actionResult: PubSubMessage<Error> = {
+              type: SessionProcessorMessage.UNCAUGHT_EXCEPTION,
+              data: error,
+              uuid: message.uuid,
+            };
+            publishMessage(actionResult);
+          }
         }
       }
     );

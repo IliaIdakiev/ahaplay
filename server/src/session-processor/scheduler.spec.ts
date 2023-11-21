@@ -24,7 +24,7 @@ import { useFakeTimers, stub, SinonFakeTimers, spy } from "sinon";
 import { minutesToMilliseconds } from "date-fns";
 import { expect } from "chai";
 
-describe.only("Test machine scheduler", () => {
+describe("Test machine scheduler", () => {
   const machineName = "testMachine";
   const players = ["player-1", "player-2", "player-3"];
   const workshopDuration = 10;
