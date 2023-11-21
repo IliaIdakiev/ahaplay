@@ -52,6 +52,14 @@ activityModel.prototype.isBenchmark = function (this: ActivityModelInstance) {
   return !!this.benchmark;
 };
 
+activityModel.prototype.isSurvey = function (this: ActivityModelInstance) {
+  return !!this.survey;
+};
+
+activityModel.prototype.isAction = function (this: ActivityModelInstance) {
+  return !!this.action;
+};
+
 activityModel.prototype.isConceptualization = function (
   this: ActivityModelInstance
 ) {

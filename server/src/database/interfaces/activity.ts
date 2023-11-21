@@ -19,6 +19,8 @@ import { ConceptModelInstance } from "./concept";
 import { ConceptualizationModelInstance } from "./conceptualization";
 import { QuestionModelInstance } from "./question";
 import { TheoryModelInstance } from "./theory";
+import { SurveyModelInstance } from "./survey";
+import { ActionModelInstance } from "./action";
 
 export interface ActivityAttributes extends IBase {
   description: string;
@@ -36,6 +38,8 @@ export interface ActivityAttributes extends IBase {
   conceptualization?: ConceptualizationModelInstance;
   question?: QuestionModelInstance;
   theory?: TheoryModelInstance;
+  survey?: SurveyModelInstance;
+  action?: ActionModelInstance;
 }
 
 export interface ActivityCreationAttributes
@@ -89,4 +93,10 @@ export interface ActivityModelInstance
 
   getTheory: HasOneGetAssociationMixin<TheoryModelInstance>;
   setTheory: HasOneSetAssociationMixin<TheoryModelInstance, string>;
+
+  getSurvey: HasOneGetAssociationMixin<SurveyModelInstance>;
+  setSurvey: HasOneSetAssociationMixin<SurveyModelInstance, string>;
+
+  getAction: HasOneGetAssociationMixin<ActionModelInstance>;
+  setAction: HasOneSetAssociationMixin<ActionModelInstance, string>;
 }

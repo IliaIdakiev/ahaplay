@@ -430,6 +430,27 @@ export function sessionMachineServiceFromWorkshopFactory({
         }),
       };
     }
+    if (activity.survey) {
+      states = {
+        ...states,
+        ...createIndividualOnlyState({
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity?.id,
+        }),
+      };
+    }
+    if (activity.action) {
+      states = {
+        ...states,
+        ...createIndividualAndGroupState({
+          // maybe GroupOneValue
+          machineName,
+          activityName: activity.id,
+          nextActivityName: nextActivity?.id,
+        }),
+      };
+    }
   }
 
   states = {
