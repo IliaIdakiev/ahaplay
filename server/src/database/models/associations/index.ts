@@ -15,3 +15,5 @@ import "./theory";
 import "./type";
 import "./workshop";
 import "./workspace";
+import "./action";
+import "./survey";

@@ -10,6 +10,8 @@ import {
   assignmentAssociationNames,
   answerAssociationNames,
   conceptAssociationNames,
+  actionAssociationNames,
+  surveyAssociationNames,
 } from "../constants";
 import { authorChallengeModel } from "../author-challenge";
 import { benchmarkModel } from "../benchmark";
@@ -19,6 +21,8 @@ import { theoryModel } from "../theory";
 import { assignmentModel } from "../assignment";
 import { answerModel } from "../answer";
 import { conceptModel } from "../concept";
+import { actionModel } from "../action";
+import { surveyModel } from "../survey";
 
 activityModel.belongsTo(workshopModel, {
   foreignKey: "workshop_id",
@@ -61,6 +65,18 @@ activityModel.hasOne(assignmentModel, {
   sourceKey: "id",
   foreignKey: "activity_id",
   as: assignmentAssociationNames.singular,
+});
+
+activityModel.hasOne(actionModel, {
+  sourceKey: "id",
+  foreignKey: "activity_id",
+  as: actionAssociationNames.singular,
+});
+
+activityModel.hasOne(surveyModel, {
+  sourceKey: "id",
+  foreignKey: "activity_id",
+  as: surveyAssociationNames.singular,
 });
 
 activityModel.hasMany(answerModel, {

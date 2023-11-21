@@ -17,6 +17,8 @@ import { answerModel } from "./answer";
 import { typeModel } from "./type";
 import { instructionModel } from "./instruction";
 import { goalModel } from "./goal";
+import { actionModel } from "./action";
+import { surveyModel } from "./survey";
 
 export const models = {
   profile: profileModel,
@@ -37,4 +39,6 @@ export const models = {
   type: typeModel,
   instruction: instructionModel,
   goal: goalModel,
+  action: actionModel,
+  survey: surveyModel,
 };

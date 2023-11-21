@@ -77,3 +77,13 @@ export const goalAssociationNames = {
   singular: "goal",
   plural: "goals",
 };
+
+export const actionAssociationNames = {
+  singular: "action",
+  plural: "actions",
+};
+
+export const surveyAssociationNames = {
+  singular: "survey",
+  plural: "surveys",
+};
