@@ -338,6 +338,9 @@ export function sessionMachineServiceFromWorkshopFactory({
   snapshot?: SessionMachineSnapshot | undefined | null;
 }) {
   const activities = workshop.activities!;
+  const sortedActivities = activities
+    .slice()
+    .sort((a, b) => a.sequence_number - b.sequence_number);
   let states = {
     ...createIndividualOnlyState({
       machineName,
@@ -350,9 +353,6 @@ export function sessionMachineServiceFromWorkshopFactory({
       nextActivityName: activities[0].id,
     }),
   };
-  const sortedActivities = activities.sort(
-    (a, b) => a.sequence_number - b.sequence_number
-  );
   const isQuiz = workshop.typeInstance!.name === "Quiz";
   const activityTimeouts: Timeouts["activity"] = {};
   for (const activity of sortedActivities) {
