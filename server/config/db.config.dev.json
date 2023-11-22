@@ -1,7 +1,7 @@
 {
   "database": "ahaplay",
   "username": "ahaplay",
-  "password": "",
+  "password": "ahaplay",
   "host": "localhost",
   "dialect": "postgres",
   "port": 5432

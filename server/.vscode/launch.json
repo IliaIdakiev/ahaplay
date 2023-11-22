@@ -10,7 +10,9 @@
       ],
       "type": "node",
       "sourceMaps": true,
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ]
     },
     {
       "type": "node",
@@ -23,8 +25,13 @@
       "env": {
         "NODE_ENV": "dev"
       },
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "runtimeArgs": ["-r", "tsconfig-paths/register"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "runtimeArgs": [
+        "-r",
+        "tsconfig-paths/register"
+      ],
       "preLaunchTask": "build:app",
       "console": "integratedTerminal"
     },
@@ -34,17 +41,25 @@
       "name": "Debug Tests",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": [
-        "--config", "mocha.config.js",
-        "--timeout", "0"
+        "--config",
+        "mocha.config.js",
+        "--timeout",
+        "0"
       ],
       "preLaunchTask": "build:spec",
-      "runtimeArgs": ["--nolazy"],
+      "runtimeArgs": [
+        "--nolazy"
+      ],
       "cwd": "${workspaceFolder}",
       "console": "integratedTerminal",
       "internalConsoleOptions": "neverOpen",
       "sourceMaps": true,
-      "skipFiles": ["<node_internals>/**"],
-      "outFiles": ["${workspaceFolder}/dist"],
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist"
+      ],
       "resolveSourceMapLocations": [
         "${workspaceFolder}/dist/**",
         "!**/node_modules/**"
@@ -64,8 +79,13 @@
       "env": {
         "NODE_ENV": "dev"
       },
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "runtimeArgs": ["-r", "tsconfig-paths/register"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "runtimeArgs": [
+        "-r",
+        "tsconfig-paths/register"
+      ],
       "preLaunchTask": "build:app",
       "console": "integratedTerminal"
     },
@@ -83,8 +103,13 @@
       "env": {
         "NODE_ENV": "dev"
       },
-      "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "runtimeArgs": ["-r", "tsconfig-paths/register"],
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ],
+      "runtimeArgs": [
+        "-r",
+        "tsconfig-paths/register"
+      ],
       "preLaunchTask": "build:app",
       "console": "integratedTerminal"
     },

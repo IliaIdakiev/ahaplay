@@ -29,6 +29,10 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
       })
     );
 
+    app.get("/", (req, res) => {
+      res.send("HELLO WORLD!");
+    });
+
     app.use(globalErrorHandler);
 
     httpServer.listen({ port: config.app.port }, () => {
