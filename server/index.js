@@ -1,15 +1,14 @@
 const fs = require('fs');
 const path = require('path');
-const sourceDirectoryName = 'dist';
-const sourceDirectoryPath = path.resolve(sourceDirectoryName);
-const sessionProcessorDirectory = path.join(sourceDirectoryPath, 'session-processor');
+const startFileFullPath = path.resolve('dist/index.js');
+const sessionProcessorDirectory = path.join(startFileFullPath, 'session-processor');
 const sessionProcessorMainFileLocation = path.join(sessionProcessorDirectory, 'main.js');
 const sessionProcessorTestDispatcherFile = path.join(sessionProcessorDirectory, 'test-dispatcher.js');
 
-const exists = fs.existsSync(path.join(sourceDirectoryPath, 'index.js'));
+const exists = fs.existsSync(startFileFullPath);
 
 if (!exists) {
-  const message = `No bootstrap file found! Make sure you have successfully compiled the project and ${path.resolve(__dirname, 'dist', 'index.js')} exist!`;
+  const message = `No bootstrap file found! Make sure you have successfully compiled the project and ${startFileFullPath} exist!`;
   throw new Error(message);
 }
 
@@ -31,4 +30,4 @@ if (startSessionProcessor && sessionId) {
 }
 
 console.log('%cStarting ahaplay server', "color: red");
-require(sourceDirectoryName);
+require(startFileFullPath);
