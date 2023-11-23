@@ -1,3 +1,16 @@
+function joinAndDisconnectStateTransitionsFactory(target: string) {
+  return {
+    join: {
+      target: target,
+      actions: ["join"],
+    },
+    disconnect: {
+      target: target,
+      actions: ["disconnect"],
+    },
+  };
+}
+
 export function createMachineState({
   machineName,
   stateAfterWaiting,
@@ -10,14 +23,7 @@ export function createMachineState({
   return {
     waiting: {
       on: {
-        join: {
-          target: "waiting",
-          actions: ["join"],
-        },
-        disconnect: {
-          target: "waiting",
-          actions: ["disconnect"],
-        },
+        ...joinAndDisconnectStateTransitionsFactory("waiting"),
         readyToStart: [
           {
             target: `#${machineName}.${stateAfterWaiting}`,
@@ -54,6 +60,7 @@ export function createIndividualReadyOnlyState({
       states: {
         individual: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("individual"),
             setReady: [
               {
                 target: nextTarget,
@@ -98,6 +105,7 @@ export function createIndividualOnlyState({
       states: {
         individual: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("individual"),
             setValue: {
               target: "individual",
               actions: ["setValue"],
@@ -146,6 +154,7 @@ export function createGroupOnlyState({
       states: {
         group: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("group"),
             setValue: {
               target: "group",
               actions: ["setValue"],
@@ -194,6 +203,7 @@ export function createGroupOnlyOneValueState({
       states: {
         group: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("group"),
             setValue: {
               target: "group",
               actions: ["setOneValue"],
@@ -241,6 +251,7 @@ export function createIndividualAndGroupState({
       initial: "individual",
       states: {
         individual: {
+          ...joinAndDisconnectStateTransitionsFactory("individual"),
           on: {
             setValue: {
               target: "individual",
@@ -271,6 +282,7 @@ export function createIndividualAndGroupState({
         },
         group: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("group"),
             setValue: {
               target: "group",
               actions: ["setValue"],
@@ -319,6 +331,7 @@ export function createIndividualAndGroupOneValueState({
       states: {
         individual: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("individual"),
             setValue: {
               target: "individual",
               actions: ["setValue"],
@@ -348,6 +361,7 @@ export function createIndividualAndGroupOneValueState({
         },
         group: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("group"),
             setValue: {
               target: "group",
               actions: ["setOneValue"],
@@ -395,6 +409,7 @@ export function createIndividualGroupAndReviewState({
       initial: "individual",
       states: {
         individual: {
+          ...joinAndDisconnectStateTransitionsFactory("individual"),
           on: {
             setValue: {
               target: "individual",
@@ -425,6 +440,7 @@ export function createIndividualGroupAndReviewState({
         },
         group: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("group"),
             setValue: {
               target: "group",
               actions: ["setValue"],
@@ -454,6 +470,7 @@ export function createIndividualGroupAndReviewState({
         },
         review: {
           on: {
+            ...joinAndDisconnectStateTransitionsFactory("review"),
             setReady: [
               {
                 target: nextTarget,
