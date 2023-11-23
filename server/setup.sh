@@ -22,7 +22,7 @@ service nginx start
 service nginx status
 
 # Install 
-npm install pm2 -g.
+npm install pm2 -g
 
 # Start your application or any other services in the background
 yarn run build:app && yarn start
