@@ -7,8 +7,9 @@
     "start": "node -r tsconfig-paths/register index.js",
     "build:app": "yarn cdc && yarn clean && tsc -p tsconfig.app.json",
     "build:spec": "yarn clean && tsc -p tsconfig.spec.json",
-    "docker:build": "docker build -t ahaplay-server:tag .",
-    "docker:run": "docker run --privileged --name ahaplay_container -it -p 80:80 -p 443:443 ahaplay-server:tag",
+    "docker:build": "docker build -t ahaplay-server:$npm_package_version .",
+    "docker:run": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 ahaplay-server:$npm_package_version",
+    "docker:ps": "docker ps",
     "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js",
     "cdc": "madge --circular ./src/**/*.ts",
     "clean": "rimraf dist"
