@@ -12,7 +12,7 @@ export const assignmentModel = sequelize.define<
   "Assignment",
   {
     duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     text: {
@@ -24,12 +24,12 @@ export const assignmentModel = sequelize.define<
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
     },
     conceptualization_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

@@ -12,18 +12,13 @@ export const profileTypeDefs = gql`
     name: String
     password: String
     is_completed: Boolean
-    active_workspace_id: String
     workspace: Workspace
   }
 `;
 
 export const profileQueryDefs = gql`
   extend type Query {
-    getProfiles(
-      id: String
-      email: String
-      active_workspace_id: String
-    ): [Profile]
+    getProfiles(id: String, email: String): [Profile]
   }
 `;
 
@@ -46,7 +41,7 @@ function prepareIncludesFromInfo(info: any) {
 export const profileQueryResolvers = {
   getProfiles(
     _: undefined,
-    data: { id: string; email: string; active_workspace_id: string },
+    data: { id: string; email: string },
     contextValue: any,
     info: any
   ) {

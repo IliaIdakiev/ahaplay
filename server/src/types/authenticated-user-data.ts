@@ -3,5 +3,4 @@ export interface AuthenticatedUserData {
   name: string;
   email: string;
   image: string;
-  active_workspace_id: string;
 }

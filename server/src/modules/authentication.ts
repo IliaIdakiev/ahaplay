@@ -102,13 +102,12 @@ export function authenticationHandler(
         return void next(new Error(LoginError.NOT_FOUND));
       }
       const [profile] = workspace.profiles!;
-      const { id, name, image, active_workspace_id, email } = profile;
+      const { id, name, image, email } = profile;
       const accessTokenPayload: AuthJwtPayload = {
         id,
         email,
         name,
         image,
-        active_workspace_id,
       };
 
       generateTokenPair(accessTokenPayload).then(

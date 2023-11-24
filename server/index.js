@@ -7,6 +7,7 @@ const sessionProcessorTestDispatcherFile = path.join(sessionProcessorDirectory, 
 
 const exists = fs.existsSync(startFileFullPath);
 
+
 if (!exists) {
   const message = `No bootstrap file found! Make sure you have successfully compiled the project and ${startFileFullPath} exist!`;
   throw new Error(message);
@@ -14,6 +15,7 @@ if (!exists) {
 
 console.log(`%cSetting base dir to ${__dirname}`, "color: red");
 global.__basedir = __dirname;
+global.__is_debug = !!process.execArgv.some(arg => arg.startsWith('--inspect-brk'));
 
 
 const args = process.argv.slice(2);

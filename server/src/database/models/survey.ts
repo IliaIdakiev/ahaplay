@@ -12,11 +12,11 @@ export const surveyModel = sequelize.define<
   "Survey",
   {
     i_duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
     },

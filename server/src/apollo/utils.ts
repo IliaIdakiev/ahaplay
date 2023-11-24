@@ -47,7 +47,6 @@ export function generateRequestContext(req: any) {
       const context: AppContext = {
         authenticatedProfile: {
           profileId: userData.id,
-          workspaceId: userData.active_workspace_id,
         },
         pubSub,
       };

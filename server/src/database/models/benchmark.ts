@@ -16,11 +16,11 @@ export const benchmarkModel = sequelize.define<
       allowNull: false,
     },
     g_duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     i_duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     reference: {
@@ -28,12 +28,12 @@ export const benchmarkModel = sequelize.define<
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
     },
     conceptualization_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

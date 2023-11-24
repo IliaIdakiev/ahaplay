@@ -6,3 +6,4 @@ export * from "./profile";
 export * from "./workshop";
 export * from "./workspace";
 export * from "./session";
+export * from "./domain";

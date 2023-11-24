@@ -10,7 +10,7 @@ import { startSessionProcess } from "../../../session-processor/process";
 import { AuthenticatedAppContext, SessionStateGraphQL } from "../../types";
 import { graphqlInMemorySessionStateSerializer } from "./helpers";
 
-export const mutationResolvers = {
+export const sessionMutationResolvers = {
   join(
     _: undefined,
     data: { sessionId: string },

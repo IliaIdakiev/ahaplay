@@ -15,7 +15,6 @@ export interface ProfileAttributes extends IBase {
   name: string;
   password: string;
   is_completed: boolean;
-  active_workspace_id: string;
 
   workspace?: WorkspaceModelInstance;
 }

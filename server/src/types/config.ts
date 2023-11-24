@@ -30,7 +30,8 @@ export interface IAppConfig {
   refreshTokenName: string;
   hashSaltRounds: number;
   allowGraphqlSandbox: boolean;
-  sessionProcessDebug: null | "--inspect" | "--inspect-brk=9229";
+  sessionProcessorDebugPort?: string | undefined | null;
+  syncSequelizeModels: boolean;
 }
 
 export interface IDatabaseConfig {
@@ -46,6 +47,13 @@ export interface IWorkshopConfig {
   sessionOpeningTimeInMinutes: number;
 }
 
+export interface INginxConfig {
+  location: string;
+  configurationsFolderName: string;
+  domainConfigurationTemplateLocation: string;
+  testAndReloadScriptName: string;
+}
+
 export interface IRedisConfig {
   url: string;
   prefix: string;
@@ -57,4 +65,5 @@ export interface IConfig {
   db: IDatabaseConfig;
   workshop: IWorkshopConfig;
   redis: IRedisConfig;
+  nginx: INginxConfig;
 }

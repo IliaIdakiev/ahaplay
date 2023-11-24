@@ -14,7 +14,7 @@ export const workshopModel = sequelize.define<
   {
     ...baseFields,
     duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     topic: {
@@ -26,7 +26,7 @@ export const workshopModel = sequelize.define<
       allowNull: true,
     },
     author_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
     headline: {

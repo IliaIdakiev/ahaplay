@@ -1,4 +1,8 @@
-import { models, profileAssociationNames } from "../../database";
+import {
+  domainAssociationNames,
+  models,
+  profileAssociationNames,
+} from "../../database";
 import { Op } from "sequelize";
 
 export function getWorkspaceWithProfiles({
@@ -9,7 +13,6 @@ export function getWorkspaceWithProfiles({
   emails: string[];
 }) {
   return models.workspace.findOne({
-    where: { domain },
     include: [
       {
         model: models.profile,
@@ -18,6 +21,13 @@ export function getWorkspaceWithProfiles({
           email: {
             [Op.in]: emails,
           },
+        },
+      },
+      {
+        model: models.domain,
+        as: domainAssociationNames.plural,
+        where: {
+          domain,
         },
       },
     ],

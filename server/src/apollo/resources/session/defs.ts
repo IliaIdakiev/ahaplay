@@ -147,7 +147,7 @@ export const sessionQueryDefs = gql`
       slot_id: String
       creator_id: String
       workshop_id: String
-      workspace_id: string
+      workspace_id: String
     ): [Session]
   }
 `;

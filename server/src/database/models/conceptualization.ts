@@ -12,11 +12,11 @@ export const conceptualizationModel = sequelize.define<
   "Conceptualization",
   {
     g_duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     i_duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     instructions: {
@@ -24,7 +24,7 @@ export const conceptualizationModel = sequelize.define<
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
     },

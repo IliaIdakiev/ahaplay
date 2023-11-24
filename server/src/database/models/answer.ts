@@ -22,11 +22,11 @@ export const answerModel = sequelize.define<
       allowNull: false,
     },
     points: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
   },

@@ -45,7 +45,6 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
             pubSub: pubSub,
             authenticatedProfile: {
               profileId: decoded.id,
-              workspaceId: decoded.active_workspace_id,
             },
           };
           return context;

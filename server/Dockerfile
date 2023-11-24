@@ -15,6 +15,8 @@ COPY . .
 
 EXPOSE 80
 EXPOSE 443
+EXPOSE 9230
+EXPOSE 9232
 
 RUN chown -R node /usr/src/app
 RUN yarn install

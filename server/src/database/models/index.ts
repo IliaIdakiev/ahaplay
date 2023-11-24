@@ -20,6 +20,7 @@ import { goalModel } from "./goal";
 import { actionModel } from "./action";
 import { surveyModel } from "./survey";
 import { invitationModel } from "./invitation";
+import { domainModel } from "./domain";
 
 export const models = {
   profile: profileModel,
@@ -43,4 +44,5 @@ export const models = {
   action: actionModel,
   survey: surveyModel,
   invitation: invitationModel,
+  domain: domainModel,
 };

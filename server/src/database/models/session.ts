@@ -25,7 +25,7 @@ export const sessionModel = sequelize.define<
       unique: true,
     },
     completed_activities: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
       defaultValue: 0,
     },
@@ -40,22 +40,22 @@ export const sessionModel = sequelize.define<
       defaultValue: null,
     },
     team_play_time: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
     },
     team_points: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
     },
     total_activities: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
     },
     winner_points: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: true,
       defaultValue: null,
     },
@@ -65,19 +65,19 @@ export const sessionModel = sequelize.define<
     },
 
     slot_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     creator_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     workshop_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     workspace_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

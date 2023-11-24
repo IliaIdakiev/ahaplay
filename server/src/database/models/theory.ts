@@ -12,7 +12,7 @@ export const theoryModel = sequelize.define<
   "Theory",
   {
     duration: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     video: {
@@ -20,12 +20,12 @@ export const theoryModel = sequelize.define<
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
       primaryKey: true,
     },
     conceptualization_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

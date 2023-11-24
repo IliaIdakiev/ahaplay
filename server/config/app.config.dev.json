@@ -30,5 +30,6 @@
   "refreshTokenName": "refresh",
   "hashSaltRounds": 10,
   "allowGraphqlSandbox": true,
-  "sessionProcessDebug": "--inspect-brk=9229"
+  "sessionProcessorDebugPort": "9229",
+  "syncSequelizeModels": true
 }

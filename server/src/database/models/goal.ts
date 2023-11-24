@@ -15,11 +15,11 @@ export const goalModel = sequelize.define<
       allowNull: false,
     },
     sequence_number: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     workshop_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
   },

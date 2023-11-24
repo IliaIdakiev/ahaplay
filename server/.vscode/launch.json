@@ -15,6 +15,19 @@
       ]
     },
     {
+      "name": "Attach to server",
+      "port": 9230,
+      "request": "attach",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "type": "node",
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js"
+      ]
+    },
+    {
       "type": "node",
       "request": "launch",
       "name": "Debug",
@@ -112,7 +125,7 @@
       ],
       "preLaunchTask": "build:app",
       "console": "integratedTerminal"
-    },
+    }
   ]
 }
 

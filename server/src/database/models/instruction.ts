@@ -18,11 +18,11 @@ export const instructionModel = sequelize.define<
       allowNull: false,
     },
     sequence_number: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     type_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
   },

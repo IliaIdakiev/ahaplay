@@ -3,7 +3,6 @@ import { MakeAllKeysRequired } from "../../types";
 
 interface ContextAuthenticatedProfile {
   profileId: string;
-  workspaceId: string;
 }
 
 export interface AppContext {

@@ -6,10 +6,12 @@
   "scripts": {
     "start": "node -r tsconfig-paths/register index.js",
     "start:pm2": "pm2 start ./index.js --no-automation --no-daemon --name ahaplay-server -- -r tsconfig-paths/register",
+    "start:pm2:debug": "pm2 start ./index.js --name ahaplay-server  --no-automation --no-daemon --node-args='--inspect-brk=9230' -- -r tsconfig-paths/register",
     "build:app": "yarn cdc && yarn clean && tsc -p tsconfig.app.json",
     "build:spec": "yarn clean && tsc -p tsconfig.spec.json",
     "docker:build": "docker build -t ahaplay-server:$npm_package_version .",
-    "docker:run": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -e NODE_ENV=dev ahaplay-server:$npm_package_version",
+    "docker:run": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev ahaplay-server:$npm_package_version",
+    "docker:run:debug": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev -e IS_DEBUG=true ahaplay-server:$npm_package_version",
     "docker:run:prod": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -e NODE_ENV=prod ahaplay-server:$npm_package_version",
     "docker:ps": "docker ps",
     "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js",

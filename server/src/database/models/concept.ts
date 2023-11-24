@@ -22,11 +22,11 @@ export const conceptModel = sequelize.define<
       allowNull: false,
     },
     sequence_number: {
-      type: DataTypes.NUMBER,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     activity_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
   },

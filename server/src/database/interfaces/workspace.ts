@@ -9,9 +9,7 @@ import { ProfileModelInstance } from "./profile";
 
 export interface WorkspaceAttributes extends IBase {
   image: string;
-  workspace_key: string;
   name: string;
-  domain: string;
 
   profiles?: ProfileModelInstance[];
 }

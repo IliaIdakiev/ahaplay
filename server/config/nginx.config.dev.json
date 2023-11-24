@@ -1,0 +1,6 @@
+{
+  "location": "/etc/nginx",
+  "configurationsFolderName": "conf.d",
+  "domainConfigurationTemplateLocation": "./nginx-domain-template.conf",
+  "testAndReloadScriptName": "test-restart-nginx.sh"
+}

@@ -21,8 +21,12 @@ redis-server &
 service nginx start
 service nginx status
 
-# Install pm2 
-npm install -g pm2 && yarn run build:app && yarn start:pm2
+
+if [ "$IS_DEBUG" = "true" ]; then
+  npm install -g pm2 && yarn run build:app && yarn start:pm2:debug
+else
+  npm install -g pm2 && yarn run build:app && yarn start:pm2
+fi
 
 # Wait for background processes to finish
 wait

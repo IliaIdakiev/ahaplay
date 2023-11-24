@@ -14,11 +14,11 @@ export const milestoneWorkshopModel = sequelize.define<
   {
     ...baseFields,
     milestone_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     workshop_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

@@ -27,11 +27,11 @@ export const invitationModel = sequelize.define<
     },
 
     profile_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
     slot_id: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: false,
     },
   },

@@ -87,3 +87,8 @@ export const surveyAssociationNames = {
   singular: "survey",
   plural: "surveys",
 };
+
+export const domainAssociationNames = {
+  singular: "domain",
+  plural: "domains",
+};

@@ -3,6 +3,7 @@ import {
   IAppConfig,
   IConfig,
   IDatabaseConfig,
+  INginxConfig,
   IRedisConfig,
   IWorkshopConfig,
 } from "./types";
@@ -30,11 +31,17 @@ const redisConfig = require(path.join(
   `redis.config.${environment}`
 )) as IRedisConfig;
 
+const nginxConfig = require(path.join(
+  configPath,
+  `nginx.config.${environment}`
+)) as INginxConfig;
+
 const config: IConfig = {
   app: appConfig,
   db: dbConfig,
   workshop: workshopConfig,
   redis: redisConfig,
+  nginx: nginxConfig,
 };
 
 export default config;

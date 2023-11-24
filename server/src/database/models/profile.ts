@@ -45,10 +45,6 @@ export const profileModel = sequelize.define<
       type: DataTypes.BOOLEAN,
       allowNull: true,
     },
-    active_workspace_id: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
   },
   {
     ...baseModelConfig,

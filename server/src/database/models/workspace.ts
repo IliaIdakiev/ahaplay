@@ -17,15 +17,7 @@ export const workspaceModel = sequelize.define<
       type: DataTypes.STRING,
       allowNull: false,
     },
-    workspace_key: {
-      type: DataTypes.STRING,
-      allowNull: false,
-    },
     image: {
-      type: DataTypes.STRING,
-      allowNull: true,
-    },
-    domain: {
       type: DataTypes.STRING,
       allowNull: true,
     },

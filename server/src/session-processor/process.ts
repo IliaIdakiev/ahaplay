@@ -8,9 +8,10 @@ import config from "../config";
 
 const sessionProcessorStartScript = path.resolve(__basedir, "index.js");
 const sessionProcessorStaticArgs = ["--session-processor"];
-const nodeArgs = config.app.sessionProcessDebug
-  ? [config.app.sessionProcessDebug]
-  : [];
+const nodeArgs =
+  config.app.sessionProcessorDebugPort && __is_debug
+    ? [config.app.sessionProcessorDebugPort]
+    : [];
 
 export function startSessionProcess({
   sessionId,
