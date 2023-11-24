@@ -23,12 +23,17 @@ export const activityTypeDefs = gql`
 
 export const activityQueryDefs = gql`
   extend type Query {
-    activity(id: String): Activity
+    getActivity(id: String): Activity
   }
 `;
 
 export const activityQueryResolvers = {
-  activity(_: undefined, data: { id: string }, contextValue: any, info: any) {
+  getActivity(
+    _: undefined,
+    data: { id: string },
+    contextValue: any,
+    info: any
+  ) {
     const requestedFields = extractRequestedFieldsFromInfo(info);
     const includeWorkshop = requestedFields.includes("workshop");
     const options = includeWorkshop

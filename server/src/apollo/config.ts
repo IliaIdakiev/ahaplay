@@ -12,6 +12,18 @@ import {
   sessionSubscriptionDefs,
   mutationResolvers,
   sessionMutationDefs,
+  slotQueryResolvers,
+  slotQueryDefs,
+  slotTypeDefs,
+  profileQueryDefs,
+  profileQueryResolvers,
+  profileTypeDefs,
+  workspaceQueryDefs,
+  workspaceQueryResolvers,
+  workspaceTypeDefs,
+  invitationQueryDefs,
+  invitationTypeDefs,
+  invitationQueryResolvers,
 } from "./resources";
 
 import { mergeTypeDefs } from "@graphql-tools/merge";
@@ -47,6 +59,10 @@ export const resolvers = {
   Query: {
     ...workshopQueryResolvers,
     ...activityQueryResolvers,
+    ...slotQueryResolvers,
+    ...profileQueryResolvers,
+    ...workspaceQueryResolvers,
+    ...invitationQueryResolvers,
   },
   Subscription: {
     ...subscriptionResolvers,
@@ -63,4 +79,13 @@ export const typeDefs = mergeTypeDefs([
   activityTypeDefs,
   activityQueryDefs,
   sessionTypeDefs,
+  slotTypeDefs,
+  slotQueryDefs,
+  profileTypeDefs,
+  profileQueryDefs,
+  workspaceTypeDefs,
+  workspaceQueryDefs,
+  workshopQueryDefs,
+  invitationTypeDefs,
+  invitationQueryDefs,
 ]);

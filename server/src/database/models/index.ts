@@ -19,6 +19,7 @@ import { instructionModel } from "./instruction";
 import { goalModel } from "./goal";
 import { actionModel } from "./action";
 import { surveyModel } from "./survey";
+import { invitationModel } from "./invitation";
 
 export const models = {
   profile: profileModel,
@@ -41,4 +42,5 @@ export const models = {
   goal: goalModel,
   action: actionModel,
   survey: surveyModel,
+  invitation: invitationModel,
 };

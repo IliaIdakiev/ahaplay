@@ -85,6 +85,11 @@ function innerActionHandler(snapshot: SessionMachineSnapshot) {
   publishSessionState({ sessionId, snapshot });
 }
 
+function sessionFinished() {
+  // TODO: save to database
+  process.exit(0);
+}
+
 Promise.all([
   connectSequelize().then(() =>
     getSessionWithWorkshopActivitiesAndRelations(sessionId)
@@ -100,6 +105,7 @@ Promise.all([
       workshop: session.workshop,
       snapshot,
     });
+    service.onDone(sessionFinished);
     return { service, workshop: session.workshop! };
   })
   .then((data) => {

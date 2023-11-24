@@ -1,3 +1,4 @@
+// TODO: extract all common actions in similar factories as this one
 function joinAndDisconnectStateTransitionsFactory(target: string) {
   return {
     join: {

@@ -1,3 +1,4 @@
+import { minutesToMilliseconds } from "date-fns";
 import pm2 from "pm2";
 import { promisify } from "util";
 
@@ -65,6 +66,7 @@ export const processManager = {
         args,
         autorestart: true,
         node_args: nodeArgs,
+        kill_timeout: minutesToMilliseconds(30),
       }).then(([process]) => ({ isNew: true, process }));
     });
   },
