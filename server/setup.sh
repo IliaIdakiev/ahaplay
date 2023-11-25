@@ -23,7 +23,7 @@ service nginx status
 
 
 if [ "$IS_DEBUG" = "true" ]; then
-  npm install -g pm2 && yarn run build:app && yarn start:pm2:debug
+  npm install -g pm2 && yarn start:pm2:debug
 else
   npm install -g pm2 && yarn run build:app && yarn start:pm2
 fi

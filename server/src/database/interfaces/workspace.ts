@@ -6,12 +6,14 @@ import {
 } from "sequelize";
 import { IBase, IBaseKeys } from "./base";
 import { ProfileModelInstance } from "./profile";
+import { DomainModelInstance } from "./domain";
 
 export interface WorkspaceAttributes extends IBase {
   image: string;
   name: string;
 
   profiles?: ProfileModelInstance[];
+  domains?: DomainModelInstance[];
 }
 
 export interface WorkspaceCreationAttributes
@@ -25,4 +27,7 @@ export interface WorkspaceModelInstance
     WorkspaceInstanceMethods {
   getUsers: HasManyGetAssociationsMixin<ProfileModelInstance>;
   setUsers: HasManySetAssociationsMixin<ProfileModelInstance, string>;
+
+  getDomains: HasManyGetAssociationsMixin<DomainModelInstance>;
+  setDomains: HasManySetAssociationsMixin<DomainModelInstance, string>;
 }

@@ -17,6 +17,7 @@ slotModel.belongsTo(workshopModel, {
 
 slotModel.belongsTo(workspaceModel, {
   foreignKey: "workspace_id",
+  targetKey: "id",
   as: workspaceAssociationNames.singular,
   onDelete: "CASCADE",
   constraints: false,

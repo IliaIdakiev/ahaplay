@@ -9,6 +9,8 @@
         "<node_internals>/**"
       ],
       "type": "node",
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/usr/src/app",
       "sourceMaps": true,
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
@@ -21,6 +23,8 @@
       "skipFiles": [
         "<node_internals>/**"
       ],
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/usr/src/app",
       "type": "node",
       "sourceMaps": true,
       "outFiles": [

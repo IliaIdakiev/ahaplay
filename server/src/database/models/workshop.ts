@@ -22,7 +22,7 @@ export const workshopModel = sequelize.define<
       allowNull: true,
     },
     type: {
-      type: DataTypes.STRING,
+      type: DataTypes.UUID,
       allowNull: true,
     },
     author_id: {

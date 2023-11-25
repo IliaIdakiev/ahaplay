@@ -2,7 +2,7 @@ import { sequelize } from "./sequelize-instance";
 
 export function sync() {
   return sequelize
-    .sync({ force: false })
+    .sync({ force: false, alter: true })
     .then(() => {
       console.log("Database synchronized successfully");
     })

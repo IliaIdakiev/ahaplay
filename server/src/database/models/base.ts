@@ -5,6 +5,7 @@ export const baseFields = {
   id: {
     type: DataTypes.UUID,
     primaryKey: true,
+    unique: true,
     defaultValue: () => v4(),
   },
   create_date: {

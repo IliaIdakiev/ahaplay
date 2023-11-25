@@ -30,6 +30,7 @@ sessionModel.belongsTo(workshopModel, {
 });
 sessionModel.belongsTo(workspaceModel, {
   foreignKey: "workspace_id",
+  targetKey: "id",
   as: workspaceAssociationNames.singular,
   onDelete: "SET NULL",
   constraints: false,

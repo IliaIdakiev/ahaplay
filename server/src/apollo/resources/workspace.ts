@@ -31,22 +31,22 @@ export const workspaceMutationDefs = gql`
       image: String
       name: String
       domains: [DomainInput]
-    ): [Workspace]
+    ): Workspace
   }
 `;
 
 function prepareIncludesFromInfo(info: any) {
   const requestedFields = extractRequestedFieldsFromInfo(info);
-  const includeProfiles = requestedFields.includes("profiles");
+  // const includeProfiles = requestedFields.includes("profiles");
 
   const include: Includeable[] = [];
 
-  if (includeProfiles) {
-    include.push({
-      model: models.profile,
-      as: workspaceAssociationNames.plural,
-    });
-  }
+  // if (includeProfiles) {
+  //   include.push({
+  //     model: models.profile,
+  //     as: workspaceAssociationNames.plural,
+  //   });
+  // }
 
   return include;
 }
@@ -78,8 +78,18 @@ export const workspaceMutationResolvers = {
     contextValue: any,
     info: any
   ) {
-    return models.workspace.create({
-      ...data,
-    });
+    const { domains, ...workspaceData } = data;
+    models.workspace
+      .create(workspaceData, { returning: true })
+      .then((workspace) => {
+        return models.domain
+          .bulkCreate(
+            domains.map((d) => ({ ...d, workspace_id: workspace.id }))
+          )
+          .then((domains) => {
+            workspace.domains = domains;
+            return workspace;
+          });
+      });
   },
 };
