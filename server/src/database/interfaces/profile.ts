@@ -16,11 +16,16 @@ export interface ProfileAttributes extends IBase {
   password: string;
   is_completed: boolean;
 
-  workspace?: WorkspaceModelInstance;
+  workspaces?: WorkspaceModelInstance;
 }
 
 export interface ProfileCreationAttributes
-  extends Optional<ProfileAttributes, IBaseKeys | "login_date"> {}
+  extends Omit<
+    Optional<ProfileAttributes, IBaseKeys | "login_date">,
+    "workspaces"
+  > {
+  workspaces?: string[];
+}
 
 export interface ProfileInstanceMethods {
   authenticate: (password: string) => Promise<boolean>;

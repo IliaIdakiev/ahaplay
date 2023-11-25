@@ -27,6 +27,8 @@ import {
   workspaceQueryDefs,
   workspaceMutationDefs,
   workspaceMutationResolvers,
+  profileMutationResolvers,
+  profileMutationDefs,
 } from "./resources";
 
 import { mergeTypeDefs } from "@graphql-tools/merge";
@@ -73,6 +75,7 @@ export const resolvers = {
   Mutation: {
     ...sessionMutationResolvers,
     ...workspaceMutationResolvers,
+    ...profileMutationResolvers,
   },
 };
 
@@ -94,4 +97,5 @@ export const typeDefs = mergeTypeDefs([
   invitationQueryDefs,
   sessionQueryDefs,
   workspaceMutationDefs,
+  profileMutationDefs,
 ]);
