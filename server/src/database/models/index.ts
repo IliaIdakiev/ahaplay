@@ -21,6 +21,7 @@ import { actionModel } from "./action";
 import { surveyModel } from "./survey";
 import { invitationModel } from "./invitation";
 import { domainModel } from "./domain";
+import { workspaceProfileModel } from "./workspace-profile";
 
 export const models = {
   profile: profileModel,
@@ -45,4 +46,5 @@ export const models = {
   survey: surveyModel,
   invitation: invitationModel,
   domain: domainModel,
+  workspaceProfile: workspaceProfileModel,
 };

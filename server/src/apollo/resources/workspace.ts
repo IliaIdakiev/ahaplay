@@ -2,6 +2,7 @@ import gql from "graphql-tag";
 import {
   domainAssociationNames,
   models,
+  profileAssociationNames,
   workspaceAssociationNames,
 } from "../../database";
 import { extractRequestedFieldsFromInfo } from "../utils";
@@ -43,16 +44,24 @@ export const workspaceMutationDefs = gql`
 
 function prepareIncludesFromInfo(info: any) {
   const requestedFields = extractRequestedFieldsFromInfo(info);
-  // const includeProfiles = requestedFields.includes("profiles");
+  const includeProfiles = requestedFields.includes("profiles");
+  const includeDomains = requestedFields.includes("domains");
 
   const include: Includeable[] = [];
 
-  // if (includeProfiles) {
-  //   include.push({
-  //     model: models.profile,
-  //     as: workspaceAssociationNames.plural,
-  //   });
-  // }
+  if (includeProfiles) {
+    include.push({
+      model: models.profile,
+      as: profileAssociationNames.plural,
+    });
+  }
+
+  if (includeDomains) {
+    include.push({
+      model: models.domain,
+      as: domainAssociationNames.plural,
+    });
+  }
 
   return include;
 }
@@ -65,10 +74,6 @@ export const workspaceQueryResolvers = {
     info: any
   ) {
     const include = prepareIncludesFromInfo(info);
-    include.push({
-      model: models.domain,
-      as: domainAssociationNames.plural,
-    });
     return models.workspace.findAll({ where: { ...data }, include });
   },
 };

@@ -25,8 +25,8 @@ export interface WorkspaceModelInstance
   extends Model<WorkspaceAttributes, WorkspaceCreationAttributes>,
     WorkspaceAttributes,
     WorkspaceInstanceMethods {
-  getUsers: HasManyGetAssociationsMixin<ProfileModelInstance>;
-  setUsers: HasManySetAssociationsMixin<ProfileModelInstance, string>;
+  getProfiles: HasManyGetAssociationsMixin<ProfileModelInstance>;
+  setProfiles: HasManySetAssociationsMixin<ProfileModelInstance, string>;
 
   getDomains: HasManyGetAssociationsMixin<DomainModelInstance>;
   setDomains: HasManySetAssociationsMixin<DomainModelInstance, string>;

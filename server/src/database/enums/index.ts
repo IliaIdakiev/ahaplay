@@ -6,3 +6,5 @@ export * from "./slot-status";
 export * from "./workshop-availability";
 export * from "./session-status";
 export * from "./slot-type";
+export * from "./profile-workspace-access";
+export * from "./profile-workspace-status";

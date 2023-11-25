@@ -32,7 +32,7 @@ export function getGqlDefBody(gqlDef: DocumentNode) {
 export function extractRequestedFieldsFromInfo(info: any) {
   return info.fieldNodes[0].selectionSet.selections.map(
     (field: any) => field.name.value
-  );
+  ) as string[];
 }
 
 export function generateRequestContext(req: any) {

@@ -7,3 +7,4 @@ export * from "./workshop";
 export * from "./workspace";
 export * from "./session";
 export * from "./domain";
+export * from "./workspace-profile";
