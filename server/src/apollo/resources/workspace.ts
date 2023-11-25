@@ -8,17 +8,23 @@ import { extractRequestedFieldsFromInfo } from "../utils";
 import { Includeable } from "sequelize";
 
 export const workspaceTypeDefs = gql`
+  type Domain {
+    domain: String
+  }
   type Workspace {
+    id: String!
     image: String
     workspace_key: String
     name: String!
-    domains: [String]!
+    domains: [Domain]!
     profiles: [Profile]
+    create_date: Date
+    update_date: Date
   }
 `;
 export const workspaceQueryDefs = gql`
   extend type Query {
-    getWorkspaces(name: String, domain: String): [Workspace]
+    getWorkspaces(id: String, name: String, domain: String): [Workspace]
   }
 `;
 
@@ -31,7 +37,7 @@ export const workspaceMutationDefs = gql`
       image: String
       name: String
       domains: [DomainInput]
-    ): Workspace
+    ): Workspace!
   }
 `;
 
@@ -79,7 +85,7 @@ export const workspaceMutationResolvers = {
     info: any
   ) {
     const { domains, ...workspaceData } = data;
-    models.workspace
+    return models.workspace
       .create(workspaceData, { returning: true })
       .then((workspace) => {
         return models.domain

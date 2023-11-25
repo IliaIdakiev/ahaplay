@@ -9,6 +9,7 @@
     "start:pm2:debug": "pm2 start ./index.js --watch --name ahaplay-server  --no-automation --no-daemon --node-args='--inspect=9230' -- -r tsconfig-paths/register",
     "build:app": "yarn cdc && yarn clean && tsc -p tsconfig.app.json",
     "build:spec": "yarn clean && tsc -p tsconfig.spec.json",
+    "build:watch": "tsc -p tsconfig.app.json --watch",
     "docker:build": "docker build -t ahaplay-server:$npm_package_version .",
     "docker:run": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev ahaplay-server:$npm_package_version",
     "docker:run:debug": "docker run -v ./dist:/usr/src/app/dist  --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev -e IS_DEBUG=true ahaplay-server:$npm_package_version",
