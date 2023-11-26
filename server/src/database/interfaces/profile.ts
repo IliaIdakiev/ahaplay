@@ -5,7 +5,7 @@ import {
   Optional,
 } from "sequelize";
 import { IBase, IBaseKeys } from "./base";
-import { WorkspaceModelInstance } from "./workspace";
+import { WorkspaceProfileModelInstance } from "./workspace-profile";
 
 export interface ProfileAttributes extends IBase {
   email: string;
@@ -16,7 +16,7 @@ export interface ProfileAttributes extends IBase {
   password: string;
   is_completed: boolean;
 
-  workspaces?: WorkspaceModelInstance;
+  workspacesProfiles?: WorkspaceProfileModelInstance[];
 }
 
 export interface ProfileCreationAttributes
@@ -35,6 +35,9 @@ export interface ProfileModelInstance
   extends Model<ProfileAttributes, ProfileCreationAttributes>,
     ProfileAttributes,
     ProfileInstanceMethods {
-  getWorkspace: BelongsToGetAssociationMixin<WorkspaceModelInstance>;
-  setWorkspace: BelongsToSetAssociationMixin<WorkspaceModelInstance, string>;
+  getWorkspaceProfiles: BelongsToGetAssociationMixin<WorkspaceProfileModelInstance>;
+  setWorkspaceProfiles: BelongsToSetAssociationMixin<
+    WorkspaceProfileModelInstance,
+    string
+  >;
 }

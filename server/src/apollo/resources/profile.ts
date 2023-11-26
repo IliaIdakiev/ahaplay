@@ -1,13 +1,60 @@
 import gql from "graphql-tag";
 import {
+  ProfileModelInstance,
   ProfileWorkspaceAccess,
   ProfileWorkspaceStatus,
+  WorkspaceModelInstance,
+  domainAssociationNames,
   models,
   workspaceAssociationNames,
   workspaceProfileAssociationNames,
 } from "../../database";
-import { extractRequestedFieldsFromInfo, getRequestedFields } from "../utils";
+import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
+
+interface ProfileWorkspaceResult {
+  workspace_id: string;
+  profile_id: string;
+  access: ProfileWorkspaceAccess;
+  status: ProfileWorkspaceStatus;
+  title: string;
+  workspace?: WorkspaceModelInstance;
+}
+
+interface ProfileResult {
+  id: string;
+  create_date: Date;
+  update_date: Date;
+  email: string;
+  headline: string;
+  image: string;
+  login_date: Date;
+  name: string;
+  is_completed: boolean;
+  workspaces: ProfileWorkspaceResult[];
+}
+
+function prepareProfileResult(
+  profile: ProfileModelInstance | null
+): ProfileResult | null {
+  if (!profile) return null;
+  const { workspacesProfiles, ...data } = profile.dataValues;
+  return {
+    ...data,
+    workspaces: (workspacesProfiles || []).map((item) => {
+      const result: ProfileWorkspaceResult = {
+        profile_id: item.profile_id,
+        workspace_id: item.workspace_id,
+        workspace: item.workspace,
+        access: item.access,
+        status: item.status,
+        title: item.title,
+      };
+
+      return result;
+    }),
+  };
+}
 
 export const profileTypeDefs = gql`
   enum ProfileWorkspaceAccess {
@@ -88,6 +135,11 @@ function prepareIncludesFromInfo(info: any) {
         workspaceAssociationNames.singular
       ]
     : false;
+  const includeWorkspaceDomains = includeWorkspace
+    ? requestedFields[workspaceAssociationNames.plural][
+        workspaceAssociationNames.singular
+      ][domainAssociationNames.plural]
+    : false;
 
   const includes: Includeable[] = [];
 
@@ -104,6 +156,14 @@ function prepareIncludesFromInfo(info: any) {
           {
             model: models.workspace,
             as: workspaceAssociationNames.singular,
+            include: includeWorkspaceDomains
+              ? [
+                  {
+                    model: models.domain,
+                    as: domainAssociationNames.plural,
+                  },
+                ]
+              : [],
           },
         ],
       };
@@ -122,7 +182,9 @@ export const profileQueryResolvers = {
     info: any
   ) {
     const include = prepareIncludesFromInfo(info);
-    return models.profile.findAll({ where: { ...data }, include });
+    return models.profile
+      .findAll({ where: { ...data }, include })
+      .then((results) => results.map(prepareProfileResult));
   },
 };
 
@@ -165,7 +227,9 @@ export const profileMutationResolvers = {
             )
           : Promise.resolve()
         ).then((workspaceProfiles) =>
-          models.profile.findByPk(profile.id, { include })
+          models.profile
+            .findByPk(profile.id, { include })
+            .then(prepareProfileResult)
         )
       );
   },
@@ -183,7 +247,7 @@ export const profileMutationResolvers = {
       if (!profile) {
         return null;
       }
-      return profile.destroy().then(() => profile);
+      return profile.destroy().then(() => prepareProfileResult(profile));
     });
   },
 };
