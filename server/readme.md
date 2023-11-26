@@ -10,4 +10,8 @@
 
 ### Debug setup
 
-- NodeJS is ran with ` --inspect=9230` which is the port that is running on the docker container, inside the nginx config there is another port which is poxing a port which is `9232`to`9230`and when docker is ran there is a configuration that is opening local`9230`and linking it to`9232`.
+- NodeJS Server is ran with ` --inspect=9230` when we run docker with debug, inside the nginx config there is another port which is poxing a port which is `9232`to`9230`and when docker is ran there is a configuration that is opening local`9230`and linking it to`9232`.
+
+- NodeJS Session Processor debug port is determined by app.config.json file with property `sessionProcessorDebugPort` (it should be `9229` if we want to be able to debug from docker container). In nginx we have port `9231` which is poxing to `9229` and when docker is ran with debug mode we have `2992` is proxied to `9231`.
+
+- POSTGRES is exposed via port `9856` from nginx and when we run the docker in debug mode this port is accessed from `5431`.
