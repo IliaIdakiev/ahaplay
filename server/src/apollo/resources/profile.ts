@@ -4,8 +4,9 @@ import {
   ProfileWorkspaceStatus,
   models,
   workspaceAssociationNames,
+  workspaceProfileAssociationNames,
 } from "../../database";
-import { extractRequestedFieldsFromInfo } from "../utils";
+import { extractRequestedFieldsFromInfo, getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
 
 export const profileTypeDefs = gql`
@@ -32,6 +33,7 @@ export const profileTypeDefs = gql`
     access: ProfileWorkspaceAccess!
     status: ProfileWorkspaceStatus!
     title: String
+    workspace: Workspace
   }
 
   type Profile {
@@ -72,25 +74,44 @@ export const profileMutationDefs = gql`
       password: String!
       workspaces: [WorkspaceProfileInput]
     ): Profile!
+
+    deleteProfile(id: String!): Profile!
   }
 `;
 
 function prepareIncludesFromInfo(info: any) {
-  const requestedFields = extractRequestedFieldsFromInfo(info);
-  const includeWorkspace = requestedFields.includes(
-    workspaceAssociationNames.plural
-  );
+  const requestedFields = getRequestedFields(info);
+  const includeWorkspaceProfile =
+    requestedFields[workspaceAssociationNames.plural];
+  const includeWorkspace = includeWorkspaceProfile
+    ? requestedFields[workspaceAssociationNames.plural][
+        workspaceAssociationNames.singular
+      ]
+    : false;
 
-  const include: Includeable[] = [];
+  const includes: Includeable[] = [];
 
-  if (includeWorkspace) {
-    include.push({
-      model: models.workspace,
-      as: workspaceAssociationNames.plural,
-    });
+  if (includeWorkspaceProfile) {
+    let include: Includeable = {
+      model: models.workspaceProfile,
+      as: workspaceProfileAssociationNames.plural,
+    };
+    if (includeWorkspace) {
+      include = {
+        model: models.workspaceProfile,
+        as: workspaceProfileAssociationNames.plural,
+        include: [
+          {
+            model: models.workspace,
+            as: workspaceAssociationNames.singular,
+          },
+        ],
+      };
+    }
+    includes.push(include);
   }
 
-  return include;
+  return includes;
 }
 
 export const profileQueryResolvers = {
@@ -101,11 +122,7 @@ export const profileQueryResolvers = {
     info: any
   ) {
     const include = prepareIncludesFromInfo(info);
-    return models.profile
-      .findAll({ where: { ...data }, include })
-      .then((result) => {
-        return result;
-      });
+    return models.profile.findAll({ where: { ...data }, include });
   },
 };
 
@@ -123,7 +140,7 @@ export const profileMutationResolvers = {
         access: ProfileWorkspaceAccess;
         status: ProfileWorkspaceStatus;
         title: string;
-      }[]; // TODO: Figure out how to do it here !!!
+      }[];
       is_completed: boolean;
     },
     contextValue: any,
@@ -148,10 +165,25 @@ export const profileMutationResolvers = {
             )
           : Promise.resolve()
         ).then((workspaceProfiles) =>
-          models.profile
-            .findByPk(profile.id, { include })
-            .then((result) => result)
+          models.profile.findByPk(profile.id, { include })
         )
       );
+  },
+  deleteProfile(
+    _: undefined,
+    data: {
+      id: string;
+    },
+    contextValue: any,
+    info: any
+  ) {
+    const { id } = data;
+    const include = prepareIncludesFromInfo(info);
+    return models.profile.findByPk(id, { include }).then((profile) => {
+      if (!profile) {
+        return null;
+      }
+      return profile.destroy().then(() => profile);
+    });
   },
 };

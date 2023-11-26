@@ -8,6 +8,11 @@ export const workspaceAssociationNames = {
   plural: "workspaces",
 };
 
+export const workspaceProfileAssociationNames = {
+  singular: "workspaceProfile",
+  plural: "workspacesProfiles",
+};
+
 export const workshopAssociationNames = {
   singular: "workshop",
   plural: "workshops",

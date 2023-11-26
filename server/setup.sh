@@ -18,6 +18,10 @@ redis-server &
 
 # Wait for Redis to be ready
 ./wait-for-it.sh -t 0 -h 127.0.0.1 -p 6379 -- echo "Redis is ready and listening on port :6379"
+
+# Expose a port for postgres connections from outside of docker
+cat ./nginx.postgres.conf >> /etc/nginx/nginx.conf
+
 service nginx start
 service nginx status
 

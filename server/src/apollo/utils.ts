@@ -35,6 +35,25 @@ export function extractRequestedFieldsFromInfo(info: any) {
   ) as string[];
 }
 
+export function getRequestedFields(
+  info: any,
+  selectionSet = info.fieldNodes[0].selectionSet
+) {
+  const fields: any = {};
+
+  selectionSet.selections.forEach((selection: any) => {
+    const key = selection.name.value;
+
+    if (selection.selectionSet) {
+      fields[key] = getRequestedFields(info, selection.selectionSet);
+    } else {
+      fields[key] = true;
+    }
+  });
+
+  return fields;
+}
+
 export function generateRequestContext(req: any) {
   const { connectionParams = null, headers = null } = req;
   const token = readAuthToken({ headers: headers || connectionParams });

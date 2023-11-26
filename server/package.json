@@ -12,7 +12,7 @@
     "build:watch": "tsc -p tsconfig.app.json --watch",
     "docker:build": "docker build -t ahaplay-server:$npm_package_version .",
     "docker:run": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev ahaplay-server:$npm_package_version",
-    "docker:run:debug": "docker run -v ./dist:/usr/src/app/dist  --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev -e IS_DEBUG=true ahaplay-server:$npm_package_version",
+    "docker:run:debug": "docker run -v ./dist:/usr/src/app/dist  --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 5431:9856 -p 9229:9231 -p 9230:9232 -e NODE_ENV=dev -e IS_DEBUG=true ahaplay-server:$npm_package_version",
     "docker:run:prod": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -e NODE_ENV=prod ahaplay-server:$npm_package_version",
     "docker:ps": "docker ps",
     "test": "yarn build:app && yarn build:spec && mocha --config mocha.config.js",

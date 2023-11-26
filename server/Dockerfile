@@ -6,6 +6,7 @@ RUN apt-get update && \
   postgresql postgresql-contrib \
   sudo \
   nginx \
+  vim \
   && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /etc/nginx/ssl
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt -subj "/CN=localhost"
@@ -15,8 +16,9 @@ COPY . .
 
 EXPOSE 80
 EXPOSE 443
-EXPOSE 9230
+EXPOSE 9231
 EXPOSE 9232
+EXPOSE 9856
 
 RUN chown -R node /usr/src/app
 RUN yarn install

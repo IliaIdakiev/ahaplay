@@ -7,3 +7,7 @@
 ## Debugging:
 
 - Open visual studio code debug tab and choose `"Attach to server"`configuration and press run. This will attach the vsc to the docker server and will allow you to debug the code. **KEEP IN MIND** that whenever there are changes the server will be reloaded (restarted) so those changes can take effect which will stop the "Attach to server" debug process so **if you want to debug the updated code you will have to attach to the process again**.
+
+### Debug setup
+
+- NodeJS is ran with ` --inspect=9230` which is the port that is running on the docker container, inside the nginx config there is another port which is poxing a port which is `9232`to`9230`and when docker is ran there is a configuration that is opening local`9230`and linking it to`9232`.

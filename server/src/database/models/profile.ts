@@ -23,10 +23,12 @@ export const profileModel = sequelize.define<
     headline: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null,
     },
     image: {
       type: DataTypes.STRING,
       allowNull: true,
+      defaultValue: null,
     },
     login_date: {
       type: DataTypes.DATE,
