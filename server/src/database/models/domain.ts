@@ -27,6 +27,15 @@ export const domainModel = sequelize.define<
     ...baseModelConfig,
     tableName: "domains",
     hooks: {
+      afterBulkCreate(attributes, options) {
+        return Promise.all(
+          attributes.map(({ domain }) => {
+            nginx.createDomainConfiguration(domain);
+          })
+        )
+          .then(() => nginx.testAndReloadServer())
+          .then(() => undefined);
+      },
       afterCreate(attributes, options) {
         const { domain } = attributes;
         return nginx
@@ -47,6 +56,10 @@ export const domainModel = sequelize.define<
         return void preOperation
           .then(() => nginx.createDomainConfiguration(currentDomain))
           .then(() => nginx.testAndReloadServer());
+      },
+      afterDestroy(instance, options) {
+        const { domain } = instance;
+        return nginx.removeDomainConfiguration(domain).then(() => undefined);
       },
     },
   }

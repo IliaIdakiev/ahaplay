@@ -4,6 +4,7 @@ import config from "../config";
 import { promisify } from "util";
 import EventEmitter from "events";
 import { exec } from "child_process";
+import { tls } from "./tls";
 
 const readFile = promisify(fs.readFile.bind(fs)) as unknown as (
   path: fs.PathOrFileDescriptor,
@@ -46,13 +47,28 @@ export const nginx = {
     );
   },
   createDomainConfiguration(domain: string) {
-    return readFile(nginxDomainTemplateConfigurationFilePath, {
-      encoding: "utf-8",
-    }).then((templateAsString: string) => {
-      const domainConfiguration = templateAsString.replace(/<domain>/g, domain);
-      const newConfigPathLocation = this.createConfigurationFiePath(domain);
-      return writeFile(newConfigPathLocation, domainConfiguration);
-    });
+    return tls
+      .generateCertificate({ domain })
+      .then(({ certificateFullPath, certificateKeyFullPath }) => {
+        return Promise.all([
+          readFile(nginxDomainTemplateConfigurationFilePath, {
+            encoding: "utf-8",
+          }) as Promise<string>,
+          certificateFullPath,
+          certificateKeyFullPath,
+        ] as const);
+      })
+      .then(
+        ([templateAsString, certificateFullPath, certificateKeyFullPath]) => {
+          const domainConfiguration = templateAsString
+            .replace(/<domain>/g, domain)
+            .replace(/<certificate_location>/g, certificateFullPath)
+            .replace(/<certificate_key_location>/g, certificateKeyFullPath);
+
+          const newConfigPathLocation = this.createConfigurationFiePath(domain);
+          return writeFile(newConfigPathLocation, domainConfiguration);
+        }
+      );
   },
   removeDomainConfiguration(domain: string) {
     const configPathLocation = this.createConfigurationFiePath(domain);

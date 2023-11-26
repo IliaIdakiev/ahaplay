@@ -32,6 +32,7 @@ export interface IAppConfig {
   allowGraphqlSandbox: boolean;
   sessionProcessorDebugPort?: string | undefined | null;
   syncSequelizeModels: boolean;
+  certificateLocation: string;
 }
 
 export interface IDatabaseConfig {

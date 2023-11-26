@@ -31,5 +31,6 @@
   "hashSaltRounds": 10,
   "allowGraphqlSandbox": true,
   "sessionProcessorDebugPort": "9229",
-  "syncSequelizeModels": true
+  "syncSequelizeModels": true,
+  "certificateLocation": "/etc/ssl/certs"
 }

@@ -7,6 +7,15 @@ RUN apt-get update && \
   sudo \
   nginx \
   vim \
+  certbot \
+  python3-acme \ 
+  python3-certbot \
+  python3-mock \
+  python3-openssl \
+  python3-pkg-resources \
+  python3-pyparsing \
+  python3-zope.interface \
+  python3-certbot-nginx \
   && rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /etc/nginx/ssl
 RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout /etc/nginx/ssl/nginx.key -out /etc/nginx/ssl/nginx.crt -subj "/CN=localhost"
