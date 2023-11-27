@@ -21,6 +21,9 @@ redis-server &
 
 # Expose a port for postgres connections from outside of docker
 cat ./nginx.postgres.conf >> /etc/nginx/nginx.conf
+# Remove default configuration that shows nginx running on port 80
+rm -f /etc/nginx/sites-available/default
+rm -f /etc/nginx/sites-enabled/default
 
 service nginx start
 service nginx status

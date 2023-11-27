@@ -39,6 +39,15 @@ const nginxDomainTemplateConfigurationFilePath = path.join(
 );
 
 export const nginx = {
+  reloadConfiguration() {
+    const command = `nginx -s reload`;
+    return new Promise<void>((res, rej) => {
+      exec(command, (error) => {
+        if (error) return rej(error);
+        res();
+      });
+    });
+  },
   createConfigurationFiePath(domain: string) {
     return path.join(
       config.nginx.location,
@@ -66,21 +75,25 @@ export const nginx = {
             .replace(/<certificate_key_location>/g, certificateKeyFullPath);
 
           const newConfigPathLocation = this.createConfigurationFiePath(domain);
-          return writeFile(newConfigPathLocation, domainConfiguration);
+          return writeFile(newConfigPathLocation, domainConfiguration).then(
+            () => ({ domain, certificateFullPath, certificateKeyFullPath })
+          );
         }
-      );
+      )
+      .then((data) => this.reloadConfiguration().then(() => data));
   },
   removeDomainConfiguration(domain: string) {
     const configPathLocation = this.createConfigurationFiePath(domain);
     return stat(configPathLocation)
       .then(() => unlink(configPathLocation))
-      .then(() => configPathLocation)
       .then((err) => {
         if ((err as any)?.code !== "ENOENT") {
           return configPathLocation;
         }
         return Promise.reject(err);
-      });
+      })
+      .then(() => tls.deleteCertificate({ domain }))
+      .then(() => this.reloadConfiguration().then(() => configPathLocation));
   },
   testAndReloadServer() {
     return execAsync(path.join(__basedir, config.nginx.testAndReloadScriptName))

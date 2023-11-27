@@ -39,6 +39,8 @@ export const workspaceMutationDefs = gql`
       name: String
       domains: [DomainInput]
     ): Workspace!
+
+    deleteWorkspace(id: String!): Workspace
   }
 `;
 
@@ -102,5 +104,27 @@ export const workspaceMutationResolvers = {
             return workspace;
           });
       });
+  },
+  deleteWorkspace(
+    _: undefined,
+    data: {
+      id: string;
+    },
+    contextValue: any,
+    info: any
+  ) {
+    const id = data.id;
+    const include = prepareIncludesFromInfo(info);
+    return models.workspace.findByPk(id, { include }).then((workspace) => {
+      if (!workspace) {
+        return workspace;
+      }
+
+      return workspace
+        .getDomains()
+        .then((domains) => Promise.all(domains.map((d) => d.destroy())))
+        .then(() => workspace.destroy())
+        .then(() => workspace);
+    });
   },
 };

@@ -50,6 +50,9 @@ export const tls = {
     });
   },
   deleteCertificate({ domain }: { domain: string }) {
+    if (environment === "prod") {
+      throw new Error("Setup removal of certbot certificates");
+    }
     const certificateFullPath = generateCertificatePath(domain, "cert");
     const certificateKeyFullPath = generateCertificatePath(domain, "key");
     return Promise.all([
