@@ -3,7 +3,6 @@ import {
   domainAssociationNames,
   models,
   profileAssociationNames,
-  workspaceAssociationNames,
 } from "../../database";
 import { extractRequestedFieldsFromInfo } from "../utils";
 import { Includeable } from "sequelize";
