@@ -1,12 +1,16 @@
 import gql from "graphql-tag";
 import {
+  SlotReminderStatus,
+  SlotStatus,
+  SlotType,
   models,
   profileAssociationNames,
   workshopAssociationNames,
   workspaceAssociationNames,
 } from "../../database";
-import { extractRequestedFieldsFromInfo } from "../utils";
+import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
+import { AppContext } from "../types";
 
 export const slotTypeDefs = gql`
   enum SlotType {
@@ -22,6 +26,12 @@ export const slotTypeDefs = gql`
     ONGOING
     NOT_ENOUGH_PLAYERS
     COMPLETED
+  }
+
+  enum SlotReminderStatus {
+    FORTHCOMING
+    FARAWAY
+    NONE
   }
 
   type Slot {
@@ -48,11 +58,38 @@ export const slotQueryDefs = gql`
   }
 `;
 
+export const slotMutationDefs = gql`
+  type Mutation {
+    createSlot(
+      type: SlotType!
+      key: String!
+      schedule_date: Date!
+      workshop_id: String!
+      workspace_id: String!
+      ics: String
+      ics_uid: String
+    ): Slot!
+    editSlot(
+      id: String!
+      type: SlotType
+      key: String
+      schedule_date: Date
+      workshop_id: String
+      workspace_id: String
+      ics: String
+      ics_uid: String
+      status: SlotStatus
+      reminder_status: SlotReminderStatus
+    ): Slot
+    deleteSlot(id: String!): Slot
+  }
+`;
+
 function prepareIncludesFromInfo(info: any) {
-  const requestedFields = extractRequestedFieldsFromInfo(info);
-  const includeWorkshop = requestedFields.includes("workshop");
-  const includeWorkspace = requestedFields.includes("workspace");
-  const includeProfile = requestedFields.includes("profile");
+  const requestedFields = getRequestedFields(info);
+  const includeWorkshop = !!requestedFields.workshop;
+  const includeWorkspace = !!requestedFields.workspace;
+  const includeProfile = !!requestedFields.profile;
 
   const include: Includeable[] = [];
   if (includeWorkshop) {
@@ -85,5 +122,69 @@ export const slotQueryResolvers = {
   ) {
     const include = prepareIncludesFromInfo(info);
     return models.slot.findAll({ where: { ...data }, include });
+  },
+};
+
+export const slotMutationResolvers = {
+  createSlot(
+    _: undefined,
+    data: {
+      type: SlotType;
+      key: string;
+      schedule_date: Date;
+      workshop_id: string;
+      workspace_id: string;
+      ics: string;
+      ics_uid: string;
+    },
+    contextValue: AppContext,
+    info: any
+  ) {
+    const include = prepareIncludesFromInfo(info);
+    return models.slot
+      .create(
+        {
+          ...data,
+          creator_id: contextValue.authenticatedProfile!.profileId!,
+          reminder_status: SlotReminderStatus.NONE,
+          status: SlotStatus.SCHEDULED,
+        },
+        { returning: true }
+      )
+      .then((slot) => models.slot.findByPk(slot.id, { include }));
+  },
+  editSlot(
+    _: undefined,
+    data: {
+      id: string;
+      type: SlotType;
+      key: string;
+      schedule_date: Date;
+      workshop_id: string;
+      workspace_id: string;
+      ics: string;
+      ics_uid: string;
+      status: SlotStatus;
+      reminder_status: SlotReminderStatus;
+    },
+    contextValue: AppContext,
+    info: any
+  ) {
+    const include = prepareIncludesFromInfo(info);
+    return models.slot
+      .update({ ...data }, { where: { id: data.id }, returning: true })
+      .then(([, slot]) => models.slot.findByPk(slot[0]?.id, { include }));
+  },
+  deleteSlot(
+    _: undefined,
+    data: {
+      id: string;
+    },
+    contextValue: any,
+    info: any
+  ) {
+    return models.slot
+      .findByPk(data.id)
+      .then((slot) => slot?.destroy().then(() => slot));
   },
 };

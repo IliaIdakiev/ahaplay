@@ -29,6 +29,8 @@ import {
   workspaceMutationResolvers,
   profileMutationResolvers,
   profileMutationDefs,
+  slotMutationResolvers,
+  slotMutationDefs,
 } from "./resources";
 
 import { mergeTypeDefs } from "@graphql-tools/merge";
@@ -76,6 +78,7 @@ export const resolvers = {
     ...sessionMutationResolvers,
     ...workspaceMutationResolvers,
     ...profileMutationResolvers,
+    ...slotMutationResolvers,
   },
 };
 
@@ -98,4 +101,5 @@ export const typeDefs = mergeTypeDefs([
   sessionQueryDefs,
   workspaceMutationDefs,
   profileMutationDefs,
+  slotMutationDefs,
 ]);
