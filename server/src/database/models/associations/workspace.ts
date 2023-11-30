@@ -1,4 +1,8 @@
-import { domainAssociationNames, profileAssociationNames } from "../constants";
+import {
+  domainAssociationNames,
+  profileAssociationNames,
+  workspaceProfileAssociationNames,
+} from "../constants";
 import { domainModel } from "../domain";
 import { profileModel } from "../profile";
 import { workspaceModel } from "../workspace";
@@ -8,6 +12,12 @@ workspaceModel.hasMany(domainModel, {
   sourceKey: "id",
   foreignKey: "workspace_id",
   as: domainAssociationNames.plural,
+});
+
+workspaceModel.hasMany(workspaceProfileModel, {
+  sourceKey: "id",
+  foreignKey: "workspace_id",
+  as: workspaceProfileAssociationNames.plural,
 });
 
 workspaceModel.belongsToMany(profileModel, {

@@ -1,6 +1,8 @@
 import {
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
+  HasManyGetAssociationsMixin,
+  HasManySetAssociationsMixin,
   Model,
   Optional,
 } from "sequelize";
@@ -34,4 +36,10 @@ export interface WorkspaceProfileModelInstance
 
   getWorkspace: BelongsToGetAssociationMixin<WorkspaceModelInstance>;
   setWorkspace: BelongsToSetAssociationMixin<WorkspaceModelInstance, string>;
+
+  getWorkspaceProfiles: HasManyGetAssociationsMixin<WorkspaceProfileModelInstance>;
+  setWorkspaceProfiles: HasManySetAssociationsMixin<
+    WorkspaceProfileModelInstance,
+    string
+  >;
 }

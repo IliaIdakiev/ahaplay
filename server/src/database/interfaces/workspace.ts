@@ -7,11 +7,13 @@ import {
 import { IBase, IBaseKeys } from "./base";
 import { ProfileModelInstance } from "./profile";
 import { DomainModelInstance } from "./domain";
+import { WorkspaceProfileModelInstance } from "./workspace-profile";
 
 export interface WorkspaceAttributes extends IBase {
   image: string;
   name: string;
 
+  workspaceProfiles?: WorkspaceProfileModelInstance[];
   profiles?: ProfileModelInstance[];
   domains?: DomainModelInstance[];
 }
