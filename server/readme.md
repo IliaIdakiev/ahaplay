@@ -15,3 +15,13 @@
 - NodeJS Session Processor debug port is determined by app.config.json file with property `sessionProcessorDebugPort` (it should be `9229` if we want to be able to debug from docker container). In nginx we have port `9231` which is poxing to `9229` and when docker is ran with debug mode we have `2992` is proxied to `9231`.
 
 - POSTGRES is exposed via port `9856` from nginx and when we run the docker in debug mode this port is accessed from `5431`.
+
+## Documentation
+
+### Slots
+
+This represents a scheduled/ongoing/passed session and we have two types:
+
+- ALL - All invited users are playing together
+
+- SPLIT - We split the invited users into multiple sessions
