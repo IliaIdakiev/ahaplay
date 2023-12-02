@@ -4,7 +4,7 @@ import {
   profileAssociationNames,
   slotAssociationNames,
 } from "../../database";
-import { extractRequestedFieldsFromInfo } from "../utils";
+import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
 
 export const invitationTypeDefs = gql`
@@ -31,9 +31,9 @@ export const invitationQueryDefs = gql`
 `;
 
 function prepareIncludesFromInfo(info: any) {
-  const requestedFields = extractRequestedFieldsFromInfo(info);
-  const includeProfile = requestedFields.includes("profile");
-  const includeSlot = requestedFields.includes("slot");
+  const requestedFields = getRequestedFields(info);
+  const includeProfile = !!requestedFields.profile;
+  const includeSlot = !!requestedFields.slot;
 
   const include: Includeable[] = [];
 

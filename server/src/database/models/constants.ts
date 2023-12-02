@@ -10,7 +10,7 @@ export const workspaceAssociationNames = {
 
 export const workspaceProfileAssociationNames = {
   singular: "workspaceProfile",
-  plural: "workspacesProfiles",
+  plural: "workspaceProfiles",
 };
 
 export const workshopAssociationNames = {

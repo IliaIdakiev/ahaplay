@@ -38,10 +38,10 @@ function prepareProfileResult(
   profile: ProfileModelInstance | null
 ): ProfileResult | null {
   if (!profile) return null;
-  const { workspacesProfiles, ...data } = profile.dataValues;
+  const { workspaceProfiles, ...data } = profile.dataValues;
   return {
     ...data,
-    workspaces: (workspacesProfiles || []).map((item) => {
+    workspaces: (workspaceProfiles || []).map((item) => {
       const result: ProfileWorkspaceResult = {
         profile_id: item.profile_id,
         workspace_id: item.workspace_id,

@@ -29,12 +29,6 @@ export function getGqlDefBody(gqlDef: DocumentNode) {
   return gqlDef.loc!.source.body;
 }
 
-export function extractRequestedFieldsFromInfo(info: any) {
-  return info.fieldNodes[0].selectionSet.selections.map(
-    (field: any) => field.name.value
-  ) as string[];
-}
-
 export function getRequestedFields(
   info: any,
   selectionSet = info.fieldNodes[0].selectionSet

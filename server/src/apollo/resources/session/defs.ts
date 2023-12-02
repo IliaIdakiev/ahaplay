@@ -1,5 +1,5 @@
 import gql from "graphql-tag";
-import { extractRequestedFieldsFromInfo } from "../../utils";
+import { getRequestedFields } from "../../utils";
 import { Includeable } from "sequelize";
 import {
   models,
@@ -89,11 +89,11 @@ export const sessionMutationDefs = gql`
 `;
 
 function prepareIncludesFromInfo(info: any) {
-  const requestedFields = extractRequestedFieldsFromInfo(info);
-  const includeWorkspace = requestedFields.includes("workspace");
-  const includeWorkshop = requestedFields.includes("workshop");
-  const includeSlot = requestedFields.includes("slot");
-  const includeProfile = requestedFields.includes("profile");
+  const requestedFields = getRequestedFields(info);
+  const includeWorkspace = !!requestedFields.workspace;
+  const includeWorkshop = !!requestedFields.workshop;
+  const includeSlot = !!requestedFields.slot;
+  const includeProfile = !!requestedFields.profile;
 
   const include: Includeable[] = [];
 

@@ -1,6 +1,6 @@
 import gql from "graphql-tag";
 import { activityAssociationNames, models } from "../../database";
-import { extractRequestedFieldsFromInfo } from "../utils";
+import { getRequestedFields } from "../utils";
 
 export const workshopTypeDefs = gql`
   enum WorkshopAvailability {
@@ -33,8 +33,8 @@ export const workshopQueryDefs = gql`
 
 export const workshopQueryResolvers = {
   workshop(_: undefined, data: { id: string }, contextValue: any, info: any) {
-    const requestedFields = extractRequestedFieldsFromInfo(info);
-    const includeActivities = requestedFields.includes("activities");
+    const requestedFields = getRequestedFields(info);
+    const includeActivities = !!requestedFields.activities;
     const options = includeActivities
       ? {
           include: [

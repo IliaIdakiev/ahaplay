@@ -59,7 +59,10 @@ export const domainModel = sequelize.define<
       },
       afterDestroy(instance, options) {
         const { domain } = instance;
-        return nginx.removeDomainConfiguration(domain).then(() => undefined);
+        return nginx
+          .removeDomainConfiguration(domain)
+          .then(() => nginx.testAndReloadServer())
+          .then(() => undefined);
       },
     },
   }
