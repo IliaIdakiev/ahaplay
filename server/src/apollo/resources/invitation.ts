@@ -44,7 +44,7 @@ export const invitationQueryDefs = gql`
       slot_id: String
     ): [Invitation]
 
-    getInvitation(email: String, slotId: String): GetInvitationResult
+    getInvitation(email: String, slotId: String): GetInvitationResult!
   }
 `;
 

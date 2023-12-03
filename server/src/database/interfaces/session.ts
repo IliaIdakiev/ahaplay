@@ -41,6 +41,7 @@ export interface SessionCreationAttributes
     | "team_name"
     | "team_play_time"
     | "team_points"
+    | "completed_activities"
     | "total_activities"
     | "winner_points"
     | "complete_date"

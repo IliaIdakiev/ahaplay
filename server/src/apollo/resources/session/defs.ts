@@ -80,6 +80,11 @@ export const sessionMutationDefs = gql`
 `;
 
 export const sessionQueryDefs = gql`
+  type SessionResult {
+    session: Session
+    millisecondsToStart: Int
+  }
+
   extend type Query {
     getSessions(
       id: String
@@ -92,7 +97,7 @@ export const sessionQueryDefs = gql`
       workspace_id: String
     ): [Session]
 
-    joinSession(slotId: String!): Session
+    getSession(sessionKey: String!): SessionResult!
   }
 `;
 
