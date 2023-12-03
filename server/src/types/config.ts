@@ -6,8 +6,8 @@ export interface IAppConfig {
   jwt: {
     secret: string;
     issuer: string;
-    accessTokenExpieryTime: string;
-    refreshTokenExpieryTime: string;
+    accessTokenExpiryTime: string;
+    refreshTokenExpiryTime: string;
   };
   email: {
     disabled: true;
@@ -33,6 +33,7 @@ export interface IAppConfig {
   sessionProcessorDebugPort?: string | undefined | null;
   syncSequelizeModels: boolean;
   certificateLocation: string;
+  splitWaitingTime: string;
 }
 
 export interface IDatabaseConfig {

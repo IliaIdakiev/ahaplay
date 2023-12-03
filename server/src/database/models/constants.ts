@@ -3,6 +3,11 @@ export const profileAssociationNames = {
   plural: "profiles",
 };
 
+export const sessionAssociationNames = {
+  singular: "session",
+  plural: "sessions",
+};
+
 export const workspaceAssociationNames = {
   singular: "workspace",
   plural: "workspaces",

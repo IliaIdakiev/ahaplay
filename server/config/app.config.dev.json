@@ -6,8 +6,8 @@
   "jwt": {
     "secret": "very-well-kept-token-secret",
     "issuer": "ahaplay",
-    "accessTokenExpieryTime": "1h",
-    "refreshTokenExpieryTime": "1d"
+    "accessTokenExpiryTime": "1h",
+    "refreshTokenExpiryTime": "1d"
   },
   "email": {
     "disableEmails": true,
@@ -32,5 +32,6 @@
   "allowGraphqlSandbox": true,
   "sessionProcessorDebugPort": "9229",
   "syncSequelizeModels": true,
-  "certificateLocation": "/etc/ssl/certs"
+  "certificateLocation": "/etc/ssl/certs",
+  "splitWaitingTime": "5m"
 }

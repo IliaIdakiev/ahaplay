@@ -1,6 +1,8 @@
 import {
   BelongsToGetAssociationMixin,
   BelongsToSetAssociationMixin,
+  HasOneGetAssociationMixin,
+  HasOneSetAssociationMixin,
   Model,
   Optional,
 } from "sequelize";
@@ -9,6 +11,8 @@ import { WorkspaceModelInstance } from "./workspace";
 import { WorkshopModelInstance } from "./workshop";
 import { ProfileModelInstance } from "./profile";
 import { SlotStatus, SlotType } from "../enums";
+import { SessionModelInstance } from "./session";
+import { HasOneSetAssociationMixinOptions } from "sequelize";
 
 export interface SlotAttributes extends IBase {
   ics: string; // TODO: Ask?
@@ -25,6 +29,7 @@ export interface SlotAttributes extends IBase {
   workspace?: WorkspaceModelInstance;
   workshop?: WorkshopModelInstance;
   profile?: ProfileModelInstance;
+  session?: SessionModelInstance;
 }
 
 export interface SlotCreationAttributes
@@ -46,4 +51,7 @@ export interface SlotModelInstance
 
   getProfile: BelongsToGetAssociationMixin<ProfileModelInstance>;
   setProfile: BelongsToSetAssociationMixin<ProfileModelInstance, string>;
+
+  getSession: HasOneGetAssociationMixin<SessionModelInstance>;
+  setSession: HasOneSetAssociationMixin<SessionModelInstance, string>;
 }
