@@ -1,3 +1,17 @@
+## Building the project
+
+- Building the server - Open a terminal and run `yarn build`.
+
+- Building the docker image - Open a terminal and run `yarn docker:build`.
+
+- Building the server in watch mode - Open a terminal and run `yarn build:watch`.
+
+## Running the project (not in development mode / for development mode look at the next section)
+
+- Build the project - `yarn build && yarn docker:build`
+
+- Run the docker container - `yarn docker:run`
+
 ## Development mode:
 
 - Open terminal and run: `yarn docker:run:debug` which will run the docker container with synced dist directory and will automatically reload the server whenever there are changes in dist.
@@ -6,9 +20,11 @@
 
 ## Debugging:
 
-- Open visual studio code debug tab and choose `"Attach to server"`configuration and press run. This will attach the vsc to the docker server and will allow you to debug the code. **KEEP IN MIND** that whenever there are changes the server will be reloaded (restarted) so those changes can take effect which will stop the "Attach to server" debug process so **if you want to debug the updated code you will have to attach to the process again**.
+- Debugging the server: Open visual studio code debug tab and choose `"Attach to server"`configuration and press run. This will attach the vsc to the docker server and will allow you to debug the code. **KEEP IN MIND** that if you are in **Development mode** whenever there are changes to the source code the server will be automatically reloaded (restarted) in order for the changes to take effect. This process will stop the current debug process so **if you want to debug again you will have to repeat the process**.
 
-### Debug setup
+- Debugging the session processor: Open visual studio code debug tab and choose `"Attach to session processor"`configuration and press run. This will attach the vsc to the docker session processor and will allow you to debug the code. **KEEP IN MIND** that if you are in **Development mode** whenever there are changes to the source code the server will be automatically reloaded (restarted) in order for the changes to take effect. This process will stop the current debug process so **if you want to debug again you will have to repeat the process**.
+
+### Debug setup information
 
 - NodeJS Server is ran with ` --inspect=9230` when we run docker with debug, inside the nginx config there is another port which is poxing a port which is `9232`to`9230`and when docker is ran there is a configuration that is opening local`9230`and linking it to`9232`.
 
