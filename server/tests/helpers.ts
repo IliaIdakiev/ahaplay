@@ -137,3 +137,37 @@ export function generateProfileRegistrationRequestPayload(variables: {
     variables,
   };
 }
+
+export function generateProfileLoginRequestPayload(variables: {
+  email: string;
+  password: string;
+}) {
+  return {
+    query: `
+      mutation Mutation($email: String!, $password: String!) {
+        login(email: $email, password: $password) {
+          profile {
+            create_date
+            email
+            headline
+            id
+            image
+            is_completed
+            login_date
+            name
+            update_date
+            workspaces {
+              workspace_id
+              title
+              profile_id
+              access
+              status
+            }
+          }
+          token
+        }
+      }
+    `,
+    variables,
+  };
+}

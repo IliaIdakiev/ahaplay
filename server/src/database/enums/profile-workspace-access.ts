@@ -1,7 +1,7 @@
 export enum ProfileWorkspaceAccess {
-  ADMIN = "Administrator",
-  SUPER_ADMIN = "Super administrator",
-  TEAM_MEMBER = "Team member",
-  OWNER = "Owner",
-  NONE = "None",
+  ADMIN = "ADMIN",
+  SUPER_ADMIN = "SUPER_ADMIN",
+  TEAM_MEMBER = "TEAM_MEMBER",
+  OWNER = "OWNER",
+  NONE = "NONE",
 }

@@ -1,6 +1,7 @@
 import axios from "axios";
 import {
   apiUrl,
+  generateProfileLoginRequestPayload,
   generateProfileRegistrationRequestPayload,
   generateRequestHeaders,
   generateUserCreationRequestPayload,
@@ -277,6 +278,111 @@ describe("(Client) Profile registration", () => {
       expect(workspaceResponseErrors).to.equal(undefined);
 
       expect(profileResponseData).to.equal(null);
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  });
+
+  it("should successfully register a new profile and login", async () => {
+    try {
+      const workspaceName = "My cool workspace";
+      const workspaceDomains = [{ domain: "test.com" }];
+      const email = "email@test.com";
+      const name = "Test user";
+      const password = "123";
+      const beforeRequestsTimestamp = getUnixTime(new Date());
+
+      const workspaceResponse = await instance.post(
+        apiUrl,
+        generateWorkspaceCreationRequestPayload({
+          name: workspaceName,
+          domains: workspaceDomains,
+        }),
+        { headers: generateRequestHeaders() }
+      );
+
+      const profileResponse = await instance.post(
+        apiUrl,
+        generateProfileRegistrationRequestPayload({
+          email,
+          name,
+          password,
+        }),
+        { headers: generateRequestHeaders({ origin: "test.com" }) }
+      );
+
+      const loginResponse = await instance.post(
+        apiUrl,
+        generateProfileLoginRequestPayload({
+          email,
+          password,
+        }),
+        { headers: generateRequestHeaders({ origin: "test.com" }) }
+      );
+
+      const afterRequestsTimestamp = getUnixTime(new Date());
+      const workspaceResponseData = workspaceResponse.data.data.createWorkspace;
+      const workspaceResponseErrors = workspaceResponse.data.errors;
+      const profileResponseData = profileResponse.data.data.registerProfile;
+      const profileResponseErrors = profileResponse.data.errors;
+      const loginResponseData = loginResponse.data.data.login;
+      const loginResponseErrors = loginResponse.data.errors;
+
+      expect(typeof workspaceResponseData.id).to.equal("string");
+      expect(workspaceResponseData.name).to.equal(workspaceName);
+      expect(workspaceResponseData.domains).to.deep.equal(workspaceDomains);
+      expect(workspaceResponseData.profiles).to.deep.equal([]);
+      expect(workspaceResponseErrors).to.equal(undefined);
+
+      expect(workspaceResponseData.create_date).to.be.greaterThanOrEqual(
+        beforeRequestsTimestamp
+      );
+      expect(workspaceResponseData.create_date).to.be.lessThanOrEqual(
+        afterRequestsTimestamp
+      );
+
+      expect(profileResponseData.email).to.equal(email);
+      expect(profileResponseData.name).to.equal(name);
+      expect(profileResponseData.is_completed).to.equal(false);
+      expect(profileResponseData.image).to.equal(null);
+      expect(profileResponseData.workspaces.length).to.equal(1);
+      expect(typeof profileResponseData.workspaces[0].workspace_id).to.equal(
+        "string"
+      );
+      expect(typeof profileResponseData.id).to.equal("string");
+      expect(profileResponseData.create_date).to.be.equal(
+        profileResponseData.update_date
+      );
+      expect(profileResponseData.create_date).to.be.greaterThanOrEqual(
+        beforeRequestsTimestamp
+      );
+      expect(profileResponseData.create_date).to.be.lessThanOrEqual(
+        afterRequestsTimestamp
+      );
+      expect(profileResponseErrors).to.equal(undefined);
+
+      expect(loginResponseData.profile.email).to.equal(email);
+      expect(loginResponseData.profile.name).to.equal(name);
+      expect(loginResponseData.profile.is_completed).to.equal(false);
+      expect(loginResponseData.profile.image).to.equal(null);
+      expect(loginResponseData.profile.workspaces.length).to.equal(1);
+      expect(
+        typeof loginResponseData.profile.workspaces[0].workspace_id
+      ).to.equal("string");
+      expect(typeof loginResponseData.profile.id).to.equal("string");
+      expect(loginResponseData.profile.create_date).to.be.equal(
+        loginResponseData.profile.update_date
+      );
+      expect(loginResponseData.profile.create_date).to.be.greaterThanOrEqual(
+        beforeRequestsTimestamp
+      );
+      expect(loginResponseData.profile.create_date).to.be.lessThanOrEqual(
+        afterRequestsTimestamp
+      );
+      expect(typeof loginResponseData.token).to.equal("string");
+
+      expect(loginResponseErrors).to.equal(undefined);
     } catch (e) {
       console.error(e);
       throw e;

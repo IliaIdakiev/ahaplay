@@ -12,6 +12,8 @@ import {
 import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
 import { AppContext } from "../types";
+import { createToken } from "../../modules";
+import { AuthJwtPayload } from "../../types";
 
 interface ProfileWorkspaceResult {
   workspace_id: string;
@@ -113,6 +115,11 @@ export const profileMutationDefs = gql`
     title: String
   }
 
+  type LoginResult {
+    profile: Profile
+    token: String
+  }
+
   type Mutation {
     registerProfile(
       email: String!
@@ -121,6 +128,8 @@ export const profileMutationDefs = gql`
       name: String!
       password: String!
     ): Profile
+
+    login(email: String!, password: String!): LoginResult!
 
     createProfile(
       email: String!
@@ -280,7 +289,7 @@ export const profileMutationResolvers = {
                       workspaceProfile.workspace_id = domain.workspace!.id;
                       workspaceProfile.workspace = domain.workspace!;
                       newProfile.workspaceProfiles = [workspaceProfile];
-                      
+
                       newProfile.dataValues.workspaceProfiles =
                         newProfile.workspaceProfiles;
                       return prepareProfileResult(newProfile);
@@ -293,6 +302,69 @@ export const profileMutationResolvers = {
                 isAuthenticated ? prepareProfileResult(existingUser) : null
               );
           });
+      });
+  },
+  login(
+    _: undefined,
+    data: {
+      email: string;
+      password: string;
+    },
+    contextValue: AppContext,
+    info: any
+  ): Promise<{ profile: ProfileResult; token: string } | null> {
+    const { origin } = contextValue;
+    const { email, password } = data;
+    return models.profile
+      .findOne({
+        where: { email },
+        include: [
+          {
+            model: models.workspaceProfile,
+            as: workspaceProfileAssociationNames.plural,
+            include: [
+              {
+                model: models.workspace,
+                as: workspaceAssociationNames.singular,
+                include: [
+                  {
+                    model: models.domain,
+                    as: domainAssociationNames.plural,
+                    where: { domain: origin },
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      })
+      .then((foundProfile) =>
+        foundProfile
+          ? foundProfile
+              .authenticate(password)
+              .then((isAuthenticated) =>
+                isAuthenticated
+                  ? createToken<AuthJwtPayload>({
+                      email: foundProfile.email,
+                      id: foundProfile.id,
+                      image: foundProfile.image,
+                      name: foundProfile.name,
+                    })
+                  : null
+              )
+              .then((token) => {
+                if (!token) return null;
+                return [foundProfile, token] as const;
+              })
+          : null
+      )
+      .then((result) => {
+        if (!result) return null;
+        const responseData = {
+          profile: prepareProfileResult(result[0])!,
+          token: result[1]!,
+        };
+        return responseData;
       });
   },
   createProfile(
