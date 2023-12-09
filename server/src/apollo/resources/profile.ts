@@ -11,6 +11,7 @@ import {
 } from "../../database";
 import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
+import { AppContext } from "../types";
 
 interface ProfileWorkspaceResult {
   workspace_id: string;
@@ -113,6 +114,14 @@ export const profileMutationDefs = gql`
   }
 
   type Mutation {
+    registerProfile(
+      email: String!
+      headline: String
+      image: String
+      name: String!
+      password: String!
+    ): Profile
+
     createProfile(
       email: String!
       headline: String
@@ -189,6 +198,103 @@ export const profileQueryResolvers = {
 };
 
 export const profileMutationResolvers = {
+  registerProfile(
+    _: undefined,
+    data: {
+      email: string;
+      password: string;
+      name: string;
+      title?: string;
+    },
+    contextValue: AppContext,
+    info: any
+  ) {
+    const { origin } = contextValue;
+    return models.domain
+      .findOne({
+        where: { domain: origin },
+        include: [
+          {
+            model: models.workspace,
+            as: workspaceAssociationNames.singular,
+            include: [
+              {
+                model: models.domain,
+                as: domainAssociationNames.plural,
+              },
+            ],
+          },
+        ],
+      })
+      .then((domain) => {
+        const { email, password, name } = data;
+
+        if (
+          !domain ||
+          !domain.workspace ||
+          !domain.workspace.domains ||
+          domain.workspace.domains.length === 0 ||
+          !domain.workspace.domains.find((d) => {
+            const domainMatch = email.match(/@([^@]+)$/) || [];
+            const emailDomain = domainMatch[1];
+            return typeof emailDomain === "string" && emailDomain === d.domain;
+          })
+        )
+          return null;
+
+        return models.profile
+          .findOne({
+            where: { email },
+            include: [
+              {
+                model: models.workspaceProfile,
+                as: workspaceProfileAssociationNames.plural,
+                include: [
+                  {
+                    model: models.workspace,
+                    as: workspaceAssociationNames.singular,
+                  },
+                ],
+              },
+            ],
+          })
+          .then((existingUser) => {
+            if (!existingUser)
+              return models.profile
+                .create({
+                  email,
+                  name,
+                  password,
+                  is_completed: false,
+                })
+                .then((newProfile) =>
+                  models.workspaceProfile
+                    .create({
+                      profile_id: newProfile.id,
+                      workspace_id: domain.workspace!.id,
+                      access: ProfileWorkspaceAccess.TEAM_MEMBER,
+                      status: ProfileWorkspaceStatus.ACTIVE,
+                      title: data.title || "",
+                    })
+                    .then((workspaceProfile) => {
+                      workspaceProfile.workspace_id = domain.workspace!.id;
+                      workspaceProfile.workspace = domain.workspace!;
+                      newProfile.workspaceProfiles = [workspaceProfile];
+                      
+                      newProfile.dataValues.workspaceProfiles =
+                        newProfile.workspaceProfiles;
+                      return prepareProfileResult(newProfile);
+                    })
+                );
+
+            return existingUser
+              .authenticate(password)
+              .then((isAuthenticated) =>
+                isAuthenticated ? prepareProfileResult(existingUser) : null
+              );
+          });
+      });
+  },
   createProfile(
     _: undefined,
     data: {

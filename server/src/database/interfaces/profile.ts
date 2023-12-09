@@ -23,7 +23,7 @@ export interface ProfileCreationAttributes
   extends Omit<
     Optional<
       ProfileAttributes,
-      IBaseKeys | "login_date" | "headline" | "image" | "name"
+      IBaseKeys | "login_date" | "headline" | "image"
     >,
     "workspaces"
   > {

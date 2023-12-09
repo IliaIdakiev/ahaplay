@@ -55,11 +55,11 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Debug Tests",
+      "name": "Debug Specs",
       "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
       "args": [
         "--config",
-        "mocha.config.js",
+        "mocha.spec.config.js",
         "--timeout",
         "0"
       ],
@@ -79,6 +79,36 @@
       ],
       "resolveSourceMapLocations": [
         "${workspaceFolder}/dist/**",
+        "!**/node_modules/**"
+      ]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Tests",
+      "program": "${workspaceFolder}/node_modules/mocha/bin/_mocha",
+      "args": [
+        "--config",
+        "mocha.test.config.js",
+        "--timeout",
+        "0"
+      ],
+      "preLaunchTask": "build:tests",
+      "runtimeArgs": [
+        "--nolazy"
+      ],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "sourceMaps": true,
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "outFiles": [
+        "${workspaceFolder}/dist_tests"
+      ],
+      "resolveSourceMapLocations": [
+        "${workspaceFolder}/dist_tests/**",
         "!**/node_modules/**"
       ]
     },

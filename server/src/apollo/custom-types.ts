@@ -1,3 +1,4 @@
+import { getUnixTime } from "date-fns";
 import { GraphQLScalarType, Kind } from "graphql";
 import gql from "graphql-tag";
 
@@ -10,7 +11,7 @@ const DateType = new GraphQLScalarType({
   description: "Date scalar type",
   serialize(value) {
     if (value instanceof Date) {
-      return value.getTime();
+      return getUnixTime(value.getTime());
     }
     return null;
   },
@@ -22,7 +23,7 @@ const DateType = new GraphQLScalarType({
   },
   parseLiteral(ast) {
     if (ast.kind === Kind.INT) {
-      return new Date(parseInt(ast.value, 10));
+      return new Date(ast.value);
     }
     return null;
   },

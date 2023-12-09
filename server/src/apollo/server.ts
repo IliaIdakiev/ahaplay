@@ -45,7 +45,9 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
             pubSub: pubSub,
             authenticatedProfile: {
               profileId: decoded.id,
+              email: decoded.email,
             },
+            origin: "<ORIGIN>",
           };
           return context;
         });

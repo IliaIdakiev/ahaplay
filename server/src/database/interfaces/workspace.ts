@@ -19,7 +19,7 @@ export interface WorkspaceAttributes extends IBase {
 }
 
 export interface WorkspaceCreationAttributes
-  extends Optional<WorkspaceAttributes, IBaseKeys> {}
+  extends Optional<WorkspaceAttributes, IBaseKeys | "image"> {}
 
 export interface WorkspaceInstanceMethods {}
 

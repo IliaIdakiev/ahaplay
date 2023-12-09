@@ -60,6 +60,26 @@
       "options": {
         "cwd": "${workspaceFolder}"
       }
+    },
+    {
+      "label": "build:tests",
+      "type": "shell",
+      "command": "./node_modules/.bin/tsc",
+      "args": [
+        "-p",
+        "tsconfig.test.json"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "options": {
+        "cwd": "${workspaceFolder}"
+      }
     }
   ]
 }

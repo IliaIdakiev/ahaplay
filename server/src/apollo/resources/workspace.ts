@@ -78,12 +78,12 @@ export const workspaceMutationDefs = gql`
   type Mutation {
     createWorkspace(
       image: String
-      name: String
+      name: String!
       domains: [DomainInput]
       profiles: [ProfileInput]
     ): Workspace!
     updateWorkspace(
-      id: String
+      id: String!
       image: String
       name: String
       domains: [DomainInput]
@@ -188,10 +188,10 @@ export const workspaceMutationResolvers = {
   createWorkspace(
     _: undefined,
     data: {
-      image: string;
+      image?: string;
       name: string;
-      domains: { domain: string }[];
-      profiles: {
+      domains?: { domain: string }[];
+      profiles?: {
         id: string;
         access: ProfileWorkspaceAccess;
         status: ProfileWorkspaceStatus;
@@ -207,31 +207,35 @@ export const workspaceMutationResolvers = {
       .create(workspaceData, { returning: true })
       .then((workspace) => {
         return Promise.all([
-          models.domain.bulkCreate(
-            domains.map((d) => ({ ...d, workspace_id: workspace.id }))
-          ),
-          models.workspaceProfile
-            .bulkCreate(
-              profiles.map(({ id, access, status, title }) => ({
-                profile_id: id,
-                workspace_id: workspace.id,
-                access,
-                status,
-                title,
-              }))
-            )
-            .then((workspaceProfiles) =>
-              requestedFields.profiles
-                ? Promise.all(
-                    workspaceProfiles.map((wp) =>
-                      wp.getProfile().then((profile) => {
-                        wp.profile = profile;
-                        return wp;
-                      })
-                    )
-                  )
-                : []
-            ),
+          domains && domains?.length > 0
+            ? models.domain.bulkCreate(
+                domains.map((d) => ({ ...d, workspace_id: workspace.id }))
+              )
+            : [],
+          profiles && profiles.length > 0
+            ? models.workspaceProfile
+                .bulkCreate(
+                  profiles.map(({ id, access, status, title }) => ({
+                    profile_id: id,
+                    workspace_id: workspace.id,
+                    access,
+                    status,
+                    title,
+                  }))
+                )
+                .then((workspaceProfiles) =>
+                  requestedFields.profiles
+                    ? Promise.all(
+                        workspaceProfiles.map((wp) =>
+                          wp.getProfile().then((profile) => {
+                            wp.profile = profile;
+                            return wp;
+                          })
+                        )
+                      )
+                    : []
+                )
+            : [],
         ]).then(([domains, workspaceProfiles]) => {
           const result = generateResult(workspace, domains, workspaceProfiles);
           return result;

@@ -8,7 +8,7 @@ export const connectSequelize = () =>
     .authenticate()
     .then(() => {
       if (!config.app.syncSequelizeModels) return;
-      return sync();
+      return sync().then(() => sequelize);
     })
     .catch((error) => {
       console.error("Sequelize connection failed", error);

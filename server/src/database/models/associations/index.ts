@@ -18,3 +18,4 @@ import "./workspace";
 import "./action";
 import "./survey";
 import "./workspace-profile";
+import "./domain";

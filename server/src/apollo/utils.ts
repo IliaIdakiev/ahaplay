@@ -4,6 +4,7 @@ import { pubSub } from "../redis";
 import { readAuthToken, verifyToken } from "../modules";
 import { AuthError } from "./types";
 import { AuthenticatedUserData } from "../types";
+import { Request } from "express";
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
@@ -48,9 +49,13 @@ export function getRequestedFields(
   return fields;
 }
 
-export function generateRequestContext(req: any) {
-  const { connectionParams = null, headers = null } = req;
-  const token = readAuthToken({ headers: headers || connectionParams });
+export function generateRequestContext(req: Request) {
+  const origin = req.headers["origin"];
+  if (!origin) {
+    return Promise.reject(AuthError.NO_ORIGIN);
+  }
+
+  const token = readAuthToken(req);
   if (!token) {
     return Promise.reject(AuthError.INVALID_CREDENTIALS);
   }
@@ -60,7 +65,9 @@ export function generateRequestContext(req: any) {
       const context: AppContext = {
         authenticatedProfile: {
           profileId: userData.id,
+          email: userData.email,
         },
+        origin,
         pubSub,
       };
       return context;
