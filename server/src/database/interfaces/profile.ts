@@ -21,7 +21,10 @@ export interface ProfileAttributes extends IBase {
 
 export interface ProfileCreationAttributes
   extends Omit<
-    Optional<ProfileAttributes, IBaseKeys | "login_date">,
+    Optional<
+      ProfileAttributes,
+      IBaseKeys | "login_date" | "headline" | "image" | "name"
+    >,
     "workspaces"
   > {
   workspaces?: string[];
