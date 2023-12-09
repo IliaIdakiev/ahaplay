@@ -1,15 +1,20 @@
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import { MakeAllKeysRequired } from "../../types";
+import { WorkspaceModelInstance } from "../../database";
 
-interface ContextAuthenticatedProfile {
+interface DecodedProfileData {
   profileId: string;
   email: string;
 }
 
 export interface AppContext {
-  authenticatedProfile?: ContextAuthenticatedProfile;
+  decodedProfileData: DecodedProfileData | null;
+  token: string | null;
   pubSub: RedisPubSub;
   origin: string;
 }
 
-export type AuthenticatedAppContext = MakeAllKeysRequired<AppContext>;
+export type AuthenticatedAppContext = {
+  decodedProfileData: DecodedProfileData;
+  token: string;
+  originWorkspace?: WorkspaceModelInstance | null;
+} & AppContext;

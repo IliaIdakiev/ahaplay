@@ -1,10 +1,16 @@
 import { DocumentNode } from "graphql";
 import { AppContext } from "./types/context";
 import { pubSub } from "../redis";
-import { readAuthToken, verifyToken } from "../modules";
+import { decodeToken, readAuthToken } from "../modules";
 import { AuthError } from "./types";
 import { AuthenticatedUserData } from "../types";
 import { Request } from "express";
+
+export function getDomainFromUrl(url: string): string | null {
+  const regex = /(https?:\/\/)?([^\/?]*)?/;
+  const match = url.match(regex) || [null, null];
+  return match[0];
+}
 
 export function extractType(typeName: string, gqlDef: DocumentNode) {
   const result = getGqlDefBody(gqlDef).replace(
@@ -57,16 +63,23 @@ export function generateRequestContext(req: Request) {
 
   const token = readAuthToken(req);
   if (!token) {
-    return Promise.reject(AuthError.INVALID_CREDENTIALS);
+    const context: AppContext = {
+      decodedProfileData: null,
+      token: null,
+      origin,
+      pubSub,
+    };
+    return Promise.resolve(context);
   }
 
-  return verifyToken<AuthenticatedUserData>(token)
+  return decodeToken<AuthenticatedUserData>(token)
     .then((userData) => {
       const context: AppContext = {
-        authenticatedProfile: {
+        decodedProfileData: {
           profileId: userData.id,
           email: userData.email,
         },
+        token,
         origin,
         pubSub,
       };

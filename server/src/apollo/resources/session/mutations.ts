@@ -20,7 +20,7 @@ export const sessionMutationResolvers = {
     const sessionId = data.sessionId;
     const pubSub = context.pubSub;
     const action = createJoinAction({
-      profileId: context.authenticatedProfile.profileId,
+      profileId: context.decodedProfileData.profileId,
     });
 
     return startSessionProcess({ sessionId, pubSub })
@@ -37,7 +37,7 @@ export const sessionMutationResolvers = {
     const sessionId = data.sessionId;
     const pubSub = context.pubSub;
     const action = createDisconnectAction({
-      profileId: context.authenticatedProfile.profileId,
+      profileId: context.decodedProfileData.profileId,
     });
     return startSessionProcess({ sessionId, pubSub })
       .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
@@ -53,7 +53,7 @@ export const sessionMutationResolvers = {
     const sessionId = data.sessionId;
     const pubSub = context.pubSub;
     const action = createReadyToStartAction({
-      profileId: context.authenticatedProfile.profileId,
+      profileId: context.decodedProfileData.profileId,
     });
     return startSessionProcess({ sessionId, pubSub })
       .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
@@ -69,7 +69,7 @@ export const sessionMutationResolvers = {
     const { sessionId, activityId, value } = data;
     const pubSub = context.pubSub;
     const action = createSetValueAction({
-      profileId: context.authenticatedProfile.profileId,
+      profileId: context.decodedProfileData.profileId,
       activityId,
       value,
     });
@@ -87,7 +87,7 @@ export const sessionMutationResolvers = {
     const { sessionId, activityId } = data;
     const pubSub = context.pubSub;
     const action = createSetReadyAction({
-      profileId: context.authenticatedProfile.profileId,
+      profileId: context.decodedProfileData.profileId,
       activityId,
     });
     return startSessionProcess({ sessionId, pubSub })

@@ -98,7 +98,7 @@ export const sessionQueryResolvers = {
                 session_key: sessionKey,
                 status: SessionStatus.SCHEDULED,
                 slot_id: slot.id,
-                creator_id: contextValue.authenticatedProfile!.profileId,
+                creator_id: contextValue.decodedProfileData!.profileId,
                 workshop_id: slot.workshop_id,
                 workspace_id: slot.workspace_id,
               })

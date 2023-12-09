@@ -77,45 +77,45 @@ export function renewTokensHandler(
     );
 }
 
-export function authenticationHandler(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  const domain = req.get("Host");
-  const { email, password } = req.body;
-  if (!email || !password || !domain) {
-    return void next(new Error(LoginError.MISSING_DATA));
-  }
-  getWorkspaceWithProfiles({ emails: [email], domain })
-    .then((workspace) => {
-      if (!workspace || (workspace.profiles?.length || 0) === 0) {
-        return void next(new Error(LoginError.NOT_FOUND));
-      }
-      const [profile] = workspace.profiles!;
-      return profile
-        .authenticate(password)
-        .then((success) => (success ? workspace : null));
-    })
-    .then((workspace) => {
-      if (!workspace) {
-        return void next(new Error(LoginError.NOT_FOUND));
-      }
-      const [profile] = workspace.profiles!;
-      const { id, name, image, email } = profile;
-      const accessTokenPayload: AuthJwtPayload = {
-        id,
-        email,
-        name,
-        image,
-      };
+// export function authenticationHandler(
+//   req: Request,
+//   res: Response,
+//   next: NextFunction
+// ): void {
+//   const domain = req.get("Host");
+//   const { email, password } = req.body;
+//   if (!email || !password || !domain) {
+//     return void next(new Error(LoginError.MISSING_DATA));
+//   }
+//   getWorkspaceWithProfiles({ emails: [email], domain })
+//     .then((workspace) => {
+//       if (!workspace || (workspace.profiles?.length || 0) === 0) {
+//         return void next(new Error(LoginError.NOT_FOUND));
+//       }
+//       const [profile] = workspace.profiles!;
+//       return profile
+//         .authenticate(password)
+//         .then((success) => (success ? workspace : null));
+//     })
+//     .then((workspace) => {
+//       if (!workspace) {
+//         return void next(new Error(LoginError.NOT_FOUND));
+//       }
+//       const [profile] = workspace.profiles!;
+//       const { id, name, image, email } = profile;
+//       const accessTokenPayload: AuthJwtPayload = {
+//         id,
+//         email,
+//         name,
+//         image,
+//       };
 
-      generateTokenPair(accessTokenPayload).then(
-        ({ accessToken, refreshToken }) => {
-          const profile = workspace.profiles![0]!;
-          setAuthToken(res, accessToken);
-          res.send({ email: profile.email, name: profile.name, refreshToken });
-        }
-      );
-    });
-}
+//       generateTokenPair(accessTokenPayload).then(
+//         ({ accessToken, refreshToken }) => {
+//           const profile = workspace.profiles![0]!;
+//           setAuthToken(res, accessToken);
+//           res.send({ email: profile.email, name: profile.name, refreshToken });
+//         }
+//       );
+//     });
+// }

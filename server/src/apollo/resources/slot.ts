@@ -145,7 +145,7 @@ export const slotMutationResolvers = {
       .create(
         {
           ...data,
-          creator_id: contextValue.authenticatedProfile!.profileId!,
+          creator_id: contextValue.decodedProfileData!.profileId!,
           reminder_status: SlotReminderStatus.NONE,
           status: SlotStatus.SCHEDULED,
         },

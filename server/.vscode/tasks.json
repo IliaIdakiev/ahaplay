@@ -44,10 +44,10 @@
     {
       "label": "build:spec",
       "type": "shell",
-      "command": "./node_modules/.bin/tsc",
+      "command": "yarn",
       "args": [
-        "-p",
-        "tsconfig.spec.json"
+        "run",
+        "build:spec"
       ],
       "group": {
         "kind": "build",
@@ -64,10 +64,10 @@
     {
       "label": "build:tests",
       "type": "shell",
-      "command": "./node_modules/.bin/tsc",
+      "command": "yarn",
       "args": [
-        "-p",
-        "tsconfig.test.json"
+        "run",
+        "build:tests"
       ],
       "group": {
         "kind": "build",

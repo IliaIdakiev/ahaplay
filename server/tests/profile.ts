@@ -1,9 +1,11 @@
 import axios from "axios";
 import {
   apiUrl,
+  generateGetProfilesRequestPayload,
   generateProfileLoginRequestPayload,
   generateProfileRegistrationRequestPayload,
   generateRequestHeaders,
+  generateUpdateWorkspaceRequestPayload,
   generateUserCreationRequestPayload,
   generateWorkspaceCreationRequestPayload,
 } from "./helpers";
@@ -17,7 +19,7 @@ const instance = axios.create({
   }),
 });
 
-describe("(Admin) Profile creation", () => {
+describe("(Admin) Profile", () => {
   beforeEach(async () => {
     const response = await instance.delete("/recreate-database");
   });
@@ -111,9 +113,87 @@ describe("(Admin) Profile creation", () => {
       throw e;
     }
   });
+
+  it.only("should get all profiles", async () => {
+    try {
+      const email1 = "email1@email.com";
+      const name1 = "Test user 1";
+      const email2 = "email2@email.com";
+      const name2 = "Test user 2";
+      const password = "123";
+      const workspaceName = "Test workspace";
+      const workspaceDomain = "localhost";
+
+      const workspaceResponse = await instance.post(
+        apiUrl,
+        generateWorkspaceCreationRequestPayload({
+          name: workspaceName,
+          domains: [{ domain: workspaceDomain }],
+        }),
+        { headers: generateRequestHeaders() }
+      );
+
+      const beforeRequestTimestamp = getUnixTime(new Date());
+      const responseCreateUser1 = await instance.post(
+        apiUrl,
+        generateUserCreationRequestPayload({
+          email: email1,
+          name: name1,
+          password,
+        }),
+        { headers: generateRequestHeaders() }
+      );
+      const responseCreateUser2 = await instance.post(
+        apiUrl,
+        generateUserCreationRequestPayload({
+          email: email2,
+          name: name2,
+          password,
+        }),
+        { headers: generateRequestHeaders() }
+      );
+
+      const updateWorkspaceId = workspaceResponse.data.data.createWorkspace.id;
+      const createProfile1Id = responseCreateUser1.data.data.createProfile.id;
+      const createProfile2Id = responseCreateUser1.data.data.createProfile.id;
+
+      const updateWorkspace = await instance.post(
+        apiUrl,
+        generateUpdateWorkspaceRequestPayload({
+          updateWorkspaceId,
+          profiles: [
+            {
+              id: createProfile1Id,
+              status: "ACTIVE",
+              access: "TEAM_MEMBER",
+              title: "Mr",
+            },
+            {
+              id: createProfile2Id,
+              status: "ACTIVE",
+              access: "ADMIN",
+              title: "Mr",
+            },
+          ],
+        }),
+        { headers: generateRequestHeaders() }
+      );
+
+      const responseGetProfiles = await instance.post(
+        apiUrl,
+        generateGetProfilesRequestPayload(),
+        { headers: generateRequestHeaders() }
+      );
+
+      const afterRequestTimestamp = getUnixTime(new Date());
+    } catch (e) {
+      console.error(e);
+      throw e;
+    }
+  });
 });
 
-describe("(Client) Profile registration", () => {
+describe("(Client) Profile", () => {
   beforeEach(async () => {
     const response = await instance.delete("/recreate-database");
   });

@@ -3,7 +3,6 @@ import {
   ProfileModelInstance,
   ProfileWorkspaceAccess,
   ProfileWorkspaceStatus,
-  WorkspaceModelInstance,
   domainAssociationNames,
   models,
   workspaceAssociationNames,
@@ -11,18 +10,18 @@ import {
 } from "../../database";
 import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
-import { AppContext } from "../types";
+import {
+  AppContext,
+  AuthenticatedAppContext,
+  ProfileWorkspace,
+} from "../types";
 import { createToken } from "../../modules";
 import { AuthJwtPayload } from "../../types";
-
-interface ProfileWorkspaceResult {
-  workspace_id: string;
-  profile_id: string;
-  access: ProfileWorkspaceAccess;
-  status: ProfileWorkspaceStatus;
-  title: string;
-  workspace?: WorkspaceModelInstance;
-}
+import {
+  authenticate,
+  authorize,
+  noAuthenticate,
+} from "../middleware/authorize";
 
 interface ProfileResult {
   id: string;
@@ -34,7 +33,7 @@ interface ProfileResult {
   login_date: Date;
   name: string;
   is_completed: boolean;
-  workspaces: ProfileWorkspaceResult[];
+  workspaces: ProfileWorkspace[];
 }
 
 function prepareProfileResult(
@@ -45,7 +44,7 @@ function prepareProfileResult(
   return {
     ...data,
     workspaces: (workspaceProfiles || []).map((item) => {
-      const result: ProfileWorkspaceResult = {
+      const result: ProfileWorkspace = {
         profile_id: item.profile_id,
         workspace_id: item.workspace_id,
         workspace: item.workspace,
@@ -104,6 +103,7 @@ export const profileTypeDefs = gql`
 export const profileQueryDefs = gql`
   extend type Query {
     getProfiles(id: String, email: String): [Profile]
+    getMyProfile: Profile
   }
 `;
 
@@ -138,13 +138,13 @@ export const profileMutationDefs = gql`
       name: String!
       password: String!
       workspaces: [WorkspaceProfileInput]
-    ): Profile!
+    ): Profile
 
     deleteProfile(id: String!): Profile!
   }
 `;
 
-function prepareIncludesFromInfo(info: any) {
+function prepareIncludesFromInfo(info: any, workspaceId?: string) {
   const requestedFields = getRequestedFields(info);
   const includeWorkspaceProfile =
     requestedFields[workspaceAssociationNames.plural];
@@ -161,11 +161,15 @@ function prepareIncludesFromInfo(info: any) {
 
   const includes: Includeable[] = [];
 
-  if (includeWorkspaceProfile) {
+  if (includeWorkspaceProfile || typeof workspaceId === "string") {
     let include: Includeable = {
       model: models.workspaceProfile,
       as: workspaceProfileAssociationNames.plural,
+      where: {
+        workspace_id: workspaceId,
+      },
     };
+
     if (includeWorkspace) {
       include = {
         model: models.workspaceProfile,
@@ -193,82 +197,99 @@ function prepareIncludesFromInfo(info: any) {
 }
 
 export const profileQueryResolvers = {
-  getProfiles(
-    _: undefined,
-    data: { id: string; email: string },
-    contextValue: any,
-    info: any
-  ) {
+  getProfiles: authorize({
+    allowedWorkspaceAccess: [ProfileWorkspaceAccess.ADMIN],
+  })(
+    (
+      _: undefined,
+      data: { id: string; email: string },
+      contextValue: AuthenticatedAppContext,
+      info: any
+    ) => {
+      const include = prepareIncludesFromInfo(
+        info,
+        contextValue.originWorkspace!.id
+      );
+      return models.profile
+        .findAll({ where: { ...data }, include })
+        .then((results) => results.map(prepareProfileResult));
+    }
+  ),
+  getMyProfile(_: undefined, data: void, contextValue: AppContext, info: any) {
+    const { profileId, email } = contextValue.decodedProfileData || {};
     const include = prepareIncludesFromInfo(info);
-    return models.profile
-      .findAll({ where: { ...data }, include })
-      .then((results) => results.map(prepareProfileResult));
+    // return models.profile
+    //   .findAll({ where: { ...data }, include })
+    //   .then((results) => results.map(prepareProfileResult));
   },
 };
 
 export const profileMutationResolvers = {
-  registerProfile(
-    _: undefined,
-    data: {
-      email: string;
-      password: string;
-      name: string;
-      title?: string;
-    },
-    contextValue: AppContext,
-    info: any
-  ) {
-    const { origin } = contextValue;
-    return models.domain
-      .findOne({
-        where: { domain: origin },
-        include: [
-          {
-            model: models.workspace,
-            as: workspaceAssociationNames.singular,
-            include: [
-              {
-                model: models.domain,
-                as: domainAssociationNames.plural,
-              },
-            ],
-          },
-        ],
-      })
-      .then((domain) => {
-        const { email, password, name } = data;
+  registerProfile: noAuthenticate(
+    (
+      _: undefined,
+      data: {
+        email: string;
+        password: string;
+        name: string;
+        title?: string;
+      },
+      contextValue: AppContext,
+      info: any
+    ) => {
+      const { origin } = contextValue;
+      return models.domain
+        .findOne({
+          where: { domain: origin },
+          include: [
+            {
+              model: models.workspace,
+              as: workspaceAssociationNames.singular,
+              include: [
+                {
+                  model: models.domain,
+                  as: domainAssociationNames.plural,
+                },
+              ],
+            },
+          ],
+        })
+        .then((domain) => {
+          const { email, password, name } = data;
 
-        if (
-          !domain ||
-          !domain.workspace ||
-          !domain.workspace.domains ||
-          domain.workspace.domains.length === 0 ||
-          !domain.workspace.domains.find((d) => {
-            const domainMatch = email.match(/@([^@]+)$/) || [];
-            const emailDomain = domainMatch[1];
-            return typeof emailDomain === "string" && emailDomain === d.domain;
-          })
-        )
-          return null;
+          if (
+            !domain ||
+            !domain.workspace ||
+            !domain.workspace.domains ||
+            domain.workspace.domains.length === 0 ||
+            !domain.workspace.domains.find((d) => {
+              const domainMatch = email.match(/@([^@]+)$/) || [];
+              const emailDomain = domainMatch[1];
+              return (
+                typeof emailDomain === "string" && emailDomain === d.domain
+              );
+            })
+          )
+            return null;
 
-        return models.profile
-          .findOne({
-            where: { email },
-            include: [
-              {
-                model: models.workspaceProfile,
-                as: workspaceProfileAssociationNames.plural,
-                include: [
-                  {
-                    model: models.workspace,
-                    as: workspaceAssociationNames.singular,
-                  },
-                ],
-              },
-            ],
-          })
-          .then((existingUser) => {
-            if (!existingUser)
+          return models.profile
+            .findOne({
+              where: { email },
+              include: [
+                {
+                  model: models.workspaceProfile,
+                  as: workspaceProfileAssociationNames.plural,
+                  include: [
+                    {
+                      model: models.workspace,
+                      as: workspaceAssociationNames.singular,
+                    },
+                  ],
+                },
+              ],
+            })
+            .then((existingUser) => {
+              if (existingUser) return null;
               return models.profile
                 .create({
                   email,
@@ -295,122 +316,109 @@ export const profileMutationResolvers = {
                       return prepareProfileResult(newProfile);
                     })
                 );
-
-            return existingUser
-              .authenticate(password)
-              .then((isAuthenticated) =>
-                isAuthenticated ? prepareProfileResult(existingUser) : null
-              );
+            });
+        });
+    }
+  ),
+  login: noAuthenticate(
+    (
+      _: undefined,
+      data: {
+        email: string;
+        password: string;
+      },
+      contextValue: AppContext,
+      info: any
+    ): Promise<{ profile: ProfileResult; token: string } | null> => {
+      const { origin } = contextValue;
+      const { email, password } = data;
+      return models.profile
+        .findOne({
+          where: { email },
+          include: [
+            {
+              model: models.workspaceProfile,
+              as: workspaceProfileAssociationNames.plural,
+              include: [
+                {
+                  model: models.workspace,
+                  as: workspaceAssociationNames.singular,
+                  include: [
+                    {
+                      model: models.domain,
+                      as: domainAssociationNames.plural,
+                      where: { domain: origin },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        })
+        .then((foundProfile) => {
+          if (!foundProfile) return null;
+          return foundProfile.authenticate(password).then((isAuthenticated) => {
+            if (!isAuthenticated) return null;
+            const profileResult = prepareProfileResult(foundProfile)!;
+            return createToken<AuthJwtPayload>({
+              email: foundProfile.email,
+              id: foundProfile.id,
+              image: foundProfile.image,
+              name: foundProfile.name,
+              workspaces: profileResult!.workspaces,
+            }).then((token) => ({ profile: profileResult, token }));
           });
-      });
-  },
-  login(
-    _: undefined,
-    data: {
-      email: string;
-      password: string;
-    },
-    contextValue: AppContext,
-    info: any
-  ): Promise<{ profile: ProfileResult; token: string } | null> {
-    const { origin } = contextValue;
-    const { email, password } = data;
-    return models.profile
-      .findOne({
-        where: { email },
-        include: [
-          {
-            model: models.workspaceProfile,
-            as: workspaceProfileAssociationNames.plural,
-            include: [
-              {
-                model: models.workspace,
-                as: workspaceAssociationNames.singular,
-                include: [
-                  {
-                    model: models.domain,
-                    as: domainAssociationNames.plural,
-                    where: { domain: origin },
-                  },
-                ],
-              },
-            ],
-          },
-        ],
-      })
-      .then((foundProfile) =>
-        foundProfile
-          ? foundProfile
-              .authenticate(password)
-              .then((isAuthenticated) =>
-                isAuthenticated
-                  ? createToken<AuthJwtPayload>({
-                      email: foundProfile.email,
-                      id: foundProfile.id,
-                      image: foundProfile.image,
-                      name: foundProfile.name,
-                    })
-                  : null
+        });
+    }
+  ),
+  createProfile: authorize({
+    allowedWorkspaceAccess: [ProfileWorkspaceAccess.ADMIN],
+  })(
+    (
+      _: undefined,
+      data: {
+        email: string;
+        headline: string;
+        image: string;
+        name: string;
+        password: string;
+        workspaces: {
+          workspaceId: string;
+          access: ProfileWorkspaceAccess;
+          status: ProfileWorkspaceStatus;
+          title: string;
+        }[];
+        is_completed: boolean;
+      },
+      contextValue: any,
+      info: any
+    ) => {
+      const include = prepareIncludesFromInfo(info);
+      const { workspaces, ...profileData } = data;
+      return models.profile
+        .create(profileData, {
+          returning: true,
+        })
+        .then((profile) =>
+          (workspaces && workspaces.length > 0
+            ? models.workspaceProfile.bulkCreate(
+                workspaces.map((item) => ({
+                  workspace_id: item.workspaceId,
+                  profile_id: profile.id,
+                  status: item.status,
+                  access: item.access,
+                  title: item.title,
+                }))
               )
-              .then((token) => {
-                if (!token) return null;
-                return [foundProfile, token] as const;
-              })
-          : null
-      )
-      .then((result) => {
-        if (!result) return null;
-        const responseData = {
-          profile: prepareProfileResult(result[0])!,
-          token: result[1]!,
-        };
-        return responseData;
-      });
-  },
-  createProfile(
-    _: undefined,
-    data: {
-      email: string;
-      headline: string;
-      image: string;
-      name: string;
-      password: string;
-      workspaces: {
-        workspaceId: string;
-        access: ProfileWorkspaceAccess;
-        status: ProfileWorkspaceStatus;
-        title: string;
-      }[];
-      is_completed: boolean;
-    },
-    contextValue: any,
-    info: any
-  ) {
-    const include = prepareIncludesFromInfo(info);
-    const { workspaces, ...profileData } = data;
-    return models.profile
-      .create(profileData, {
-        returning: true,
-      })
-      .then((profile) =>
-        (workspaces && workspaces.length > 0
-          ? models.workspaceProfile.bulkCreate(
-              workspaces.map((item) => ({
-                workspace_id: item.workspaceId,
-                profile_id: profile.id,
-                status: item.status,
-                access: item.access,
-                title: item.title,
-              }))
-            )
-          : Promise.resolve()
-        ).then((workspaceProfiles) =>
-          models.profile
-            .findByPk(profile.id, { include })
-            .then(prepareProfileResult)
-        )
-      );
-  },
+            : Promise.resolve()
+          ).then((workspaceProfiles) =>
+            models.profile
+              .findByPk(profile.id, { include })
+              .then(prepareProfileResult)
+          )
+        );
+    }
+  ),
   deleteProfile(
     _: undefined,
     data: {

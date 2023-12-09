@@ -18,7 +18,8 @@ const httpServer = http.createServer(app);
 const apolloServer = createApolloServer(httpServer);
 
 Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
-  ([sequelize]) => {
+  ([result]) => {
+    const { sequelize } = result || {};
     console.log("Database connected, Redis connected and apollo is running.");
 
     app.use(bodyParser.json());
@@ -30,8 +31,7 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
       })
     );
 
-    // if(environment === "test")
-    if (environment === "dev" && sequelize) {
+    if (environment === "test" && sequelize) {
       app.delete("/recreate-database", (req, res) => {
         sequelize
           .drop({ logging: true })

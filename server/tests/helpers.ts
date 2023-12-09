@@ -91,8 +91,6 @@ export function generateWorkspaceCreationRequestPayload(variables: {
         ) {
           id
           name
-          create_date
-          update_date
           domains {
             domain
           }
@@ -102,6 +100,62 @@ export function generateWorkspaceCreationRequestPayload(variables: {
               email
             }
           }
+          image
+          create_date
+          update_date
+          workspace_key
+        }
+      }
+
+    `,
+    variables,
+  };
+}
+
+export function generateUpdateWorkspaceRequestPayload(variables: {
+  updateWorkspaceId: string;
+  image?: string;
+  name?: string;
+  domains?: { domain: string }[];
+  profiles?: {
+    access: "ADMIN" | "SUPER_ADMIN" | "TEAM_MEMBER" | "OWNER" | "NONE";
+    id: string;
+    status:
+      | "ACTIVE"
+      | "LEFT"
+      | "UNSUBSCRIBED"
+      | "ABSENCE"
+      | "PROHIBITED"
+      | "NONE";
+    title: string;
+  }[];
+}) {
+  return {
+    query: `
+      mutation Mutation($updateWorkspaceId: String!, $image: String, $name: String, $domains: [DomainInput], $profiles: [ProfileInput]) {
+        updateWorkspace(id: $updateWorkspaceId, image: $image, name: $name, domains: $domains, profiles: $profiles) {
+          domains {
+            domain
+          }
+          id
+          image
+          name
+          profiles {
+            access
+            profile {
+              email
+              create_date
+              image
+              login_date
+              name
+              update_date
+            }
+            status
+            title
+          }
+          update_date
+          workspace_key
+          create_date
         }
       }
     `,
@@ -169,5 +223,32 @@ export function generateProfileLoginRequestPayload(variables: {
       }
     `,
     variables,
+  };
+}
+
+export function generateGetProfilesRequestPayload() {
+  return {
+    query: `
+      query GetProfiles {
+        getProfiles {
+          id
+          create_date
+          email
+          headline
+          image
+          is_completed
+          name
+          login_date
+          update_date
+          workspaces {
+            access
+            profile_id
+            status
+            title
+            workspace_id
+          }
+        }
+      }
+    `,
   };
 }

@@ -34,6 +34,7 @@ export interface IAppConfig {
   syncSequelizeModels: boolean;
   certificateLocation: string;
   splitWaitingTime: string;
+  masterDomains: string[];
 }
 
 export interface IDatabaseConfig {

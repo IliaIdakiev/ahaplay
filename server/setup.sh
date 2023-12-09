@@ -11,7 +11,11 @@ echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
 
 # Create user and database
 su - postgres -c "psql -c \"CREATE USER ahaplay WITH SUPERUSER PASSWORD 'ahaplay';\""
-su - postgres -c "createdb -O ahaplay ahaplay"
+if [ "$NODE_ENV" = "test" ]; then 
+  su - postgres -c "createdb -O ahaplay ahaplay-testing"
+else 
+  su - postgres -c "createdb -O ahaplay ahaplay"
+fi
 
 # Start Redis
 redis-server &
@@ -30,9 +34,17 @@ service nginx status
 
 
 if [ "$IS_DEBUG" = "true" ]; then
-  npm install -g pm2 && yarn start:pm2:debug
+  if [ "$NODE_ENV" = "test" ]; then 
+    npm install -g pm2 && yarn start:pm2:debug:test
+  else 
+    npm install -g pm2 && yarn start:pm2:debug
+  fi
 else
-  npm install -g pm2 && yarn run build:app && yarn start:pm2
+  if [ "$NODE_ENV" = "test"]; then 
+    npm install -g pm2 && yarn run build:app && yarn start:pm2:test
+  else 
+    npm install -g pm2 && yarn run build:app && yarn start:pm2
+  fi
 fi
 
 # Wait for background processes to finish

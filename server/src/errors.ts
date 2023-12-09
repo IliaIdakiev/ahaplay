@@ -5,8 +5,13 @@ export enum LoginError {
 
 export enum AuthenticationError {
   TOKEN_NOT_FOUND = "TOKEN_NOT_FOUND",
+  ALREADY_AUTHENTICATED = "ALREADY_AUTHENTICATED",
   TOKEN_EXPIRED = "TOKEN_EXPIRED",
   UNKNOWN = "UNKNOWN",
+}
+
+export enum AuthorizationError {
+  NOT_AUTHORIZED = "NOT_AUTHORIZED",
 }
 
 export enum RefreshTokenError {
