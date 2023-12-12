@@ -4,73 +4,26 @@ import {
   models,
   workspaceProfileAssociationNames,
 } from "../../database";
-import { AuthenticationError, AuthorizationError } from "../../errors";
-import { verifyToken } from "../../modules";
-import { AuthJwtPayload } from "../../types";
-import { AppContext, AuthenticatedAppContext } from "../types";
+import { AuthorizationError } from "../../errors";
+import { AuthenticatedAppContext } from "../types";
 import config from "../../config";
-import { Includeable } from "sequelize";
 import { getDomainFromUrl } from "../utils";
+import { authenticate } from "./authenticate";
+import { getEmailDomain } from "../resources/utils";
 
-// Strictly authenticated middleware check
-export const authenticate =
-  <TArgs, TResult>(
-    next: (
-      parent: any,
-      args: TArgs,
-      context: AuthenticatedAppContext,
-      info: any
-    ) => TResult
-  ) =>
-  (
-    parent: any,
-    args: TArgs,
-    context: AppContext,
-    info: any
-  ): Promise<TResult> => {
-    if (!context.token) throw new Error(AuthenticationError.TOKEN_NOT_FOUND);
-    return verifyToken<AuthJwtPayload>(context.token)
-      .then((decodedData) => {
-        context.decodedProfileData = {
-          email: decodedData.email,
-          profileId: decodedData.id,
-        };
-        return next(parent, args, context as AuthenticatedAppContext, info);
-      })
-      .catch((err) => {
-        if (err.message === "jwt expired")
-          throw new Error(AuthenticationError.TOKEN_EXPIRED);
-        throw err;
-      });
-  };
-
-// Strictly not authenticated middleware check
-export const noAuthenticate =
-  <TArgs, TResult>(
-    next: (parent: any, args: TArgs, context: AppContext, info: any) => TResult
-  ) =>
-  (
-    parent: any,
-    args: TArgs,
-    context: AppContext,
-    info: any
-  ): Promise<TResult> => {
-    context.decodedProfileData = null;
-    if (context.token === null)
-      Promise.resolve(next(parent, args, context, info));
-    return verifyToken(context.token!)
-      .then(() => {
-        throw new Error(AuthenticationError.ALREADY_AUTHENTICATED);
-      })
-      .catch((err) => {
-        if (err.message !== "jwt expired") throw err;
-        return next(parent, args, context, info);
-      });
-  };
+type AuthorizeProps =
+  | {
+      masterOnly?: false | null | undefined;
+      allowedWorkspaceAccess: ProfileWorkspaceAccess[];
+    }
+  | {
+      masterOnly: true;
+      allowedWorkspaceAccess?: null | undefined;
+    };
 
 export const authorize =
-  (props: { allowedWorkspaceAccess: ProfileWorkspaceAccess[] }) =>
-  <TArgs, TResult>(
+  (props: AuthorizeProps) =>
+  <TArgs extends object, TResult>(
     next: (
       parent: any,
       args: TArgs,
@@ -85,45 +38,50 @@ export const authorize =
         context: AuthenticatedAppContext,
         info: any
       ): Promise<TResult> => {
-        const origin = getDomainFromUrl(context.origin);
-        const match = context.decodedProfileData.email.match(/@([^@]+)$/) || [];
-        const emailDomain = match[1];
+        const emailDomain = getEmailDomain(context.decodedProfileData.email)!;
         const isMasterDomain = config.app.masterDomains.includes(emailDomain);
 
-        const workspaceInclude: Includeable[] = [
-          {
-            model: models.domain,
-            as: domainAssociationNames.plural,
-            where: { domain: origin },
-          },
-        ];
+        if (isMasterDomain) {
+          context.isMaster = true;
+          return next(parent, args, context, info);
+        }
+        if (props.masterOnly)
+          throw new Error(AuthorizationError.NOT_AUTHORIZED);
 
-        if (!isMasterDomain) {
-          workspaceInclude.push({
-            model: models.workspaceProfile,
-            as: workspaceProfileAssociationNames.plural,
-            where: { profile_id: context.decodedProfileData.profileId },
-          });
+        if ("workspace_id" in args) {
+          args.workspace_id = context.decodedProfileData.workspace.workspace_id;
         }
 
         return models.workspace
           .findOne({
-            include: workspaceInclude,
+            include: [
+              {
+                model: models.domain,
+                as: domainAssociationNames.plural,
+                where: { domain: emailDomain },
+              },
+              {
+                model: models.workspaceProfile,
+                as: workspaceProfileAssociationNames.singular,
+                where: { profile_id: context.decodedProfileData.id },
+              },
+            ],
           })
           .then((originWorkspace) => {
             if (!originWorkspace)
               throw new Error(AuthorizationError.NOT_AUTHORIZED);
+
             const currentWorkspaceProfile =
               originWorkspace.workspaceProfiles?.[0] || null;
+
             if (
-              !isMasterDomain &&
-              (!currentWorkspaceProfile ||
-                !props.allowedWorkspaceAccess.includes(
-                  currentWorkspaceProfile.access
-                ))
+              !currentWorkspaceProfile ||
+              !props.allowedWorkspaceAccess!.includes(
+                currentWorkspaceProfile.access
+              )
             )
               throw new Error(AuthorizationError.NOT_AUTHORIZED);
-            context.originWorkspace = originWorkspace;
+
             return next(parent, args, context, info);
           });
       }

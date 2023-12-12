@@ -10,6 +10,7 @@ import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
 import { generateRequestContext } from "./apollo";
 import { environment } from "./env";
+import testDatabaseSetup, { processOperations } from "./test-database-setup";
 
 const cookieSecret = config.app.cookieSecret;
 
@@ -32,12 +33,30 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
     );
 
     if (environment === "test" && sequelize) {
-      app.delete("/recreate-database", (req, res) => {
+      app.post("/recreate-database", (req, res) => {
+        const data = req.body;
         sequelize
           .drop({ logging: true })
           .then(() => sequelize.sync())
-          .then(() => {
-            res.status(200).send("Ok!");
+          .then(() => processOperations(data))
+          .then((data) => {
+            res.send(data);
+          })
+          .catch((err) => {
+            console.error(err);
+            res.status(500).send(err.message);
+          });
+      });
+
+      app.post("/process-operations", (req, res) => {
+        const data = req.body;
+        processOperations(data)
+          .then((data) => {
+            res.send(data);
+          })
+          .catch((err) => {
+            console.error(err);
+            res.status(500).send(err.message);
           });
       });
     }

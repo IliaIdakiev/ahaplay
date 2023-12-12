@@ -10,7 +10,7 @@ import {
 } from "../../database";
 import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
-import { AppContext } from "../types";
+import { AppContext, AuthenticatedAppContext } from "../types";
 
 export const slotTypeDefs = gql`
   enum SlotType {
@@ -54,7 +54,7 @@ export const slotTypeDefs = gql`
 
 export const slotQueryDefs = gql`
   extend type Query {
-    getSlots(id: String, creator_id: String): [Slot]
+    getSlots(workspace_id: String, id: String): [Slot]
   }
 `;
 
@@ -116,7 +116,7 @@ function prepareIncludesFromInfo(info: any) {
 export const slotQueryResolvers = {
   getSlots(
     _: undefined,
-    data: { id: string; creator_id: string },
+    data: { id: string; workspaceId: string },
     contextValue: any,
     info: any
   ) {
@@ -137,7 +137,7 @@ export const slotMutationResolvers = {
       ics: string;
       ics_uid: string;
     },
-    contextValue: AppContext,
+    contextValue: AuthenticatedAppContext,
     info: any
   ) {
     const include = prepareIncludesFromInfo(info);
@@ -145,7 +145,7 @@ export const slotMutationResolvers = {
       .create(
         {
           ...data,
-          creator_id: contextValue.decodedProfileData!.profileId!,
+          creator_id: contextValue.decodedProfileData.id,
           reminder_status: SlotReminderStatus.NONE,
           status: SlotStatus.SCHEDULED,
         },

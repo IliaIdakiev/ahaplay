@@ -16,19 +16,14 @@ export interface ProfileAttributes extends IBase {
   password: string;
   is_completed: boolean;
 
-  workspaceProfiles?: WorkspaceProfileModelInstance[];
+  workspaceProfile?: WorkspaceProfileModelInstance;
 }
 
 export interface ProfileCreationAttributes
-  extends Omit<
-    Optional<
-      ProfileAttributes,
-      IBaseKeys | "login_date" | "headline" | "image"
-    >,
-    "workspaces"
-  > {
-  workspaces?: string[];
-}
+  extends Optional<
+    ProfileAttributes,
+    IBaseKeys | "login_date" | "headline" | "image"
+  > {}
 
 export interface ProfileInstanceMethods {
   authenticate: (password: string) => Promise<boolean>;
@@ -38,8 +33,8 @@ export interface ProfileModelInstance
   extends Model<ProfileAttributes, ProfileCreationAttributes>,
     ProfileAttributes,
     ProfileInstanceMethods {
-  getWorkspaceProfiles: BelongsToGetAssociationMixin<WorkspaceProfileModelInstance>;
-  setWorkspaceProfiles: BelongsToSetAssociationMixin<
+  getWorkspaceProfile: BelongsToGetAssociationMixin<WorkspaceProfileModelInstance>;
+  setWorkspaceProfile: BelongsToSetAssociationMixin<
     WorkspaceProfileModelInstance,
     string
   >;

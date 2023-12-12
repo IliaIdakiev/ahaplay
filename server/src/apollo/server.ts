@@ -40,13 +40,10 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
       schema,
       context({ connectionParams }) {
         const token = readAuthToken({ headers: connectionParams })!;
-        return decodeToken<AuthJwtPayload>(token).then((decoded) => {
+        return decodeToken<AuthJwtPayload>(token).then((decodedData) => {
           const context: AppContext = {
             pubSub: pubSub,
-            decodedProfileData: {
-              profileId: decoded.id,
-              email: decoded.email,
-            },
+            decodedProfileData: decodedData,
             token,
             origin: "<ORIGIN>",
           };

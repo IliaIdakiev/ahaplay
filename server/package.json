@@ -19,7 +19,8 @@
     "docker:run:debug:test": "docker run -v ./dist:/usr/src/app/dist  --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -p 5431:9856 -p 9229:9231 -p 9230:9232 -e NODE_ENV=test -e IS_DEBUG=true ahaplay-server:$npm_package_version",
     "docker:run:prod": "docker run --privileged --rm --name ahaplay_container -it -p 80:80 -p 443:443 -e NODE_ENV=prod ahaplay-server:$npm_package_version",
     "docker:ps": "docker ps",
-    "test": "yarn build:app && yarn build:spec && mocha --config mocha.spec.config.js",
+    "spec": "yarn build:app && yarn build:spec && mocha --config mocha.spec.config.js",
+    "test": "yarn build:tests && mocha --config mocha.test.config.js --timeout 0",
     "cdc": "madge --circular ./src/**/*.ts",
     "clean": "rimraf dist",
     "clean:test": "rimraf dist_tests"

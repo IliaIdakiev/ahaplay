@@ -17,11 +17,11 @@ import {
 } from "../types";
 import { createToken } from "../../modules";
 import { AuthJwtPayload } from "../../types";
-import {
-  authenticate,
-  authorize,
-  noAuthenticate,
-} from "../middleware/authorize";
+import { authorize } from "../middleware/authorize";
+import { authenticate } from "../middleware/authenticate";
+import { noAuthenticate } from "../middleware/no-authenticate";
+import { getEmailDomain } from "./utils";
+import { LoginError, RegistrationError } from "../../errors";
 
 interface ProfileResult {
   id: string;
@@ -33,28 +33,26 @@ interface ProfileResult {
   login_date: Date;
   name: string;
   is_completed: boolean;
-  workspaces: ProfileWorkspace[];
+  workspace: ProfileWorkspace | null;
 }
 
 function prepareProfileResult(
   profile: ProfileModelInstance | null
 ): ProfileResult | null {
   if (!profile) return null;
-  const { workspaceProfiles, ...data } = profile.dataValues;
+  const { workspaceProfile, ...data } = profile.dataValues;
   return {
     ...data,
-    workspaces: (workspaceProfiles || []).map((item) => {
-      const result: ProfileWorkspace = {
-        profile_id: item.profile_id,
-        workspace_id: item.workspace_id,
-        workspace: item.workspace,
-        access: item.access,
-        status: item.status,
-        title: item.title,
-      };
-
-      return result;
-    }),
+    workspace: workspaceProfile
+      ? {
+          profile_id: workspaceProfile.profile_id,
+          workspace_id: workspaceProfile.workspace_id,
+          workspace: workspaceProfile.workspace,
+          access: workspaceProfile.access,
+          status: workspaceProfile.status,
+          title: workspaceProfile.title,
+        }
+      : null,
   };
 }
 
@@ -81,6 +79,7 @@ export const profileTypeDefs = gql`
     profile_id: String!
     access: ProfileWorkspaceAccess!
     status: ProfileWorkspaceStatus!
+
     title: String
     workspace: Workspace
   }
@@ -90,26 +89,25 @@ export const profileTypeDefs = gql`
     create_date: Date!
     update_date: Date!
     email: String!
-    headline: String
-    image: String
-    login_date: Date
     name: String!
     is_completed: Boolean!
 
-    workspaces: [ProfileWorkspace]
+    login_date: Date
+    headline: String
+    image: String
+    workspace: ProfileWorkspace
   }
 `;
 
 export const profileQueryDefs = gql`
   extend type Query {
-    getProfiles(id: String, email: String): [Profile]
+    getProfiles(workspace_id: String, id: String, email: String): [Profile]
     getMyProfile: Profile
   }
 `;
 
 export const profileMutationDefs = gql`
   input WorkspaceProfileInput {
-    workspaceId: String!
     access: ProfileWorkspaceAccess!
     status: ProfileWorkspaceStatus!
     title: String
@@ -120,78 +118,89 @@ export const profileMutationDefs = gql`
     token: String
   }
 
+  type RegisterResult {
+    email: String
+    name: String
+  }
+
   type Mutation {
     registerProfile(
       email: String!
+      password: String!
+      name: String!
+      title: String
       headline: String
       image: String
-      name: String!
-      password: String!
-    ): Profile
+    ): RegisterResult!
 
     login(email: String!, password: String!): LoginResult!
 
     createProfile(
       email: String!
-      headline: String
-      image: String
       name: String!
       password: String!
-      workspaces: [WorkspaceProfileInput]
+      workspace_id: String!
+      workspace: WorkspaceProfileInput!
+      headline: String
+      image: String
     ): Profile
 
-    deleteProfile(id: String!): Profile!
+    deleteProfile(workspace_id: String!, id: String!): Profile
   }
 `;
 
-function prepareIncludesFromInfo(info: any, workspaceId?: string) {
+function prepareIncludesFromInfo(
+  info: any,
+  config: { workspace_id?: string; isMasterAccount?: boolean }
+) {
   const requestedFields = getRequestedFields(info);
   const includeWorkspaceProfile =
-    requestedFields[workspaceAssociationNames.plural];
+    requestedFields[workspaceAssociationNames.singular];
   const includeWorkspace = includeWorkspaceProfile
-    ? requestedFields[workspaceAssociationNames.plural][
+    ? requestedFields[workspaceAssociationNames.singular][
         workspaceAssociationNames.singular
       ]
     : false;
   const includeWorkspaceDomains = includeWorkspace
-    ? requestedFields[workspaceAssociationNames.plural][
+    ? requestedFields[workspaceAssociationNames.singular][
         workspaceAssociationNames.singular
       ][domainAssociationNames.plural]
     : false;
 
   const includes: Includeable[] = [];
 
-  if (includeWorkspaceProfile || typeof workspaceId === "string") {
-    let include: Includeable = {
-      model: models.workspaceProfile,
-      as: workspaceProfileAssociationNames.plural,
-      where: {
-        workspace_id: workspaceId,
-      },
-    };
+  let include: Includeable = {
+    model: models.workspaceProfile,
+    as: workspaceProfileAssociationNames.singular,
+  };
 
-    if (includeWorkspace) {
-      include = {
-        model: models.workspaceProfile,
-        as: workspaceProfileAssociationNames.plural,
-        include: [
-          {
-            model: models.workspace,
-            as: workspaceAssociationNames.singular,
-            include: includeWorkspaceDomains
-              ? [
-                  {
-                    model: models.domain,
-                    as: domainAssociationNames.plural,
-                  },
-                ]
-              : [],
-          },
-        ],
-      };
-    }
-    includes.push(include);
+  if (!config.isMasterAccount) {
+    include.where = {
+      workspace_id: config.workspace_id,
+    };
   }
+
+  if (includeWorkspace) {
+    include = {
+      model: models.workspaceProfile,
+      as: workspaceProfileAssociationNames.singular,
+      include: [
+        {
+          model: models.workspace,
+          as: workspaceAssociationNames.singular,
+          include: includeWorkspaceDomains
+            ? [
+                {
+                  model: models.domain,
+                  as: domainAssociationNames.plural,
+                },
+              ]
+            : [],
+        },
+      ],
+    };
+  }
+  includes.push(include);
 
   return includes;
 }
@@ -206,22 +215,28 @@ export const profileQueryResolvers = {
       contextValue: AuthenticatedAppContext,
       info: any
     ) => {
-      const include = prepareIncludesFromInfo(
-        info,
-        contextValue.originWorkspace!.id
-      );
+      const include = prepareIncludesFromInfo(info, {
+        isMasterAccount: !!contextValue.isMaster,
+        // workspace_id: contextValue.decodedProfileData.workspace.workspace_id,
+      });
       return models.profile
         .findAll({ where: { ...data }, include })
         .then((results) => results.map(prepareProfileResult));
     }
   ),
-  getMyProfile(_: undefined, data: void, contextValue: AppContext, info: any) {
-    const { profileId, email } = contextValue.decodedProfileData || {};
-    const include = prepareIncludesFromInfo(info);
-    // return models.profile
-    //   .findAll({ where: { ...data }, include })
-    //   .then((results) => results.map(prepareProfileResult));
-  },
+  getMyProfile: authenticate(
+    (_: undefined, data: void, contextValue: AppContext, info: any) => {
+      const {
+        id: profileId,
+        email,
+        workspace,
+      } = contextValue.decodedProfileData || {};
+      // const include = prepareIncludesFromInfo(info, workspace!.workspace_id);
+      // return models.profile
+      //   .findAll({ where: { ...data }, include })
+      //   .then((results) => results.map(prepareProfileResult));
+    }
+  ),
 };
 
 export const profileMutationResolvers = {
@@ -233,14 +248,16 @@ export const profileMutationResolvers = {
         password: string;
         name: string;
         title?: string;
+        headline?: String;
+        image?: String;
       },
       contextValue: AppContext,
       info: any
     ) => {
-      const { origin } = contextValue;
+      const domain = getEmailDomain(data.email);
       return models.domain
         .findOne({
-          where: { domain: origin },
+          where: { domain },
           include: [
             {
               model: models.workspace,
@@ -257,20 +274,8 @@ export const profileMutationResolvers = {
         .then((domain) => {
           const { email, password, name } = data;
 
-          if (
-            !domain ||
-            !domain.workspace ||
-            !domain.workspace.domains ||
-            domain.workspace.domains.length === 0 ||
-            !domain.workspace.domains.find((d) => {
-              const domainMatch = email.match(/@([^@]+)$/) || [];
-              const emailDomain = domainMatch[1];
-              return (
-                typeof emailDomain === "string" && emailDomain === d.domain
-              );
-            })
-          )
-            return null;
+          if (!domain || !domain.workspace)
+            throw new Error(RegistrationError.MISSING_WORKSPACE);
 
           return models.profile
             .findOne({
@@ -278,7 +283,7 @@ export const profileMutationResolvers = {
               include: [
                 {
                   model: models.workspaceProfile,
-                  as: workspaceProfileAssociationNames.plural,
+                  as: workspaceProfileAssociationNames.singular,
                   include: [
                     {
                       model: models.workspace,
@@ -289,7 +294,7 @@ export const profileMutationResolvers = {
               ],
             })
             .then((existingUser) => {
-              if (existingUser) return null;
+              if (existingUser) return { email: data.email, name: data.name };
               return models.profile
                 .create({
                   email,
@@ -309,11 +314,11 @@ export const profileMutationResolvers = {
                     .then((workspaceProfile) => {
                       workspaceProfile.workspace_id = domain.workspace!.id;
                       workspaceProfile.workspace = domain.workspace!;
-                      newProfile.workspaceProfiles = [workspaceProfile];
+                      newProfile.workspaceProfile = workspaceProfile;
 
-                      newProfile.dataValues.workspaceProfiles =
-                        newProfile.workspaceProfiles;
-                      return prepareProfileResult(newProfile);
+                      newProfile.dataValues.workspaceProfile =
+                        newProfile.workspaceProfile;
+                      return { email: data.email, name: data.name };
                     })
                 );
             });
@@ -330,15 +335,15 @@ export const profileMutationResolvers = {
       contextValue: AppContext,
       info: any
     ): Promise<{ profile: ProfileResult; token: string } | null> => {
-      const { origin } = contextValue;
+      const domain = getEmailDomain(data.email);
       const { email, password } = data;
       return models.profile
         .findOne({
-          where: { email },
+          where: { email, is_completed: true },
           include: [
             {
               model: models.workspaceProfile,
-              as: workspaceProfileAssociationNames.plural,
+              as: workspaceProfileAssociationNames.singular,
               include: [
                 {
                   model: models.workspace,
@@ -347,7 +352,7 @@ export const profileMutationResolvers = {
                     {
                       model: models.domain,
                       as: domainAssociationNames.plural,
-                      where: { domain: origin },
+                      where: { domain },
                     },
                   ],
                 },
@@ -358,14 +363,14 @@ export const profileMutationResolvers = {
         .then((foundProfile) => {
           if (!foundProfile) return null;
           return foundProfile.authenticate(password).then((isAuthenticated) => {
-            if (!isAuthenticated) return null;
+            if (!isAuthenticated) throw new Error(LoginError.NOT_FOUND);
             const profileResult = prepareProfileResult(foundProfile)!;
             return createToken<AuthJwtPayload>({
               email: foundProfile.email,
               id: foundProfile.id,
               image: foundProfile.image,
               name: foundProfile.name,
-              workspaces: profileResult!.workspaces,
+              workspace: profileResult!.workspace!,
             }).then((token) => ({ profile: profileResult, token }));
           });
         });
@@ -382,58 +387,66 @@ export const profileMutationResolvers = {
         image: string;
         name: string;
         password: string;
-        workspaces: {
-          workspaceId: string;
+        workspace_id: string;
+        workspace: {
           access: ProfileWorkspaceAccess;
           status: ProfileWorkspaceStatus;
           title: string;
-        }[];
+        };
         is_completed: boolean;
       },
       contextValue: any,
       info: any
     ) => {
-      const include = prepareIncludesFromInfo(info);
-      const { workspaces, ...profileData } = data;
+      const { workspace, workspace_id, ...profileData } = data;
+      const include = prepareIncludesFromInfo(info, {
+        isMasterAccount: !!contextValue.isMaster,
+        workspace_id: contextValue.decodedProfileData.workspace.workspace_id,
+      });
       return models.profile
         .create(profileData, {
           returning: true,
         })
         .then((profile) =>
-          (workspaces && workspaces.length > 0
-            ? models.workspaceProfile.bulkCreate(
-                workspaces.map((item) => ({
-                  workspace_id: item.workspaceId,
-                  profile_id: profile.id,
-                  status: item.status,
-                  access: item.access,
-                  title: item.title,
-                }))
-              )
-            : Promise.resolve()
-          ).then((workspaceProfiles) =>
-            models.profile
-              .findByPk(profile.id, { include })
-              .then(prepareProfileResult)
-          )
+          models.workspaceProfile
+            .create({
+              workspace_id,
+              profile_id: profile.id,
+              status: workspace.status,
+              access: workspace.access,
+              title: workspace.title,
+            })
+            .then(() =>
+              models.profile
+                .findByPk(profile.id, { include })
+                .then(prepareProfileResult)
+            )
         );
     }
   ),
-  deleteProfile(
-    _: undefined,
-    data: {
-      id: string;
-    },
-    contextValue: any,
-    info: any
-  ) {
-    const { id } = data;
-    const include = prepareIncludesFromInfo(info);
-    return models.profile.findByPk(id, { include }).then((profile) => {
-      if (!profile) {
-        return null;
-      }
-      return profile.destroy().then(() => prepareProfileResult(profile));
-    });
-  },
+  deleteProfile: authorize({
+    allowedWorkspaceAccess: [ProfileWorkspaceAccess.ADMIN],
+  })(
+    (
+      _: undefined,
+      data: {
+        id: string;
+        workspace_id: string;
+      },
+      contextValue: any,
+      info: any
+    ) => {
+      const { id, workspace_id } = data;
+      const include = prepareIncludesFromInfo(info, {
+        isMasterAccount: !!contextValue.isMaster,
+        workspace_id: contextValue.decodedProfileData.workspace.workspace_id,
+      });
+      return models.profile.findByPk(id, { include }).then((profile) => {
+        if (!profile) {
+          return null;
+        }
+        return profile.destroy().then(() => prepareProfileResult(profile));
+      });
+    }
+  ),
 };

@@ -4,8 +4,8 @@
 //   typeAssociationNames,
 // } from "../constants";
 import { workspaceProfileAssociationNames } from "../constants";
+import { profileModel } from "../profile";
 import { workshopModel } from "../workshop";
-import { workspaceProfileModel } from "../workspace-profile";
 // import { activityModel } from "../activity";
 // import { typeModel } from "../type";
 // import { goalModel } from "../goal";
@@ -28,8 +28,8 @@ import { workspaceProfileModel } from "../workspace-profile";
 //   as: goalAssociationNames.plural,
 // });
 
-workshopModel.hasMany(workspaceProfileModel, {
+workshopModel.hasMany(profileModel, {
   sourceKey: "id",
-  foreignKey: "workshop_id",
-  as: workspaceProfileAssociationNames.plural,
+  foreignKey: "author_id",
+  as: workspaceProfileAssociationNames.singular,
 });

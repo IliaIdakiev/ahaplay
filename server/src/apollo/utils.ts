@@ -73,12 +73,9 @@ export function generateRequestContext(req: Request) {
   }
 
   return decodeToken<AuthenticatedUserData>(token)
-    .then((userData) => {
+    .then((decodedData) => {
       const context: AppContext = {
-        decodedProfileData: {
-          profileId: userData.id,
-          email: userData.email,
-        },
+        decodedProfileData: decodedData,
         token,
         origin,
         pubSub,

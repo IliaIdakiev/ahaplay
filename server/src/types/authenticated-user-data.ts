@@ -5,5 +5,5 @@ export interface AuthenticatedUserData {
   name: string;
   email: string;
   image: string;
-  workspaces: ProfileWorkspace[];
+  workspace: ProfileWorkspace;
 }

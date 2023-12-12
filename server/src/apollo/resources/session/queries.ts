@@ -9,7 +9,7 @@ import {
   SessionStatus,
 } from "../../../database";
 import { getRequestedFields } from "../../utils";
-import { AppContext } from "../../types";
+import { AppContext, AuthenticatedAppContext } from "../../types";
 import { startSessionProcess } from "../../../session-processor/process";
 
 function prepareIncludesFromInfo(info: any) {
@@ -62,7 +62,7 @@ export const sessionQueryResolvers = {
   getSession(
     _: undefined,
     data: { sessionKey: string },
-    contextValue: AppContext,
+    contextValue: AuthenticatedAppContext,
     info: any
   ): Promise<{
     session: SessionModelInstance | null;
@@ -98,7 +98,7 @@ export const sessionQueryResolvers = {
                 session_key: sessionKey,
                 status: SessionStatus.SCHEDULED,
                 slot_id: slot.id,
-                creator_id: contextValue.decodedProfileData!.profileId,
+                creator_id: contextValue.decodedProfileData.id,
                 workshop_id: slot.workshop_id,
                 workspace_id: slot.workspace_id,
               })

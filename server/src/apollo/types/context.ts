@@ -1,20 +1,15 @@
 import { RedisPubSub } from "graphql-redis-subscriptions";
-import { WorkspaceModelInstance } from "../../database";
-
-interface DecodedProfileData {
-  profileId: string;
-  email: string;
-}
+import { AuthJwtPayload } from "../../types";
 
 export interface AppContext {
-  decodedProfileData: DecodedProfileData | null;
+  decodedProfileData: AuthJwtPayload | null;
   token: string | null;
   pubSub: RedisPubSub;
   origin: string;
 }
 
 export type AuthenticatedAppContext = {
-  decodedProfileData: DecodedProfileData;
+  decodedProfileData: AuthJwtPayload;
   token: string;
-  originWorkspace?: WorkspaceModelInstance | null;
+  isMaster: boolean;
 } & AppContext;

@@ -17,7 +17,7 @@ workspaceModel.hasMany(domainModel, {
 workspaceModel.hasMany(workspaceProfileModel, {
   sourceKey: "id",
   foreignKey: "workspace_id",
-  as: workspaceProfileAssociationNames.plural,
+  as: workspaceProfileAssociationNames.singular,
 });
 
 workspaceModel.belongsToMany(profileModel, {

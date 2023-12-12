@@ -3,6 +3,10 @@ export enum LoginError {
   NOT_FOUND = "NOT_FOUND",
 }
 
+export enum RegistrationError {
+  MISSING_WORKSPACE = "MISSING_WORKSPACE",
+}
+
 export enum AuthenticationError {
   TOKEN_NOT_FOUND = "TOKEN_NOT_FOUND",
   ALREADY_AUTHENTICATED = "ALREADY_AUTHENTICATED",
