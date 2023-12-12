@@ -361,7 +361,7 @@ export const profileMutationResolvers = {
           ],
         })
         .then((foundProfile) => {
-          if (!foundProfile) return null;
+          if (!foundProfile) throw new Error(LoginError.NOT_FOUND);
           return foundProfile.authenticate(password).then((isAuthenticated) => {
             if (!isAuthenticated) throw new Error(LoginError.NOT_FOUND);
             const profileResult = prepareProfileResult(foundProfile)!;
