@@ -207,50 +207,52 @@ export const workspaceMutationResolvers = {
     ) => {
       const requestedFields = getRequestedFields(info);
       const { domains, profiles, ...workspaceData } = data;
-      return models.workspace
-        .create(workspaceData, { returning: true })
-        .then((workspace) => {
-          return Promise.all([
-            domains && domains?.length > 0
-              ? models.domain.bulkCreate(
-                  domains.map((d) => ({ ...d, workspace_id: workspace.id })),
-                  { returning: true }
-                )
-              : [],
-            profiles && profiles.length > 0
-              ? models.workspaceProfile
-                  .bulkCreate(
-                    profiles.map(({ id, access, status, title }) => ({
-                      profile_id: id,
-                      workspace_id: workspace.id,
-                      access,
-                      status,
-                      title,
-                    })),
-                    { returning: true }
+      return sequelize.transaction((t) => {
+        return models.workspace
+          .create(workspaceData, { returning: true, transaction: t })
+          .then((workspace) => {
+            return Promise.all([
+              domains && domains?.length > 0
+                ? models.domain.bulkCreate(
+                    domains.map((d) => ({ ...d, workspace_id: workspace.id })),
+                    { returning: true, transaction: t }
                   )
-                  .then((workspaceProfiles) =>
-                    requestedFields.profiles
-                      ? Promise.all(
-                          workspaceProfiles.map((wp) =>
-                            wp.getProfile().then((profile) => {
-                              wp.profile = profile;
-                              return wp;
-                            })
+                : [],
+              profiles && profiles.length > 0
+                ? models.workspaceProfile
+                    .bulkCreate(
+                      profiles.map(({ id, access, status, title }) => ({
+                        profile_id: id,
+                        workspace_id: workspace.id,
+                        access,
+                        status,
+                        title,
+                      })),
+                      { returning: true, transaction: t }
+                    )
+                    .then((workspaceProfiles) =>
+                      requestedFields.profiles
+                        ? Promise.all(
+                            workspaceProfiles.map((wp) =>
+                              wp.getProfile().then((profile) => {
+                                wp.profile = profile;
+                                return wp;
+                              })
+                            )
                           )
-                        )
-                      : []
-                  )
-              : [],
-          ]).then(([domains, workspaceProfiles]) => {
-            const result = generateResult(
-              workspace,
-              domains,
-              workspaceProfiles
-            );
-            return result;
+                        : []
+                    )
+                : [],
+            ]).then(([domains, workspaceProfiles]) => {
+              const result = generateResult(
+                workspace,
+                domains,
+                workspaceProfiles
+              );
+              return result;
+            });
           });
-        });
+      });
     }
   ),
   updateWorkspace: authorize({ masterOnly: true })(

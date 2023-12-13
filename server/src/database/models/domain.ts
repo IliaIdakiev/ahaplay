@@ -17,6 +17,7 @@ export const domainModel = sequelize.define<
     domain: {
       type: DataTypes.STRING,
       allowNull: false,
+      unique: true,
     },
     workspace_id: {
       type: DataTypes.UUID,
