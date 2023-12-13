@@ -47,5 +47,12 @@ else
   fi
 fi
 
-# Wait for background processes to finish
+./wait-for-it.sh -t 0 -h 127.0.0.1 -p 8000 -- echo "Backend server running on port :8000"
+
+if [ "$NODE_ENV" = "test" ]; then 
+  yarn seed:test
+else 
+  echo "Do someting else"
+fi
+
 wait

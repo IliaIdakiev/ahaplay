@@ -38,7 +38,7 @@ export const workshopModel = sequelize.define<
       allowNull: true,
     },
     about_text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(65535),
       allowNull: true,
     },
     about_video: {

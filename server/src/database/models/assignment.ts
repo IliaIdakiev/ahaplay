@@ -16,7 +16,7 @@ export const assignmentModel = sequelize.define<
       allowNull: false,
     },
     text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(4096),
       allowNull: false,
     },
     video: {
