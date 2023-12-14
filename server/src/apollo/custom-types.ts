@@ -16,7 +16,7 @@ const DateType = new GraphQLScalarType({
     return null;
   },
   parseValue(value) {
-    if (typeof value === "number") {
+    if (typeof value === "string") {
       return new Date(value);
     }
     return null;

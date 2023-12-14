@@ -14,6 +14,8 @@ import { expect } from "chai";
 
 import { getUnixTime } from "date-fns";
 
+// TODO: Add more cases
+
 describe("(Master account) Profile actions", () => {
   it("should successfully create one profile", async () => {
     try {

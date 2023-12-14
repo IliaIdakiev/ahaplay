@@ -1,8 +1,11 @@
 import {
   ProfileWorkspaceAccess,
   ProfileWorkspaceStatus,
+  activityAssociationNames,
   domainAssociationNames,
+  goalAssociationNames,
   models,
+  typeAssociationNames,
   workspaceAssociationNames,
   workspaceProfileAssociationNames,
 } from "./database";
@@ -190,6 +193,15 @@ const testDatabaseSetup = {
             },
           ],
         },
+      ],
+    });
+  },
+  getWorkshops() {
+    return models.workshop.findAll({
+      include: [
+        { model: models.activity, as: activityAssociationNames.plural },
+        { model: models.type, as: typeAssociationNames.singular },
+        { model: models.goal, as: goalAssociationNames.plural },
       ],
     });
   },

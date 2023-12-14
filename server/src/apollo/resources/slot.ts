@@ -1,5 +1,6 @@
 import gql from "graphql-tag";
 import {
+  ProfileWorkspaceAccess,
   SlotReminderStatus,
   SlotStatus,
   SlotType,
@@ -11,6 +12,7 @@ import {
 import { getRequestedFields } from "../utils";
 import { Includeable } from "sequelize";
 import { AppContext, AuthenticatedAppContext } from "../types";
+import { authorize } from "../middleware/authorize";
 
 export const slotTypeDefs = gql`
   enum SlotType {
@@ -126,65 +128,86 @@ export const slotQueryResolvers = {
 };
 
 export const slotMutationResolvers = {
-  createSlot(
-    _: undefined,
-    data: {
-      type: SlotType;
-      key: string;
-      schedule_date: Date;
-      workshop_id: string;
-      workspace_id: string;
-      ics: string;
-      ics_uid: string;
-    },
-    contextValue: AuthenticatedAppContext,
-    info: any
-  ) {
-    const include = prepareIncludesFromInfo(info);
-    return models.slot
-      .create(
-        {
-          ...data,
-          creator_id: contextValue.decodedProfileData.id,
-          reminder_status: SlotReminderStatus.NONE,
-          status: SlotStatus.SCHEDULED,
-        },
-        { returning: true }
-      )
-      .then((slot) => models.slot.findByPk(slot.id, { include }));
-  },
-  editSlot(
-    _: undefined,
-    data: {
-      id: string;
-      type: SlotType;
-      key: string;
-      schedule_date: Date;
-      workshop_id: string;
-      workspace_id: string;
-      ics: string;
-      ics_uid: string;
-      status: SlotStatus;
-      reminder_status: SlotReminderStatus;
-    },
-    contextValue: AppContext,
-    info: any
-  ) {
-    const include = prepareIncludesFromInfo(info);
-    return models.slot
-      .update({ ...data }, { where: { id: data.id }, returning: true })
-      .then(([, slot]) => models.slot.findByPk(slot[0]?.id, { include }));
-  },
-  deleteSlot(
-    _: undefined,
-    data: {
-      id: string;
-    },
-    contextValue: any,
-    info: any
-  ) {
-    return models.slot
-      .findByPk(data.id)
-      .then((slot) => slot?.destroy().then(() => slot));
-  },
+  createSlot: authorize({
+    allowedWorkspaceAccess: [
+      ProfileWorkspaceAccess.OWNER,
+      ProfileWorkspaceAccess.ADMIN,
+    ],
+  })(
+    (
+      _: undefined,
+      data: {
+        type: SlotType;
+        key: string;
+        schedule_date: Date;
+        workshop_id: string;
+        workspace_id: string;
+        ics: string;
+        ics_uid: string;
+      },
+      contextValue: AuthenticatedAppContext,
+      info: any
+    ) => {
+      const include = prepareIncludesFromInfo(info);
+      return models.slot
+        .create(
+          {
+            ...data,
+            creator_id: contextValue.decodedProfileData.id,
+            reminder_status: SlotReminderStatus.NONE,
+            status: SlotStatus.SCHEDULED,
+          },
+          { returning: true }
+        )
+        .then((slot) => models.slot.findByPk(slot.id, { include }));
+    }
+  ),
+  editSlot: authorize({
+    allowedWorkspaceAccess: [
+      ProfileWorkspaceAccess.OWNER,
+      ProfileWorkspaceAccess.ADMIN,
+    ],
+  })(
+    (
+      _: undefined,
+      data: {
+        id: string;
+        type: SlotType;
+        key: string;
+        schedule_date: Date;
+        workshop_id: string;
+        workspace_id: string;
+        ics: string;
+        ics_uid: string;
+        status: SlotStatus;
+        reminder_status: SlotReminderStatus;
+      },
+      contextValue: AppContext,
+      info: any
+    ) => {
+      const include = prepareIncludesFromInfo(info);
+      return models.slot
+        .update({ ...data }, { where: { id: data.id }, returning: true })
+        .then(([, slot]) => models.slot.findByPk(slot[0]?.id, { include }));
+    }
+  ),
+  deleteSlot: authorize({
+    allowedWorkspaceAccess: [
+      ProfileWorkspaceAccess.OWNER,
+      ProfileWorkspaceAccess.ADMIN,
+    ],
+  })(
+    (
+      _: undefined,
+      data: {
+        id: string;
+      },
+      contextValue: any,
+      info: any
+    ) => {
+      return models.slot
+        .findByPk(data.id)
+        .then((slot) => slot?.destroy().then(() => slot));
+    }
+  ),
 };

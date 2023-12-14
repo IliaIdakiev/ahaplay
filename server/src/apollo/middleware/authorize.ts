@@ -62,7 +62,7 @@ export const authorize =
               },
               {
                 model: models.workspaceProfile,
-                as: workspaceProfileAssociationNames.singular,
+                as: workspaceProfileAssociationNames.plural,
                 where: { profile_id: context.decodedProfileData.id },
               },
             ],

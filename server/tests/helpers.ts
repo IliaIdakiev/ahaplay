@@ -341,3 +341,78 @@ export function generateDeleteProfileRequestPayload(variables: {
     variables,
   };
 }
+
+export function generateCreateSlotRequestPayload(variables: {
+  type: "ALL" | "SPLIT";
+  key: string;
+  schedule_date: Date;
+  workshop_id: string;
+  workspace_id: string;
+  ics?: string;
+  ics_uid?: string;
+}) {
+  return {
+    query: `
+      mutation Mutation(
+        $type: SlotType!
+        $key: String!
+        $schedule_date: Date!
+        $workshop_id: String!
+        $workspace_id: String!
+        $ics: String
+        $ics_uid: String
+      ) {
+        createSlot(
+          type: $type
+          key: $key
+          schedule_date: $schedule_date
+          workshop_id: $workshop_id
+          workspace_id: $workspace_id
+          ics: $ics
+          ics_uid: $ics_uid
+        ) {
+          creator_id
+          ics
+          ics_uid
+          key
+          reminder_status
+          profile {
+            create_date
+            email
+            headline
+            id
+            image
+            is_completed
+            login_date
+            name
+            update_date
+            workspace {
+              access
+              profile_id
+              status
+              title
+              workspace_id
+            }
+          }
+          schedule_date
+          status
+          type
+          workshop_id
+          workspace_id
+          workspace {
+            create_date
+            domains {
+              domain
+            }
+            id
+            image
+            name
+            update_date
+            workspace_key
+          }
+        }
+      }
+    `,
+    variables,
+  };
+}
