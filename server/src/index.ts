@@ -10,7 +10,8 @@ import { createApolloServer } from "./apollo";
 import { globalErrorHandler } from "./global-error-handler";
 import { generateRequestContext } from "./apollo";
 import { environment } from "./env";
-import testDatabaseSetup, { processOperations } from "./test-database-setup";
+import { processOperations } from "./test-database-setup";
+import { exec } from "./exec";
 
 const cookieSecret = config.app.cookieSecret;
 
@@ -38,6 +39,11 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
         sequelize
           .drop({ logging: true })
           .then(() => sequelize.sync())
+          .then(() =>
+            exec(
+              `npx sequelize db:seed:all --config ./config/db.config.test.json`
+            )
+          )
           .then(() => processOperations(data))
           .then((data) => {
             res.send(data);

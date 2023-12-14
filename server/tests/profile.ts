@@ -223,7 +223,7 @@ describe("(Master account) Profile actions", () => {
         (d: any) => d.email === thirdProfileData.email
       );
 
-      expect(responseData.length).to.equal(3);
+      expect(responseData.length).to.equal(6);
       expect(profileResultOne).to.exist;
       expect(profileResultTwo).to.exist;
       expect(profileResultThree).to.exist;

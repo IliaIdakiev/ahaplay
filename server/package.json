@@ -9,6 +9,7 @@
     "start:pm2:test": "pm2 start ./index.js --no-automation --no-daemon --name ahaplay-server -- --env test -r tsconfig-paths/register &",
     "start:pm2:debug": "pm2 start ./index.js --watch --name ahaplay-server  --no-automation --no-daemon --node-args='--inspect=9230' -- -r tsconfig-paths/register &",
     "start:pm2:debug:test": "pm2 start ./index.js --watch --name ahaplay-server  --no-automation --no-daemon --node-args='--inspect=9230' -- --env test -r tsconfig-paths/register &",
+    "start:pm2:exec-helper": "pm2 start ./exec-helper.js --watch --name ahaplay-server-exec-helper  --no-automation --no-daemon &",
     "build:app": "yarn cdc && yarn clean && tsc -p tsconfig.app.json",
     "build:spec": "yarn clean && tsc -p tsconfig.spec.json",
     "build:tests": "yarn clean:test && tsc -p tsconfig.test.json",

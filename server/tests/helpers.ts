@@ -386,13 +386,6 @@ export function generateCreateSlotRequestPayload(variables: {
             login_date
             name
             update_date
-            workspace {
-              access
-              profile_id
-              status
-              title
-              workspace_id
-            }
           }
           schedule_date
           status
@@ -401,9 +394,6 @@ export function generateCreateSlotRequestPayload(variables: {
           workspace_id
           workspace {
             create_date
-            domains {
-              domain
-            }
             id
             image
             name
