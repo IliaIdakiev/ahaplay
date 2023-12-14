@@ -18,7 +18,7 @@ export const conceptModel = sequelize.define<
       allowNull: false,
     },
     text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(65535),
       allowNull: false,
     },
     sequence_number: {

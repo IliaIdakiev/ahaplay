@@ -12,7 +12,7 @@ export const questionModel = sequelize.define<
   "Question",
   {
     text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(65535),
       allowNull: false,
     },
     g_duration: {
@@ -30,11 +30,11 @@ export const questionModel = sequelize.define<
     },
     assignment_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
     theory_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {

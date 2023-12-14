@@ -15,7 +15,7 @@ export const typeModel = sequelize.define<
       allowNull: false,
     },
     description: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(65535),
       allowNull: false,
     },
     video: {

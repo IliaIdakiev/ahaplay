@@ -26,7 +26,7 @@ export const theoryModel = sequelize.define<
     },
     conceptualization_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {

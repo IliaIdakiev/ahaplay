@@ -12,7 +12,7 @@ export const benchmarkModel = sequelize.define<
   "Benchmark",
   {
     baseline: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(2500),
       allowNull: false,
     },
     g_duration: {
@@ -24,7 +24,7 @@ export const benchmarkModel = sequelize.define<
       allowNull: false,
     },
     reference: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(2500),
       allowNull: false,
     },
     activity_id: {
@@ -38,7 +38,7 @@ export const benchmarkModel = sequelize.define<
     },
   },
   {
-    tableName: "benckmarks",
+    tableName: "benchmarks",
     timestamps: false,
   }
 );

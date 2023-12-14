@@ -22,6 +22,8 @@ import { surveyModel } from "./survey";
 import { invitationModel } from "./invitation";
 import { domainModel } from "./domain";
 import { workspaceProfileModel } from "./workspace-profile";
+import { milestoneModel } from "./milestone";
+import { milestoneWorkshopModel } from "./milestone-workshop";
 
 export const models = {
   profile: profileModel,
@@ -47,4 +49,6 @@ export const models = {
   invitation: invitationModel,
   domain: domainModel,
   workspaceProfile: workspaceProfileModel,
+  milestone: milestoneModel,
+  milestoneWorkshop: milestoneWorkshopModel,
 };

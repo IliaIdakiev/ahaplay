@@ -11,7 +11,7 @@ export const goalModel = sequelize.define<
   {
     ...baseFields,
     text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(65535),
       allowNull: false,
     },
     sequence_number: {
