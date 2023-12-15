@@ -406,3 +406,116 @@ export function generateCreateSlotRequestPayload(variables: {
     variables,
   };
 }
+
+export function generateGetInvitationRequestPayload(variables: {
+  email: string;
+  slot_id: string;
+}) {
+  return {
+    query: `
+      query GetInvitation($email: String, $slot_id: String) {
+        getInvitation(email: $email, slot_id: $slot_id) {
+          invitation {
+            email
+            emails_count
+            profile {
+              email
+              headline
+              id
+              image
+              is_completed
+              login_date
+              name
+              update_date
+            }
+            profile_id
+            slot {
+              ics
+              ics_uid
+              key
+              reminder_status
+              schedule_date
+              status
+              type
+              workshop_id
+              workspace_id
+              workspace {
+                create_date
+                id
+                image
+                name
+                update_date
+                workspace_key
+              }
+              workshop {
+                about_text
+                about_video
+                create_date
+                duration
+                headline
+                id
+                status
+                topic
+                type
+                update_date
+              }
+            }
+            slot_id
+            status
+          }
+          millisecondsToStart
+        }
+      }
+    `,
+    variables,
+  };
+}
+
+export function generateCreateInvitationRequestPayload(variables: {
+  slot_id: string;
+  email: string;
+}) {
+  return {
+    query: `
+    mutation CreateInvitation(
+      $email: String
+      $slot_id: String
+    ) {
+      createInvitation(
+        email: $email
+        slot_id: $slot_id
+      ) {
+        email
+        profile {
+          create_date
+          email
+          headline
+          id
+          image
+          is_completed
+          login_date
+          name
+          update_date
+        }
+        emails_count
+        profile_id
+        slot {
+          creator_id
+          ics
+          ics_uid
+          key
+          reminder_status
+          schedule_date
+          status
+          type
+          workshop_id
+          workspace_id
+        }
+        slot_id
+        status
+      }
+    }
+    `,
+    variables,
+  };
+}

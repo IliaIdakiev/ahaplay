@@ -22,7 +22,9 @@ import {
   workspaceQueryResolvers,
   workspaceTypeDefs,
   invitationQueryDefs,
+  invitationMutationDefs,
   invitationTypeDefs,
+  invitationMutationResolvers,
   invitationQueryResolvers,
   workspaceQueryDefs,
   workspaceMutationDefs,
@@ -79,6 +81,7 @@ export const resolvers = {
     ...workspaceMutationResolvers,
     ...profileMutationResolvers,
     ...slotMutationResolvers,
+    ...invitationMutationResolvers,
   },
 };
 
@@ -102,4 +105,5 @@ export const typeDefs = mergeTypeDefs([
   workspaceMutationDefs,
   profileMutationDefs,
   slotMutationDefs,
+  invitationMutationDefs,
 ]);

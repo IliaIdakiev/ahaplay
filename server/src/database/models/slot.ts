@@ -22,7 +22,7 @@ export const slotModel = sequelize.define<
     },
     key: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     reminder_status: {
       type: DataTypes.STRING,

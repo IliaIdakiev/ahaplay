@@ -7,11 +7,12 @@ import {
 import { IBase, IBaseKeys } from "./base";
 import { ProfileModelInstance } from "./profile";
 import { SlotModelInstance } from "./slot";
+import { InvitationStatus } from "../enums";
 
 export interface InvitationAttributes extends IBase {
   email: string;
-  status: string;
-  emails_count: string; // ??
+  emails_count: number;
+  status: InvitationStatus;
 
   profile_id: string;
   slot_id: string;
@@ -21,7 +22,10 @@ export interface InvitationAttributes extends IBase {
 }
 
 export interface InvitationCreationAttributes
-  extends Optional<InvitationAttributes, IBaseKeys> {}
+  extends Optional<
+    InvitationAttributes,
+    IBaseKeys | "status" | "emails_count"
+  > {}
 
 export interface InvitationInstanceMethods {}
 

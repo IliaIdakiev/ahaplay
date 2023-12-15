@@ -39,7 +39,7 @@ export const slotTypeDefs = gql`
   type Slot {
     ics: String
     ics_uid: String
-    key: String!
+    key: String
     reminder_status: String
     schedule_date: Date!
     status: SlotStatus!

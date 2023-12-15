@@ -5,6 +5,7 @@ import {
   InvitationCreationAttributes,
 } from "../interfaces/invitation";
 import { baseFields, baseModelConfig } from "./base";
+import { InvitationStatus } from "../enums";
 
 export const invitationModel = sequelize.define<
   InvitationModelInstance,
@@ -20,10 +21,12 @@ export const invitationModel = sequelize.define<
     status: {
       type: DataTypes.STRING,
       allowNull: false,
+      defaultValue: InvitationStatus.PENDING,
     },
     emails_count: {
       type: DataTypes.STRING,
       allowNull: false,
+      defaultValue: 0,
     },
 
     profile_id: {
@@ -38,5 +41,12 @@ export const invitationModel = sequelize.define<
   {
     ...baseModelConfig,
     tableName: "invitations",
+    indexes: [
+      {
+        unique: true,
+        fields: ["email", "slot_id"],
+        name: "unique_constraint_email_slot_id",
+      },
+    ],
   }
 );

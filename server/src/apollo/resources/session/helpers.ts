@@ -34,9 +34,9 @@ export function generateSessionUpdateSubscriptionEvent(config: {
   return `${SubscriptionAction.IN_MEMORY_SESSION_UPDATE}::${config.sessionId}`;
 }
 
-export function generateSessionKey(config: { slotId: string }) {
+export function generateSessionKey(config: { slot_id: string }) {
   // TODO: Improve this because I'm not sure what exactly it should be
-  return config.slotId;
+  return config.slot_id;
 }
 
 export function generateSessionRedisKey(config: { sessionId: string }) {
