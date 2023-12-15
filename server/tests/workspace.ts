@@ -24,7 +24,7 @@ describe("(Master account) Workspace", () => {
           data: {
             name: "Test profile",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -33,7 +33,7 @@ describe("(Master account) Workspace", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
       ]);
@@ -86,7 +86,7 @@ describe("(Master account) Workspace", () => {
           data: {
             name: "Test profile",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -95,7 +95,7 @@ describe("(Master account) Workspace", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
       ]);
@@ -137,7 +137,7 @@ describe("(Client account) Profile", () => {
           data: {
             name: "Test profile",
             email: "test@test.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -146,7 +146,7 @@ describe("(Client account) Profile", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
       ]);

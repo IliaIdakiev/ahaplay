@@ -8,6 +8,8 @@ import {
 } from "./helpers";
 import { expect } from "chai";
 
+// TODO: Add more slot tests
+
 describe("(Client account) Slot", () => {
   it("should schedule a ALL slot", async () => {
     try {
@@ -21,7 +23,7 @@ describe("(Client account) Slot", () => {
           data: {
             name: "Test profile",
             email: "test@test.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -30,7 +32,7 @@ describe("(Client account) Slot", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
         {
@@ -96,7 +98,7 @@ describe("(Client account) Slot", () => {
           data: {
             name: "Test profile",
             email: "test@test.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -105,7 +107,7 @@ describe("(Client account) Slot", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
         {
@@ -159,8 +161,7 @@ describe("(Client account) Slot", () => {
       throw e;
     }
   });
-
-  it("should not schedule a SPLIT slot for another workspace", async () => {
+  it("should schedule a SPLIT slot FOR MY WORKSPACE even if another workspace id is passed", async () => {
     try {
       const setupResult = await setupDatabase([
         {
@@ -172,7 +173,7 @@ describe("(Client account) Slot", () => {
           data: {
             name: "Test profile",
             email: "test@test.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -181,12 +182,16 @@ describe("(Client account) Slot", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
         {
           key: "getWorkshops",
           data: {},
+        },
+        {
+          key: "createWorkspace",
+          data: { name: "My test other workspace", domains: ["best.com"] },
         },
       ]);
 
@@ -194,12 +199,13 @@ describe("(Client account) Slot", () => {
       const profile = setupResult[1];
       const authToken = setupResult[2];
       const workshops = setupResult[3];
+      const otherWorkspace = setupResult[4];
 
       const type = "SPLIT" as const;
       const key = "ALA_BALA";
       const schedule_date = add(new Date(), { hours: 1 });
       const workshop_id = workshops[0].id;
-      const workspace_id = workspace.id;
+      const workspace_id = otherWorkspace.id;
       const ics = "";
       const ics_uid = "";
 
@@ -226,7 +232,7 @@ describe("(Client account) Slot", () => {
       expect(responseData.type).to.be.equal(type);
       expect(responseData.status).to.be.equal("SCHEDULED");
       expect(responseData.workshop_id).to.be.equal(workshop_id);
-      expect(responseData.workspace_id).to.be.equal(workspace_id);
+      expect(responseData.workspace_id).to.be.equal(workspace.id);
       expect(responseData.ics).to.be.equal(ics);
       expect(responseData.ics_uid).to.be.equal(ics_uid);
       expect(responseErrors).to.be.equal(undefined);

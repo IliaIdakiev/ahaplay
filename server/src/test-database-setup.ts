@@ -1,6 +1,9 @@
 import {
   ProfileWorkspaceAccess,
   ProfileWorkspaceStatus,
+  SlotReminderStatus,
+  SlotStatus,
+  SlotType,
   activityAssociationNames,
   domainAssociationNames,
   goalAssociationNames,
@@ -11,6 +14,7 @@ import {
 } from "./database";
 import { createToken } from "./modules";
 import { AuthJwtPayload } from "./types";
+import objectPath from "object-path";
 
 const testDatabaseSetup = {
   createWorkspace({ name, domains }: { name: string; domains: string[] }) {
@@ -205,6 +209,20 @@ const testDatabaseSetup = {
       ],
     });
   },
+  createSlot(data: {
+    type: SlotType;
+    key: string;
+    schedule_date: Date;
+    creator_id: string;
+    workshop_id: string;
+    workspace_id: string;
+    ics: string;
+    ics_uid: string;
+    reminder_status: SlotReminderStatus;
+    status: SlotStatus;
+  }) {
+    return models.slot.create(data, { returning: true });
+  },
 };
 
 export function processOperations(data: any) {
@@ -213,10 +231,13 @@ export function processOperations(data: any) {
     const { key, data } = value;
     if (!(key in testDatabaseSetup)) continue;
     const thenFn = (prevData: any) => {
+      const jsonPrevData = JSON.parse(JSON.stringify(prevData));
       for (const [key, value] of Object.entries(data)) {
-        if (typeof value === "string" && /\[(\d+)\]\.(.+)/.test(value)) {
-          const [, index, accessor] = /\[(\d+)\]\.(.+)/.exec(value)!;
-          data[key] = prevData[index][accessor];
+        if (
+          Array.isArray(value) &&
+          objectPath.ensureExists(jsonPrevData, value, null)
+        ) {
+          data[key] = objectPath.get(jsonPrevData, value);
         }
       }
       return testDatabaseSetup[key as keyof typeof testDatabaseSetup](data);

@@ -47,9 +47,7 @@ export interface SessionCreationAttributes
     | "complete_date"
   > {}
 
-export interface SessionInstanceMethods {
-  isOpenForSession(): boolean;
-}
+export interface SessionInstanceMethods {}
 
 export interface SessionModelInstance
   extends Model<SessionAttributes, SessionCreationAttributes>,

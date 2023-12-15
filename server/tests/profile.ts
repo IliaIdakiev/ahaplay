@@ -29,7 +29,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "OWNER",
             status: "ACTIVE",
             is_completed: true,
@@ -38,7 +38,7 @@ describe("(Master account) Profile actions", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
       ]);
@@ -106,7 +106,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "TEAM_MEMBER",
             status: "ACTIVE",
             is_completed: true,
@@ -115,7 +115,7 @@ describe("(Master account) Profile actions", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
       ]);
@@ -159,7 +159,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile 1",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "TEAM_MEMBER",
             status: "ACTIVE",
           },
@@ -167,7 +167,7 @@ describe("(Master account) Profile actions", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
         {
@@ -175,7 +175,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile 2",
             email: "test-2@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "ADMIN",
             status: "ACTIVE",
           },
@@ -189,7 +189,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile 3",
             email: "test-1@email2.com",
-            workspace_id: "[4].id",
+            workspace_id: ["4", "id"],
             access: "OWNER",
             status: "ACTIVE",
           },
@@ -269,7 +269,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile 1",
             email: "test@ahaplay.com",
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "TEAM_MEMBER",
             status: "ACTIVE",
           },
@@ -277,7 +277,7 @@ describe("(Master account) Profile actions", () => {
         {
           key: "getAuthToken",
           data: {
-            email: "[1].email",
+            email: ["1", "email"],
           },
         },
         {
@@ -289,7 +289,7 @@ describe("(Master account) Profile actions", () => {
           data: {
             name: "Test profile 2",
             email: "test-2@email.com",
-            workspace_id: "[3].id",
+            workspace_id: ["3", "id"],
             access: "ADMIN",
             status: "ACTIVE",
           },
@@ -501,7 +501,7 @@ describe("(Client account) Profile", () => {
           data: {
             name: "Test profile",
             email: `test@${workspaceDomain}`,
-            workspace_id: "[0].id",
+            workspace_id: ["0", "id"],
             access: "TEAM_MEMBER",
             status: "ACTIVE",
           },
