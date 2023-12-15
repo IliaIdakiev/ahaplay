@@ -143,14 +143,16 @@ export const invitationQueryResolvers = {
           return { invitation, millisecondsToStart };
         }
 
-        const millisecondsToStart =
+        const additionalMillisecondsToStart =
           invitation.slot.type === SlotType.SPLIT
             ? ms(config.app.splitWaitingTime)
             : 0;
-        console.log(millisecondsToStart);
 
         const sessionStartUUID = `${v4()}-${getUnixTime(
-          addMilliseconds(new Date(), millisecondsToStart)
+          addMilliseconds(
+            invitation.slot.schedule_date,
+            additionalMillisecondsToStart
+          )
         )}`;
 
         invitation.slot.set("key", sessionStartUUID);
@@ -160,7 +162,10 @@ export const invitationQueryResolvers = {
             invitation.slot = updatedSlot;
             return invitation;
           })
-          .then((invitation) => ({ invitation, millisecondsToStart }));
+          .then((invitation) => ({
+            invitation,
+            millisecondsToStart: additionalMillisecondsToStart,
+          }));
       });
   },
 };

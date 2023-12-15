@@ -261,7 +261,7 @@ describe("Invitation stuff", () => {
       expect(getInvitationData.invitation.slot.type).to.be.equal(slot.type);
       expect(
         parseInt(getInvitationData.invitation.slot.key.split("-").pop())
-      ).to.equal(getUnixTime(new Date()));
+      ).to.equal(getUnixTime(schedule_date));
     } catch (e) {
       console.error(e);
       throw e;
@@ -355,7 +355,7 @@ describe("Invitation stuff", () => {
 
       expect(getInvitationData.invitation.slot.type).to.be.equal(slot.type);
 
-      const startTime = getUnixTime(addMinutes(new Date(), 5));
+      const startTime = getUnixTime(addMinutes(schedule_date, 5));
       expect(
         parseInt(getInvitationData.invitation.slot.key.split("-").pop())
       ).to.equal(startTime);
