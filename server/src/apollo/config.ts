@@ -33,6 +33,7 @@ import {
   profileMutationDefs,
   slotMutationResolvers,
   slotMutationDefs,
+  sessionQueryResolvers,
 } from "./resources";
 
 import { mergeTypeDefs } from "@graphql-tools/merge";
@@ -72,6 +73,7 @@ export const resolvers = {
     ...profileQueryResolvers,
     ...workspaceQueryResolvers,
     ...invitationQueryResolvers,
+    ...sessionQueryResolvers,
   },
   Subscription: {
     ...subscriptionResolvers,

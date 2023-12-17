@@ -14,10 +14,16 @@ import { Includeable } from "sequelize";
 import { AppContext, AuthenticatedAppContext } from "../types";
 import { InvitationModelInstance } from "../../database/interfaces/invitation";
 import { authorize } from "../middleware/authorize";
-import { addMilliseconds, getUnixTime } from "date-fns";
+import {
+  addMilliseconds,
+  getMilliseconds,
+  getUnixTime,
+  subMilliseconds,
+} from "date-fns";
 import ms from "ms";
 import { v4 } from "uuid";
 import config from "../../config";
+import { authenticate } from "../middleware/authenticate";
 
 export const invitationTypeDefs = gql`
   type Invitation {
@@ -92,82 +98,89 @@ export const invitationQueryResolvers = {
     const include = prepareIncludesFromInfo(info);
     return models.invitation.findAll({ where: { ...data }, include });
   },
-  getInvitation(
-    _: undefined,
-    data: { email: string; slot_id: string },
-    contextValue: AppContext,
-    info: any
-  ): Promise<{
-    invitation: InvitationModelInstance | null;
-    millisecondsToStart: number | null;
-  }> {
-    const { email, slot_id } = data;
-    return models.invitation
-      .findOne({
-        where: { email, slot_id },
-        include: [
-          { model: models.profile, as: profileAssociationNames.singular },
-          {
-            model: models.slot,
-            as: slotAssociationNames.singular,
-            include: [
-              { model: models.session, as: sessionAssociationNames.singular },
-              {
-                model: models.workshop,
-                as: workshopAssociationNames.singular,
-              },
-              {
-                model: models.workspace,
-                as: workspaceAssociationNames.singular,
-              },
-            ],
-          },
-        ],
-      })
-      .then((invitation) => {
-        if (
-          !invitation ||
-          !invitation.slot ||
-          !invitation.slot.isOpenForSession() ||
-          invitation.slot.session ||
-          invitation.slot.key
-        ) {
-          let millisecondsToStart = null;
-          if (invitation?.slot?.key) {
-            const currentTimestamp = getUnixTime(new Date());
-            const keyParts = invitation.slot.key.split("-");
-            const startTimestamp = +keyParts[keyParts.length - 1];
-
-            millisecondsToStart = startTimestamp - currentTimestamp;
+  getInvitation: authenticate(
+    (
+      _: undefined,
+      data: { email: string; slot_id: string },
+      contextValue: AuthenticatedAppContext,
+      info: any
+    ): Promise<{
+      invitation: InvitationModelInstance | null;
+      millisecondsToStart: number | null;
+    }> => {
+      const { email, slot_id } = data;
+      const profile_id = contextValue.decodedProfileData.id;
+      return models.invitation
+        .findOne({
+          where: { email, slot_id, profile_id },
+          include: [
+            { model: models.profile, as: profileAssociationNames.singular },
+            {
+              model: models.slot,
+              as: slotAssociationNames.singular,
+              include: [
+                { model: models.session, as: sessionAssociationNames.singular },
+                {
+                  model: models.workshop,
+                  as: workshopAssociationNames.singular,
+                },
+                {
+                  model: models.workspace,
+                  as: workspaceAssociationNames.singular,
+                },
+              ],
+            },
+          ],
+        })
+        .then((invitation) => {
+          if (
+            !invitation ||
+            !invitation.slot ||
+            !invitation.slot.isOpenForSession() ||
+            invitation.slot.session ||
+            invitation.slot.key
+          ) {
+            let millisecondsToStart = null;
+            if (invitation?.slot?.key) {
+              const keyParts = invitation.slot.key.split("-");
+              const startTimestamp = +keyParts[keyParts.length - 1];
+              const currentTimestamp = getUnixTime(Date.now());
+              millisecondsToStart = (startTimestamp - currentTimestamp) * 1000;
+            }
+            return { invitation, millisecondsToStart };
           }
-          return { invitation, millisecondsToStart };
-        }
 
-        const additionalMillisecondsToStart =
-          invitation.slot.type === SlotType.SPLIT
-            ? ms(config.app.splitWaitingTime)
-            : 0;
+          const additionalMillisecondsToStart =
+            invitation.slot.type === SlotType.SPLIT
+              ? ms(config.app.splitWaitingTime)
+              : 0;
 
-        const sessionStartUUID = `${v4()}-${getUnixTime(
-          addMilliseconds(
-            invitation.slot.schedule_date,
-            additionalMillisecondsToStart
-          )
-        )}`;
+          const startingUnixTimestamp = getUnixTime(
+            addMilliseconds(
+              invitation.slot.schedule_date,
+              additionalMillisecondsToStart
+            )
+          );
+          const sessionStartUUID = `${v4()}-${startingUnixTimestamp}`;
 
-        invitation.slot.set("key", sessionStartUUID);
-        return invitation.slot
-          .save()
-          .then((updatedSlot) => {
-            invitation.slot = updatedSlot;
-            return invitation;
-          })
-          .then((invitation) => ({
-            invitation,
-            millisecondsToStart: additionalMillisecondsToStart,
-          }));
-      });
-  },
+          const currentTimestamp = getUnixTime(Date.now());
+          const millisecondsToStart =
+            (startingUnixTimestamp - currentTimestamp) * 1000;
+
+          invitation.slot.set("key", sessionStartUUID);
+          return invitation.slot
+            .save()
+            .then((updatedSlot) => {
+              invitation.slot = updatedSlot;
+              return invitation;
+            })
+            .then((invitation) => ({
+              invitation,
+              millisecondsToStart,
+            }));
+        });
+    }
+  ),
 };
 
 export const invitationMutationResolvers = {

@@ -3,14 +3,20 @@ import axios from "axios";
 
 export const serverUrl = `https://localhost`;
 export const apiUrl = `${serverUrl}/graphql`;
-// const masterAuthorizationToken =
-// "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6ImQwOWM4YWVjLWY3ZTYtNDBjZi05ZDNmLWMwOTUwNzQ3MjJjNiIsIm5hbWUiOiJUZXN0IFRva2VuIDEiLCJlbWFpbCI6InVzZXIxQGFoYXBsYXkuY29tIiwiaW1hZ2UiOiIiLCJhY3RpdmVfd29ya3NwYWNlX2lkIjoiMzBiOGU2Y2UtY2YyMC00ZDdjLTg4MzYtMzFlMjQ0NzQ1ZmZkIiwiaWF0IjoxNjk4NTcyNTA0LCJpc3MiOiJhaGFwbGF5In0.D8cRdizWVx6_nb3yOXnH7TG2ykmPAaMyrG4ersee3P0";
 
 export const instance = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false,
   }),
 });
+
+export function delay(milliseconds: number) {
+  return new Promise<void>((res) => {
+    setTimeout(() => {
+      res();
+    }, milliseconds);
+  });
+}
 
 export async function setupDatabase(ops: { key: string; data: any }[]) {
   const response = await instance.post(serverUrl + "/recreate-database", ops);
@@ -515,6 +521,65 @@ export function generateCreateInvitationRequestPayload(variables: {
         status
       }
     }
+    `,
+    variables,
+  };
+}
+
+export function generateGetSessionRequestPayload(variables: {
+  session_key: string;
+}) {
+  return {
+    query: `
+      query Query($session_key: String!) {
+        getSession(session_key: $session_key) {
+          millisecondsToStart
+          session {
+            complete_date
+            completed_activities
+            create_date
+            creator_id
+            id
+            profile {
+              create_date
+              email
+              headline
+              id
+              image
+              is_completed
+              login_date
+              name
+              update_date
+            }
+            session_key
+            slot {
+              creator_id
+              ics
+              ics_uid
+              key
+              reminder_status
+              schedule_date
+              status
+              type
+              workshop {
+                about_text
+                about_video
+                author_id
+                create_date
+                duration
+                headline
+                id
+                status
+                topic
+                type
+                update_date
+              }
+              workshop_id
+              workspace_id
+            }
+          }
+        }
+      }
     `,
     variables,
   };

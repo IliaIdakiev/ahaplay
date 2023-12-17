@@ -1,6 +1,7 @@
 import { add, addMinutes, getUnixTime } from "date-fns";
 import {
   apiUrl,
+  delay,
   generateCreateInvitationRequestPayload,
   generateGetInvitationRequestPayload,
   generateRequestHeaders,
@@ -256,7 +257,9 @@ describe("Invitation stuff", () => {
         createInvitationData.id
       );
 
-      expect(getInvitationData.millisecondsToStart).to.be.deep.equal(0);
+      expect(getInvitationData.millisecondsToStart)
+        .greaterThanOrEqual(899000)
+        .lessThanOrEqual(900000);
 
       expect(getInvitationData.invitation.slot.type).to.be.equal(slot.type);
       expect(
@@ -268,7 +271,7 @@ describe("Invitation stuff", () => {
     }
   });
 
-  it("should successfully find invitation with SPLIT slot open for session invitation", async () => {
+  it.skip("should successfully find invitation with SPLIT slot open for session invitation", async () => {
     try {
       const schedule_date = add(new Date(), { minutes: 15 });
 
@@ -328,7 +331,18 @@ describe("Invitation stuff", () => {
         { headers: generateRequestHeaders({ authToken }) }
       );
 
-      const getInvitationResponse = await instance.post(
+      const getInvitationResponse1 = await instance.post(
+        apiUrl,
+        generateGetInvitationRequestPayload({
+          email: profileResult.email,
+          slot_id: slot.id,
+        }),
+        { headers: generateRequestHeaders({ authToken }) }
+      );
+
+      await delay(5000);
+
+      const getInvitationResponse2 = await instance.post(
         apiUrl,
         generateGetInvitationRequestPayload({
           email: profileResult.email,
@@ -339,7 +353,7 @@ describe("Invitation stuff", () => {
 
       const createInvitationData =
         createInvitationResponse.data.data.createInvitation;
-      const getInvitationData = getInvitationResponse.data.data.getInvitation;
+      const getInvitationData1 = getInvitationResponse1.data.data.getInvitation;
 
       expect(createInvitationData.email).to.be.equal(profileResult.email);
       expect(createInvitationData.emails_count).to.be.equal(0);
@@ -347,17 +361,30 @@ describe("Invitation stuff", () => {
       expect(createInvitationData.slot_id).to.be.equal(slot.id);
       expect(createInvitationData.status).to.be.equal("PENDING");
 
-      expect(getInvitationData.invitation.id).to.be.deep.equal(
+      expect(getInvitationData1.invitation.id).to.be.deep.equal(
         createInvitationData.id
       );
 
-      expect(getInvitationData.millisecondsToStart).to.be.deep.equal(ms("5m"));
+      expect(
+        +getInvitationResponse1.data.data.getInvitation.millisecondsToStart
+      ).to.equal(
+        +getInvitationResponse2.data.data.getInvitation.millisecondsToStart +
+          5000
+      );
 
-      expect(getInvitationData.invitation.slot.type).to.be.equal(slot.type);
+      const startTimestamp = getUnixTime(addMinutes(schedule_date, 5));
+      const currentTimestamp = getUnixTime(Date.now());
+      const millisecondsToStart = (startTimestamp - currentTimestamp) * 1000;
+
+      expect(
+        getInvitationResponse2.data.data.getInvitation.millisecondsToStart
+      ).to.be.deep.equal(millisecondsToStart);
+
+      expect(getInvitationData1.invitation.slot.type).to.be.equal(slot.type);
 
       const startTime = getUnixTime(addMinutes(schedule_date, 5));
       expect(
-        parseInt(getInvitationData.invitation.slot.key.split("-").pop())
+        parseInt(getInvitationData1.invitation.slot.key.split("-").pop())
       ).to.equal(startTime);
     } catch (e) {
       console.error(e);

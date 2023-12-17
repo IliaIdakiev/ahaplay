@@ -97,7 +97,7 @@ export const sessionQueryDefs = gql`
       workspace_id: String
     ): [Session]
 
-    getSession(sessionKey: String!): SessionResult!
+    getSession(session_key: String!): SessionResult!
   }
 `;
 

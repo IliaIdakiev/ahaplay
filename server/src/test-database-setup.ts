@@ -1,4 +1,5 @@
 import {
+  InvitationStatus,
   ProfileWorkspaceAccess,
   ProfileWorkspaceStatus,
   SlotReminderStatus,
@@ -222,6 +223,14 @@ const testDatabaseSetup = {
     status: SlotStatus;
   }) {
     return models.slot.create(data, { returning: true });
+  },
+  createInvite(data: {
+    email: string;
+    status: InvitationStatus;
+    profile_id: string;
+    slot_id: string;
+  }) {
+    return models.invitation.create(data, { returning: true });
   },
 };
 
