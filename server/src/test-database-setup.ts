@@ -14,6 +14,8 @@ import {
   workspaceProfileAssociationNames,
 } from "./database";
 import { createToken } from "./modules";
+import { processManager } from "./session-processor/manager";
+import { generateRedisSessionProcessorName } from "./session-processor/utils";
 import { AuthJwtPayload } from "./types";
 import objectPath from "object-path";
 
@@ -231,6 +233,14 @@ const testDatabaseSetup = {
     slot_id: string;
   }) {
     return models.invitation.create(data, { returning: true });
+  },
+  deleteSessionProcess({ sessionId }: { sessionId: string }) {
+    const processName = generateRedisSessionProcessorName({ sessionId });
+    return processManager.deleteProcess({ processName });
+  },
+  findSessionProcess({ sessionId }: { sessionId: string }) {
+    const processName = generateRedisSessionProcessorName({ sessionId });
+    return processManager.findProcessByName({ processName });
   },
 };
 

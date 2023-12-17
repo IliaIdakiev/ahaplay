@@ -1,7 +1,8 @@
 const fs = require('fs');
 const path = require('path');
-const startFileFullPath = path.resolve('dist/index.js');
-const sessionProcessorDirectory = path.join(startFileFullPath, 'session-processor');
+const distFilePath = path.join(__dirname, 'dist')
+const startFileFullPath = path.join(distFilePath, 'index.js');
+const sessionProcessorDirectory = path.join(distFilePath, 'session-processor');
 const sessionProcessorMainFileLocation = path.join(sessionProcessorDirectory, 'main.js');
 const sessionProcessorTestDispatcherFile = path.join(sessionProcessorDirectory, 'test-dispatcher.js');
 

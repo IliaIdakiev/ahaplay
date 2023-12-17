@@ -10,7 +10,7 @@ const sessionProcessorStartScript = path.resolve(__basedir, "index.js");
 const sessionProcessorStaticArgs = ["--session-processor"];
 const nodeArgs =
   config.app.sessionProcessorDebugPort && __is_debug
-    ? [config.app.sessionProcessorDebugPort]
+    ? [`--inspect-brk=${config.app.sessionProcessorDebugPort}`]
     : [];
 
 export function startSessionProcess({
@@ -31,8 +31,8 @@ export function startSessionProcess({
     messageCheckFn,
   });
 
-  let existingProcessResolve: () => void;
-  const existingProcess = new Promise<void>((res) => {
+  let existingProcessResolve: (data: string) => void;
+  const existingProcess = new Promise<string>((res) => {
     existingProcessResolve = res;
   });
 
@@ -44,11 +44,11 @@ export function startSessionProcess({
         args: sessionProcessorStaticArgs.concat([sessionId]),
         nodeArgs,
       })
-      .then(({ process, isNew }) => {
+      .then(({ id, isNew }) => {
         if (!isNew) {
-          existingProcessResolve();
+          existingProcessResolve(id);
         }
-        return process;
+        return id as string;
       }),
     Promise.race([sessionProcessorStarted, existingProcess]),
   ]);

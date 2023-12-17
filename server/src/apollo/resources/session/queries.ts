@@ -117,11 +117,6 @@ export const sessionQueryResolvers = {
                   }).then(() => session)
                 )
                 .then((session) => {
-                  const currentTimestamp = new Date().getTime();
-                  const startTimestamp =
-                    parseInt(slot.key.slice(0, 8), 16) * 1000;
-
-                  const millisecondsToStart = startTimestamp - currentTimestamp;
                   return { session, millisecondsToStart };
                 });
             });

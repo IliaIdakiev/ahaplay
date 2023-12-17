@@ -1,18 +1,28 @@
-import { add } from "date-fns";
+import { add, getUnixTime } from "date-fns";
 import {
   apiUrl,
   generateGetInvitationRequestPayload,
   generateGetSessionRequestPayload,
   generateRequestHeaders,
   instance,
+  processOperations,
   setupDatabase,
 } from "./helpers";
+import { expect } from "chai";
+
+async function cleanUp(sessionId: string) {
+  await processOperations([
+    {
+      key: "deleteSessionProcess",
+      data: { sessionId },
+    },
+  ]);
+}
 
 describe("Session stuff", () => {
   it.only("should start session for ALL slot", async () => {
     try {
       const schedule_date = new Date();
-
       const setupResult = await setupDatabase([
         // 0
         {
@@ -88,7 +98,7 @@ describe("Session stuff", () => {
             type: "ALL",
             schedule_date,
             creator_id: ["1", "id"],
-            workshop_id: ["7", "0", "id"],
+            workshop_id: ["7", "1", "id"],
             workspace_id: ["0", "id"],
             ics: "",
             ics_uid: "",
@@ -171,6 +181,7 @@ describe("Session stuff", () => {
       const getInvitation3ResponseData =
         getInvitationResponse3.data.data.getInvitation;
 
+      const beforeSessionRequestsTimestamp = getUnixTime(new Date());
       const getSessionResponse1 = await instance.post(
         apiUrl,
         generateGetSessionRequestPayload({
@@ -178,8 +189,42 @@ describe("Session stuff", () => {
         }),
         { headers: generateRequestHeaders({ authToken: authToken1 }) }
       );
+      const afterSessionRequestsTimestamp = getUnixTime(new Date());
+
+      const getSessionResponseData =
+        getSessionResponse1.data.data.getSession.session;
+      const sessionId = getSessionResponseData.id;
+
+      const [sessionProcess] = await processOperations([
+        {
+          key: "findSessionProcess",
+          data: { sessionId },
+        },
+      ]);
 
       console.log(getSessionResponse1);
+
+      await cleanUp(sessionId);
+
+      const [sessionProcess2] = await processOperations([
+        {
+          key: "findSessionProcess",
+          data: { sessionId },
+        },
+      ]);
+
+      expect(typeof sessionProcess.id).to.be.equal("number");
+      expect(sessionProcess.id).to.be.greaterThan(0);
+      expect(sessionProcess2.id).to.be.equal(null);
+      expect(getSessionResponseData.create_date).to.be.greaterThanOrEqual(
+        beforeSessionRequestsTimestamp
+      );
+      expect(getSessionResponseData.create_date).to.be.lessThanOrEqual(
+        afterSessionRequestsTimestamp
+      );
+      expect(getSessionResponseData.session_key).to.equal(
+        getInvitation1ResponseData.invitation.slot.key
+      );
     } catch (e) {
       console.error(e);
       throw e;

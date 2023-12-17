@@ -33,7 +33,7 @@ service nginx start
 service nginx status
 
 
-yarn start:pm2:exec-helper
+yarn start:pm2:process-helper
 if [ "$IS_DEBUG" = "true" ]; then
   if [ "$NODE_ENV" = "test" ]; then 
     npm install -g pm2 && yarn start:pm2:debug:test
