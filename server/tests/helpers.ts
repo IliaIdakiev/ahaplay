@@ -1,8 +1,39 @@
+import {
+  ApolloClient,
+  gql,
+  HttpLink,
+  InMemoryCache,
+} from "@apollo/client/core";
+import { Client, createClient, Event, EventListener } from "graphql-ws";
+import WebSocket from "ws";
+
 import * as https from "https";
 import axios from "axios";
+import fetch from "cross-fetch";
 
-export const serverUrl = `https://localhost`;
+export const serverUrl = `http://localhost`;
 export const apiUrl = `${serverUrl}/graphql`;
+export const wsUrl = `ws://localhost/graphql`;
+
+export const apolloClient = new ApolloClient({
+  link: new HttpLink({ uri: apiUrl, fetch }),
+  cache: new InMemoryCache(),
+});
+
+export const createSubscriptionClient = (
+  token: string,
+  on?: Partial<{
+    [event in Event]: EventListener<event>;
+  }>
+) =>
+  createClient({
+    url: wsUrl,
+    webSocketImpl: WebSocket,
+    connectionParams: {
+      Authorization: `Bearer ${token}`,
+    },
+    on,
+  });
 
 export const instance = axios.create({
   httpsAgent: new https.Agent({
@@ -584,3 +615,173 @@ export function generateGetSessionRequestPayload(variables: {
     variables,
   };
 }
+
+export function generateJoinRequestPayload(variables: { sessionId: string }) {
+  return {
+    query: `
+      mutation Mutation($sessionId: String!) {
+        join(sessionId: $sessionId) {
+          context {
+            activityResult {
+              key
+              value {
+                key
+                value {
+                  profileId
+                  ready
+                  value
+                }
+              }
+            }
+            currentActiveProfiles
+            lastUpdatedTimestamp
+            readyActiveProfiles
+          }
+          value
+        }
+      }
+    `,
+    variables,
+  };
+}
+
+export function generateReadyToStartPayload(variables: { sessionId: string }) {
+  return {
+    query: `
+      mutation Mutation($sessionId: String!) {
+        readyToStart(sessionId: $sessionId) {
+          context {
+            activityResult {
+              key
+              value {
+                key
+                value {
+                  profileId
+                  ready
+                  value
+                }
+              }
+            }
+            currentActiveProfiles
+            lastUpdatedTimestamp
+            readyActiveProfiles
+          }
+          value
+        }
+      }
+    `,
+    variables,
+  };
+}
+
+export function generateSetActivityValuePayload(variables: {
+  sessionId: string;
+  activityId: string;
+  value: string;
+}) {
+  return {
+    query: `
+      mutation SetActivityValue(
+        $sessionId: String!
+        $activityId: String!
+        $value: String!
+      ) {
+        setActivityValue(
+          sessionId: $sessionId
+          activityId: $activityId
+          value: $value
+        ) {
+          context {
+            activityResult {
+              value {
+                key
+                value {
+                  profileId
+                  ready
+                  value
+                }
+              }
+              key
+            }
+            currentActiveProfiles
+            lastUpdatedTimestamp
+            readyActiveProfiles
+          }
+          value
+        }
+      }
+    `,
+    variables,
+  };
+}
+
+export function generateSetActivityReadyPayload(variables: {
+  sessionId: string;
+  activityId: string;
+}) {
+  return {
+    query: `
+      mutation SetActivityReady($sessionId: String!, $activityId: String!) {
+        setActivityReady(sessionId: $sessionId, activityId: $activityId) {
+          context {
+            activityResult {
+              key
+              value {
+                key
+                value {
+                  profileId
+                  ready
+                  value
+                }
+              }
+            }
+            currentActiveProfiles
+            lastUpdatedTimestamp
+            readyActiveProfiles
+          }
+          value
+        }
+      }
+    `,
+    variables,
+  };
+}
+
+export function subscriptionFactory<
+  T extends Record<string, unknown> | null | undefined
+>(query: string) {
+  return function createSubscription(
+    variables: T,
+    authToken: string,
+    collection: any[]
+  ) {
+    return new Promise<{ client: Client; unsubscribe: () => void }>(
+      (res, rej) => {
+        let unsubscribe: () => void;
+        const client = createSubscriptionClient(authToken, {
+          connected: () => res({ client, unsubscribe }),
+        });
+
+        unsubscribe = client.subscribe(
+          { query, variables },
+          {
+            next(value) {
+              console.log("Subscription next", value);
+              collection.push(value);
+            },
+            error(error) {
+              rej(error);
+            },
+            complete() {},
+          }
+        );
+      }
+    );
+  };
+}
+
+const sessionSubscriptionQuery =
+  "subscription Subscription($sessionId: String) {\n  sessionState(sessionId: $sessionId) {\n    context {\n      activityResult {\n        key\n        value {\n          key\n          value {\n            profileId\n            value\n            ready\n          }\n        }\n      }\n      currentActiveProfiles\n      lastUpdatedTimestamp\n      readyActiveProfiles\n    }\n    value\n  }\n}\n";
+export const createSessionSubscription = subscriptionFactory<{
+  sessionId: string;
+}>(sessionSubscriptionQuery);

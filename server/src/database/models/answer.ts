@@ -14,16 +14,16 @@ export const answerModel = sequelize.define<
   {
     ...baseFields,
     text: {
-      type: DataTypes.STRING,
+      type: DataTypes.STRING(1500),
       allowNull: false,
     },
     explanation_text: {
-      type: DataTypes.STRING,
-      allowNull: false,
+      type: DataTypes.STRING(65535),
+      allowNull: true,
     },
     points: {
       type: DataTypes.INTEGER,
-      allowNull: false,
+      allowNull: true,
     },
     activity_id: {
       type: DataTypes.UUID,

@@ -16,11 +16,11 @@ export const typeModel = sequelize.define<
     },
     description: {
       type: DataTypes.STRING(65535),
-      allowNull: false,
+      allowNull: true, // TODO: Maybe remove this at some point
     },
     video: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true, // TODO: Maybe remove this at some point
     },
   },
   {

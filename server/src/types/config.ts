@@ -48,6 +48,8 @@ export interface IDatabaseConfig {
 
 export interface IWorkshopConfig {
   sessionOpeningTimeInMinutes: number;
+  minimumWorkshopParticipants: number;
+  maximumWorkshopParticipants: number;
 }
 
 export interface INginxConfig {

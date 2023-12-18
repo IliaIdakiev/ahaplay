@@ -2,7 +2,7 @@
 const path = require("path");
 const { readFileInLines } = require("../seeders-utils.js");
 
-const csvFilePath = path.resolve(__dirname, "..", "db_exports", "benchmarks");
+const csvFilePath = path.resolve(__dirname, "..", "db_exports", "prod", "benchmarks");
 const databaseTableName = "benchmarks";
 
 /** @type {import('sequelize-cli').Migration} */

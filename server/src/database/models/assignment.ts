@@ -30,7 +30,7 @@ export const assignmentModel = sequelize.define<
     },
     conceptualization_id: {
       type: DataTypes.UUID,
-      allowNull: false,
+      allowNull: true,
     },
   },
   {

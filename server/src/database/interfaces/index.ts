@@ -8,3 +8,5 @@ export * from "./workspace";
 export * from "./session";
 export * from "./domain";
 export * from "./workspace-profile";
+export * from "./recommendation";
+export * from "./recommendation-workshop";

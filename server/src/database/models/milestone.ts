@@ -23,7 +23,7 @@ export const milestoneModel = sequelize.define<
     },
     description_video: {
       type: DataTypes.STRING,
-      allowNull: false,
+      allowNull: true,
     },
     goals: {
       type: DataTypes.STRING(65535),

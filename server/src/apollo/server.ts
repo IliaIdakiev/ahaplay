@@ -39,7 +39,7 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
     {
       schema,
       context({ connectionParams }) {
-        const token = readAuthToken({ headers: connectionParams })!;
+        const token = readAuthToken({ headers: connectionParams || {} })!;
         return decodeToken<AuthJwtPayload>(token).then((decodedData) => {
           const context: AppContext = {
             pubSub: pubSub,
@@ -51,7 +51,7 @@ export const createApolloServer = (httpServer: HttpOrHttpsServer) => {
         });
       },
       onConnect({ connectionParams }) {
-        const token = readAuthToken({ headers: connectionParams });
+        const token = readAuthToken({ headers: connectionParams || {} });
         if (!token) {
           return Promise.reject(AuthError.INVALID_CREDENTIALS);
         }

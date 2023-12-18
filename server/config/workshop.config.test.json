@@ -1,3 +1,5 @@
 {
-  "sessionOpeningTimeInMinutes": 30
+  "sessionOpeningTimeInMinutes": 30,
+  "minimumWorkshopParticipants": 3,
+  "maximumWorkshopParticipants": 7
 }

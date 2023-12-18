@@ -24,6 +24,8 @@ import { domainModel } from "./domain";
 import { workspaceProfileModel } from "./workspace-profile";
 import { milestoneModel } from "./milestone";
 import { milestoneWorkshopModel } from "./milestone-workshop";
+import { recommendationModel } from "./recommendation";
+import { recommendationWorkshopModel } from "./recommendation-workshop";
 
 export const models = {
   profile: profileModel,
@@ -51,4 +53,6 @@ export const models = {
   workspaceProfile: workspaceProfileModel,
   milestone: milestoneModel,
   milestoneWorkshop: milestoneWorkshopModel,
+  recommendation: recommendationModel,
+  recommendationWorkshop: recommendationWorkshopModel,
 };

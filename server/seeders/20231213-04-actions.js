@@ -2,8 +2,8 @@
 const path = require("path");
 const { readFileInLines } = require("../seeders-utils.js");
 
-const csvFilePath = path.resolve(__dirname, "..", "db_exports", "prod", "instructions");
-const databaseTableName = "instructions";
+const csvFilePath = path.resolve(__dirname, "..", "db_exports", "prod", "actions");
+const databaseTableName = "actions";
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
@@ -12,12 +12,10 @@ module.exports = {
     const data = lines.map(line => {
       const lineItems = line.split(/(?<!\\),/g).map(v => v === "\\N" ? null : v);
       return {
-        id: lineItems[0],
-        create_date: lineItems[1],
-        sequence_number: lineItems[2],
-        text: lineItems[3],
-        update_date: lineItems[4] || lineItems[1],
-        type_id: lineItems[5]
+        i_duration: lineItems[0],
+        g_duration: lineItems[1],
+        text: lineItems[2],
+        activity_id: lineItems[3],
       }
     });
     await queryInterface.bulkInsert(databaseTableName, data);
