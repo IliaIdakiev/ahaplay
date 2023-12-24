@@ -1,5 +1,10 @@
 #!/bin/bash
 
+# Change redis dump location
+redis_conf="/etc/redis/redis.conf"
+new_path="/etc/redis/dump.rdb"
+sed -i "s#^dbfilename dump.rdb#dbfilename $new_path#" "$redis_conf"
+
 # Disable Transparent Huge Pages (THP) because of REDIS
 echo 'never' > /sys/kernel/mm/transparent_hugepage/enabled
 echo 'never' > /sys/kernel/mm/transparent_hugepage/defrag
@@ -53,7 +58,7 @@ fi
 if [ "$NODE_ENV" = "test" ]; then 
   yarn seed:test
 else 
-  echo "Do someting else"
+  echo "No seed"
 fi
 
 wait

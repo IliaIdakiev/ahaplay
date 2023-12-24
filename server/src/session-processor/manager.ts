@@ -1,6 +1,16 @@
 import axios from "axios";
+import http from "http";
+import config from "../config";
 
-const helperPort = 4444;
+const helperPort = config.app.helperPort;
+
+export const instance = axios.create({
+  httpsAgent: new http.Agent({
+    maxSockets: Infinity,
+    timeout: 99999999999,
+  }),
+});
+
 export const processManager = {
   startOrReturnExistingOneProcess({
     scriptLocation,
@@ -13,7 +23,7 @@ export const processManager = {
     args?: string | string[];
     nodeArgs?: string | string[];
   }) {
-    return axios
+    return instance
       .post(`http://127.0.0.1:${helperPort}/pm2/process`, {
         scriptLocation,
         processName,
@@ -23,12 +33,12 @@ export const processManager = {
       .then((res) => res.data);
   },
   findProcessByName({ processName }: { processName: string }) {
-    return axios
+    return instance
       .get(`http://127.0.0.1:${helperPort}/pm2/process/${processName}`)
       .then((res) => res.data);
   },
   deleteProcess({ processName }: { processName: string }) {
-    return axios
+    return instance
       .delete(`http://127.0.0.1:${helperPort}/pm2/process/${processName}`)
       .then((res) => res.data);
   },

@@ -149,59 +149,106 @@ describe("Session stuff", () => {
       const authToken2 = setupResult[5];
       const authToken3 = setupResult[6];
 
+      const workshop = setupResult[7][0];
+      const workshopActivities = workshop.activities.sort(
+        (a: any, b: any) => a.sequence_number - b.sequence_number
+      );
+
       const inviteUser1 = setupResult[9];
       const inviteUser2 = setupResult[10];
       const inviteUser3 = setupResult[11];
 
-      const getInvitationResponse1 = await instance.post(
-        apiUrl,
-        generateGetInvitationRequestPayload({
-          email: inviteUser1.email,
-          slot_id: inviteUser1.slot_id,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
+      const beforeSessionRequestsTimestamp = getUnixTime(new Date());
+      const [
+        [getInvitationResponse1, getSessionResponse1],
+        [getInvitationResponse2, getSessionResponse2],
+        [getInvitationResponse3, getSessionResponse3],
+      ] = await Promise.all([
+        instance
+          .post(
+            apiUrl,
+            generateGetInvitationRequestPayload({
+              email: inviteUser1.email,
+              slot_id: inviteUser1.slot_id,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken1 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateGetSessionRequestPayload({
+                  session_key:
+                    result1.data.data.getInvitation.invitation.slot.key,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken1 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateGetInvitationRequestPayload({
+              email: inviteUser2.email,
+              slot_id: inviteUser2.slot_id,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken2 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateGetSessionRequestPayload({
+                  session_key:
+                    result1.data.data.getInvitation.invitation.slot.key,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken2 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateGetInvitationRequestPayload({
+              email: inviteUser3.email,
+              slot_id: inviteUser3.slot_id,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken3 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateGetSessionRequestPayload({
+                  session_key:
+                    result1.data.data.getInvitation.invitation.slot.key,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken3 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        ,
+      ]);
+
+      const afterSessionRequestsTimestamp = getUnixTime(new Date());
+
       const getInvitation1ResponseData =
         getInvitationResponse1.data.data.getInvitation;
-
-      const getInvitationResponse2 = await instance.post(
-        apiUrl,
-        generateGetInvitationRequestPayload({
-          email: inviteUser2.email,
-          slot_id: inviteUser2.slot_id,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken2 }) }
-      );
 
       const getInvitation2ResponseData =
         getInvitationResponse2.data.data.getInvitation;
 
-      const getInvitationResponse3 = await instance.post(
-        apiUrl,
-        generateGetInvitationRequestPayload({
-          email: inviteUser3.email,
-          slot_id: inviteUser3.slot_id,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken3 }) }
-      );
-
       const getInvitation3ResponseData =
         getInvitationResponse3.data.data.getInvitation;
 
-      const beforeSessionRequestsTimestamp = getUnixTime(new Date());
-      const getSessionResponse1 = await instance.post(
-        apiUrl,
-        generateGetSessionRequestPayload({
-          session_key: getInvitation1ResponseData.invitation.slot.key,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
-      const afterSessionRequestsTimestamp = getUnixTime(new Date());
-
-      const getSessionResponseData =
+      const getSession1ResponseData =
         getSessionResponse1.data.data.getSession.session;
-      const sessionId = getSessionResponseData.id;
+      const getSession2ResponseData =
+        getSessionResponse2.data.data.getSession.session;
+      const getSession3ResponseData =
+        getSessionResponse3.data.data.getSession.session;
 
+      const sessionId = getSession1ResponseData.id;
       const [sessionProcess] = await processOperations([
         {
           key: "findSessionProcess",
@@ -213,132 +260,446 @@ describe("Session stuff", () => {
       const user2SubscriptionCollection: any[] = [];
       const user3SubscriptionCollection: any[] = [];
 
-      await createSessionSubscription(
+      createSessionSubscription(
         { sessionId },
         authToken1,
         user1SubscriptionCollection
       );
-      await createSessionSubscription(
+      createSessionSubscription(
         { sessionId },
         authToken2,
         user2SubscriptionCollection
       );
-      await createSessionSubscription(
+      createSessionSubscription(
         { sessionId },
         authToken3,
         user3SubscriptionCollection
       );
 
       // PLAYER JOIN
-      const join1Response = await instance.post(
-        apiUrl,
-        generateJoinRequestPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
-
-      const join2Response = await instance.post(
-        apiUrl,
-        generateJoinRequestPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken2 }) }
-      );
-
-      const join3Response = await instance.post(
-        apiUrl,
-        generateJoinRequestPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken3 }) }
-      );
-
-      // PLAYER READY TO START
-      const player1ReadyResponse = await instance.post(
-        apiUrl,
-        generateReadyToStartPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
-
-      const player2ReadyResponse = await instance.post(
-        apiUrl,
-        generateReadyToStartPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken2 }) }
-      );
-
-      const player3ReadyResponse = await instance.post(
-        apiUrl,
-        generateReadyToStartPayload({
-          sessionId,
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken3 }) }
-      );
+      const [
+        [join1Response, player1ReadyResponse],
+        [join2Response, player2ReadyResponse],
+        [join3Response, player3ReadyResponse],
+      ] = await Promise.all([
+        instance
+          .post(
+            apiUrl,
+            generateJoinRequestPayload({
+              sessionId,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken1 }) }
+          )
+          .then((result1) => {
+            return instance
+              .post(
+                apiUrl,
+                generateReadyToStartPayload({
+                  sessionId,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken1 }) }
+              )
+              .then((result2) => [result1, result2]);
+          }),
+        instance
+          .post(
+            apiUrl,
+            generateJoinRequestPayload({
+              sessionId,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken2 }) }
+          )
+          .then((result1) => {
+            return instance
+              .post(
+                apiUrl,
+                generateReadyToStartPayload({
+                  sessionId,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken2 }) }
+              )
+              .then((result2) => [result1, result2]);
+          }),
+        instance
+          .post(
+            apiUrl,
+            generateJoinRequestPayload({
+              sessionId,
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken3 }) }
+          )
+          .then((result1) => {
+            return instance
+              .post(
+                apiUrl,
+                generateReadyToStartPayload({
+                  sessionId,
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken3 }) }
+              )
+              .then((result2) => [result1, result2]);
+          }),
+      ]);
 
       // SET START EMOTIONS
-      const player1StartEmotionResponse = await instance.post(
-        apiUrl,
-        generateSetActivityValuePayload({
-          sessionId,
-          activityId: "startEmotion",
-          value: "5",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
 
-      const player2StartEmotionResponse = await instance.post(
-        apiUrl,
-        generateSetActivityValuePayload({
-          sessionId,
-          activityId: "startEmotion",
-          value: "3",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken2 }) }
-      );
+      const [
+        [player1StartEmotionResponse, player1StartEmotionReadyResponse],
+        [player2StartEmotionResponse, player3StartEmotionResponse],
+        [player2StartEmotionReadyResponse, player3StartEmotionReadyResponse],
+      ] = await Promise.all([
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "startEmotion",
+              value: "5",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken1 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "startEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken1 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "startEmotion",
+              value: "3",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken2 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "startEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken2 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "startEmotion",
+              value: "6",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken3 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "startEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken3 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+      ]);
 
-      const player3StartEmotionResponse = await instance.post(
-        apiUrl,
-        generateSetActivityValuePayload({
-          sessionId,
-          activityId: "startEmotion",
-          value: "6",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken3 }) }
-      );
+      // SET TEAM NAME
+      const [
+        player1SetTeamNameResponse,
+        player2SetTeamNameResponse,
+        player3SetTeamNameResponse,
+      ] = await Promise.all([
+        instance.post(
+          apiUrl,
+          generateSetActivityValuePayload({
+            sessionId,
+            activityId: "teamName",
+            value: "The",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken1 }) }
+        ),
+        instance.post(
+          apiUrl,
+          generateSetActivityValuePayload({
+            sessionId,
+            activityId: "teamName",
+            value: "Team",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken2 }) }
+        ),
+        instance.post(
+          apiUrl,
+          generateSetActivityValuePayload({
+            sessionId,
+            activityId: "teamName",
+            value: "Is Cool",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken3 }) }
+        ),
+      ]);
 
-      // SET START EMOTIONS READY
-      const player1StartEmotionReadyResponse = await instance.post(
-        apiUrl,
-        generateSetActivityReadyPayload({
-          sessionId,
-          activityId: "startEmotion",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken1 }) }
-      );
+      // SET SET TEAM NAME READY
+      const [
+        player1TeamNameReadyResponse,
+        player2TeamNameReadyResponse,
+        player3TeamNameReadyResponse,
+      ] = await Promise.all([
+        instance.post(
+          apiUrl,
+          generateSetActivityReadyPayload({
+            sessionId,
+            activityId: "teamName",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken1 }) }
+        ),
+        instance.post(
+          apiUrl,
+          generateSetActivityReadyPayload({
+            sessionId,
+            activityId: "teamName",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken2 }) }
+        ),
+        instance.post(
+          apiUrl,
+          generateSetActivityReadyPayload({
+            sessionId,
+            activityId: "teamName",
+          }),
+          { headers: generateRequestHeaders({ authToken: authToken3 }) }
+        ),
+      ]);
 
-      const player2StartEmotionReadyResponse = await instance.post(
-        apiUrl,
-        generateSetActivityReadyPayload({
-          sessionId,
-          activityId: "startEmotion",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken2 }) }
-      );
+      let previousActivityId = null;
+      for (let i = 0; i < workshopActivities.length + 1; i++) {
+        const lastSocketValues = [
+          user1SubscriptionCollection[user1SubscriptionCollection.length - 1],
+          user2SubscriptionCollection[user2SubscriptionCollection.length - 1],
+          user3SubscriptionCollection[user3SubscriptionCollection.length - 1],
+        ].sort(
+          (a, b) =>
+            a.data.sessionState.context.lastUpdatedTimestamp -
+            b.data.sessionState.context.lastUpdatedTimestamp
+        );
+        const value = lastSocketValues[0].data.sessionState.value;
 
-      const player3StartEmotionReadyResponse = await instance.post(
-        apiUrl,
-        generateSetActivityReadyPayload({
-          sessionId,
-          activityId: "startEmotion",
-        }),
-        { headers: generateRequestHeaders({ authToken: authToken3 }) }
-      );
+        if (value.includes(previousActivityId)) {
+          --i;
+        }
+        if (value.includes("endEmotion")) {
+          break;
+        }
+        const activity = workshopActivities[i];
 
-      await delay(10000);
+        if (!value.includes("review")) {
+          // SET ACTIVITY VALUE
+          const [
+            [player1SetActivityValueResponse, player1SetReadyResponse],
+            [player2SetActivityValueResponse, player2SetReadyResponse],
+            [player3SetActivityValueResponse, player3SetReadyResponse],
+          ] = await Promise.all([
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityValuePayload({
+                  sessionId,
+                  activityId: activity.id,
+                  value: "test value 1",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken1 }) }
+              )
+              .then((result1) =>
+                instance
+                  .post(
+                    apiUrl,
+                    generateSetActivityReadyPayload({
+                      sessionId,
+                      activityId: activity.id,
+                    }),
+                    {
+                      headers: generateRequestHeaders({
+                        authToken: authToken1,
+                      }),
+                    }
+                  )
+                  .then((result2) => [result1, result2])
+              ),
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityValuePayload({
+                  sessionId,
+                  activityId: activity.id,
+                  value: "test value 2",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken2 }) }
+              )
+              .then((result1) =>
+                instance
+                  .post(
+                    apiUrl,
+                    generateSetActivityReadyPayload({
+                      sessionId,
+                      activityId: activity.id,
+                    }),
+                    {
+                      headers: generateRequestHeaders({
+                        authToken: authToken2,
+                      }),
+                    }
+                  )
+                  .then((result2) => [result1, result2])
+              ),
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityValuePayload({
+                  sessionId,
+                  activityId: activity.id,
+                  value: "test value 3",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken3 }) }
+              )
+              .then((result1) =>
+                instance
+                  .post(
+                    apiUrl,
+                    generateSetActivityReadyPayload({
+                      sessionId,
+                      activityId: activity.id,
+                    }),
+                    {
+                      headers: generateRequestHeaders({
+                        authToken: authToken3,
+                      }),
+                    }
+                  )
+                  .then((result2) => [result1, result2])
+              ),
+          ]);
+        } else {
+          // SET ACTIVITY READY
+          const [
+            player1ActivityReady,
+            player2ActivityReady,
+            player3ActivityReady,
+          ] = await Promise.all([
+            instance.post(
+              apiUrl,
+              generateSetActivityReadyPayload({
+                sessionId,
+                activityId: activity.id,
+              }),
+              { headers: generateRequestHeaders({ authToken: authToken1 }) }
+            ),
+            instance.post(
+              apiUrl,
+              generateSetActivityReadyPayload({
+                sessionId,
+                activityId: activity.id,
+              }),
+              { headers: generateRequestHeaders({ authToken: authToken2 }) }
+            ),
+            instance.post(
+              apiUrl,
+              generateSetActivityReadyPayload({
+                sessionId,
+                activityId: activity.id,
+              }),
+              { headers: generateRequestHeaders({ authToken: authToken3 }) }
+            ),
+          ]);
+        }
+
+        previousActivityId = activity.id;
+      }
+
+      // SET END EMOTIONS
+      const [
+        [player1EndEmotionResponse, player1EndEmotionReadyResponse],
+        [player2EndEmotionResponse, player2EndEmotionReadyResponse],
+        [player3EndEmotionResponse, player3EndEmotionReadyResponse],
+      ] = await Promise.all([
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "endEmotion",
+              value: "6",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken1 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "endEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken1 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "endEmotion",
+              value: "6",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken2 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "endEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken2 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+        instance
+          .post(
+            apiUrl,
+            generateSetActivityValuePayload({
+              sessionId,
+              activityId: "endEmotion",
+              value: "6",
+            }),
+            { headers: generateRequestHeaders({ authToken: authToken3 }) }
+          )
+          .then((result1) =>
+            instance
+              .post(
+                apiUrl,
+                generateSetActivityReadyPayload({
+                  sessionId,
+                  activityId: "endEmotion",
+                }),
+                { headers: generateRequestHeaders({ authToken: authToken3 }) }
+              )
+              .then((result2) => [result1, result2])
+          ),
+      ]);
 
       await cleanUp(sessionId);
 
@@ -352,13 +713,13 @@ describe("Session stuff", () => {
       expect(typeof sessionProcess.id).to.be.equal("number");
       expect(sessionProcess.id).to.be.greaterThan(0);
       expect(sessionProcess2.id).to.be.equal(null);
-      expect(getSessionResponseData.create_date).to.be.greaterThanOrEqual(
+      expect(getSession1ResponseData.create_date).to.be.greaterThanOrEqual(
         beforeSessionRequestsTimestamp
       );
-      expect(getSessionResponseData.create_date).to.be.lessThanOrEqual(
+      expect(getSession1ResponseData.create_date).to.be.lessThanOrEqual(
         afterSessionRequestsTimestamp
       );
-      expect(getSessionResponseData.session_key).to.equal(
+      expect(getSession1ResponseData.session_key).to.equal(
         getInvitation1ResponseData.invitation.slot.key
       );
     } catch (e) {

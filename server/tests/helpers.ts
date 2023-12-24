@@ -1,11 +1,7 @@
-import {
-  ApolloClient,
-  gql,
-  HttpLink,
-  InMemoryCache,
-} from "@apollo/client/core";
+import { ApolloClient, HttpLink, InMemoryCache } from "@apollo/client/core";
 import { Client, createClient, Event, EventListener } from "graphql-ws";
 import WebSocket from "ws";
+import * as fs from "fs";
 
 import * as https from "https";
 import axios from "axios";
@@ -38,8 +34,35 @@ export const createSubscriptionClient = (
 export const instance = axios.create({
   httpsAgent: new https.Agent({
     rejectUnauthorized: false,
+    maxSockets: Infinity,
+    timeout: 99999999999,
   }),
 });
+
+instance.interceptors.request.use(
+  function (config) {
+    // console.log("Sending request", config);
+    fs.appendFile(
+      "/Users/iliaidakiev/Development/ahaplay-rework/server/output.txt",
+      `${JSON.stringify(config.data)}\n\n`,
+      () => {}
+    );
+    return config;
+  },
+  function (error) {
+    return Promise.reject(error);
+  }
+);
+
+instance.interceptors.response.use(
+  function (response) {
+    // console.log("Response received", response.data);
+    return response;
+  },
+  function (error) {
+    return Promise.reject(error);
+  }
+);
 
 export function delay(milliseconds: number) {
   return new Promise<void>((res) => {
@@ -766,7 +789,7 @@ export function subscriptionFactory<
           { query, variables },
           {
             next(value) {
-              console.log("Subscription next", value);
+              console.log("Subscription next", JSON.stringify(value));
               collection.push(value);
             },
             error(error) {

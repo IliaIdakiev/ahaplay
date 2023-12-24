@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const distFilePath = path.join(__dirname, 'dist')
 const startFileFullPath = path.join(distFilePath, 'index.js');
+const processHelperFile = path.join(distFilePath, 'process-helper.js');
 const sessionProcessorDirectory = path.join(distFilePath, 'session-processor');
 const sessionProcessorMainFileLocation = path.join(sessionProcessorDirectory, 'main.js');
 const sessionProcessorTestDispatcherFile = path.join(sessionProcessorDirectory, 'test-dispatcher.js');
@@ -16,18 +17,22 @@ if (!exists) {
 
 console.log(`%cSetting base dir to ${__dirname}`, "color: red");
 global.__basedir = __dirname;
-global.__is_debug = !!process.execArgv.some(arg => arg.startsWith('--inspect-brk'));
-
 
 const args = process.argv.slice(2);
 const startSessionProcessor = args[0] === '--session-processor';
 const startTestDispatcher = args[0] === '--test-dispatcher';
+const startProcessHelper = args[0] === '--process-helper';
 const sessionId = args[1];
 
+if (startProcessHelper) {
+  console.log('%cStarting process helper', "color: red");
+  return require(processHelperFile);
+}
 if (startSessionProcessor && sessionId) {
   console.log('%cStarting xstate session processor', "color: red");
   return require(sessionProcessorMainFileLocation);
-} else if (startTestDispatcher && sessionId) {
+}
+if (startTestDispatcher && sessionId) {
   console.log('%cStarting test dispatcher for xstate session processor', "color: red");
   return require(sessionProcessorTestDispatcherFile);
 }

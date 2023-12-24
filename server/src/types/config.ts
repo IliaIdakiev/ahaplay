@@ -1,5 +1,6 @@
 export interface IAppConfig {
   port: number;
+  helperPort: number;
   webAppUrl: string;
   serverUrl: string;
   cookieSecret: string;

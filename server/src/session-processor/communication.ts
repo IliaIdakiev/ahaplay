@@ -11,6 +11,7 @@ import {
   SessionProcessorMessage,
 } from "./types";
 import { v1 } from "uuid";
+import * as fs from "fs";
 
 export function messageSessionProcessor({
   sessionId,
@@ -46,17 +47,18 @@ export function dispatchActionToProcessor({
   const messageCheckFn = (message: PubSubXActionMessageResult) =>
     message.uuid === uuid;
 
-  return messageSessionProcessor({
-    sessionId,
-    message,
-    pubSub,
-  }).then(() =>
+  return Promise.all([
     listenForSessionProcessorActionResult<PubSubXActionMessageResult>({
       sessionId,
       messageCheckFn,
       pubSub,
-    })
-  );
+    }),
+    messageSessionProcessor({
+      sessionId,
+      message,
+      pubSub,
+    }),
+  ]).then(([result]) => result);
 }
 
 export function listenForSessionProcessorActionResult<T>({

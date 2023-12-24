@@ -21,6 +21,7 @@ import {
   generateRedisSessionClientName,
   generateRedisSessionProcessorName,
 } from "./utils";
+import * as fs from "fs";
 
 const args = process.argv.slice(2);
 const sessionId = args[1];
@@ -29,6 +30,7 @@ if (!sessionId) {
 }
 
 const sessionRedisKey = generateSessionRedisKey({ sessionId });
+const currentProcessName = generateRedisSessionProcessorName({ sessionId });
 
 export function publishSessionState(config: {
   sessionId: string;
@@ -71,10 +73,10 @@ const scheduleSnapshotSave = (() => {
       isSaveScheduled = false;
       lastUpdatedSnapshot = null;
       saveInRedis(sessionRedisKey, lastUpdatedSnapshot).then(() => {
-        console.log(
-          `%cSession Snapshot saved in redis at ${new Date()}`,
-          "color: green"
-        );
+        // console.log(
+        //   `%cSession Snapshot saved in redis at ${new Date()}`,
+        //   "color: green"
+        // );
       });
     });
   };
@@ -87,7 +89,10 @@ function innerActionHandler(snapshot: SessionMachineSnapshot) {
 
 function sessionFinished() {
   // TODO: save to database
-  process.exit(0);
+  console.log("Session finished. Starting process kill timeout...");
+  setTimeout(() => {
+    process.exit(0);
+  }, 10000);
 }
 
 Promise.all([
@@ -117,38 +122,39 @@ Promise.all([
     scheduler.on("workshopTimeout", innerActionHandler);
     scheduler.on("activityTimeout", innerActionHandler);
     scheduler.on("activityPartTimeout", innerActionHandler);
-    publishMessage({ type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED });
 
-    pubSub.subscribe(
-      generateRedisSessionProcessorName({ sessionId }),
-      (message: PubSubMessage<any>) => {
-        if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
-          try {
-            const snapshot = service.send(
-              message.data.action
-            ) as unknown as SessionMachineSnapshot;
-            const { context, value: stateValue } = snapshot;
-            scheduleSnapshotSave(
-              service.getSnapshot() as unknown as SessionMachineSnapshot
-            );
-            const actionResult: PubSubXActionMessageResult = {
-              type: SessionProcessorMessage.ACTION_RESULT,
-              data: { context, stateValue },
-              uuid: message.uuid,
-            };
-            publishMessage(actionResult);
-            publishSessionState({ sessionId, snapshot });
-          } catch (error: any) {
-            const actionResult: PubSubMessage<Error> = {
-              type: SessionProcessorMessage.UNCAUGHT_EXCEPTION,
-              data: error,
-              uuid: message.uuid,
-            };
-            publishMessage(actionResult);
-          }
+    publishMessage({
+      type: SessionProcessorMessage.SESSION_PROCESSOR_STARTED,
+      data: { sessionId },
+    });
+
+    pubSub.subscribe(currentProcessName, (message: PubSubMessage<any>) => {
+      if (message.type === SessionProcessorMessage.DISPATCH_ACTION) {
+        try {
+          const snapshot = service.send(
+            message.data.action
+          ) as unknown as SessionMachineSnapshot;
+          const { context, value: stateValue } = snapshot;
+          scheduleSnapshotSave(
+            service.getSnapshot() as unknown as SessionMachineSnapshot
+          );
+          const actionResult: PubSubXActionMessageResult = {
+            type: SessionProcessorMessage.ACTION_RESULT,
+            data: { context, stateValue },
+            uuid: message.uuid,
+          };
+          publishMessage(actionResult);
+          publishSessionState({ sessionId, snapshot });
+        } catch (error: any) {
+          const actionResult: PubSubMessage<Error> = {
+            type: SessionProcessorMessage.UNCAUGHT_EXCEPTION,
+            data: error,
+            uuid: message.uuid,
+          };
+          publishMessage(actionResult);
         }
       }
-    );
+    });
 
     process.on("exit", () => {
       console.log(

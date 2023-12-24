@@ -22,6 +22,7 @@ import {
   createIndividualAndGroupOneValueState,
   createMachineState,
 } from "./helpers";
+import config from "../../config";
 
 export function sessionMachineFactory({
   states,
@@ -50,7 +51,7 @@ export function sessionMachineFactory({
       id: machineName,
       // predictableActionArguments: true,
       context: {
-        requiredActiveProfileCount: 1,
+        requiredActiveProfileCount: config.workshop.minimumWorkshopParticipants,
         currentActiveProfiles: [],
         readyActiveProfiles: [],
         activityResult: {},
@@ -321,9 +322,9 @@ export function sessionMachineServiceFactory(
 ) {
   const initialState = serviceSnapshot ? State.create(serviceSnapshot) : null;
 
-  const service = interpret(machine).onTransition((state) =>
-    console.log(state.value, state.context)
-  );
+  const service = interpret(machine).onTransition((state) => {
+    // console.log(state.value, state.context);
+  });
   if (!initialState) return service.start();
   return service.start(initialState);
 }

@@ -14,5 +14,6 @@ export const sequelize = new Sequelize(
   {
     host: databaseHost,
     dialect: databaseDialect,
+    logging: false,
   }
 );

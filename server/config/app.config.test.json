@@ -1,5 +1,6 @@
 {
   "port": 8000,
+  "helperPort": 4444,
   "webAppUrl": "localhost:4200",
   "serverUrl": "localhost:8000",
   "cookieSecret": "very-well-kept-secret",

@@ -22,10 +22,13 @@ export const sessionMutationResolvers = {
     const action = createJoinAction({
       profileId: context.decodedProfileData.id,
     });
-
     return startSessionProcess({ sessionId, pubSub })
-      .then(() => dispatchActionToProcessor({ sessionId, action, pubSub }))
-      .then((action) => graphqlInMemorySessionStateSerializer(action.data));
+      .then(() => {
+        return dispatchActionToProcessor({ sessionId, action, pubSub });
+      })
+      .then((action) => {
+        return graphqlInMemorySessionStateSerializer(action.data);
+      });
   },
 
   disconnect(
