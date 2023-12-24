@@ -219,6 +219,7 @@ describe("Test machine scheduler", () => {
         machineName,
         states: sessionMachineStates,
         timeouts,
+        requiredActiveProfileCount: 3,
       });
       sessionMachineService = sessionMachineServiceFactory(sessionMachine);
       players.forEach((profileId) => {

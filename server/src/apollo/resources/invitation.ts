@@ -20,6 +20,7 @@ import { v4 } from "uuid";
 import config from "../../config";
 import { authenticate } from "../middleware/authenticate";
 import { redisClient } from "../../redis";
+import { raceWithSubscription } from "../../utils";
 
 export const invitationTypeDefs = gql`
   type Invitation {
@@ -110,111 +111,111 @@ export const invitationQueryResolvers = {
         pubSub,
       } = contextValue;
 
-      process.nextTick(() => {
-        redisClient.set(`processing_slot:${slot_id}`, "yes");
-      });
-      return redisClient
-        .get(`processing_slot:${slot_id}`)
-        .then((isCurrentSlotBeingProcessed) => {
-          if (isCurrentSlotBeingProcessed !== "yes") return;
-          return new Promise((res, rej) => {
-            let subscriptionId: number;
-            pubSub
-              .subscribe(`processing_slot_key:${slot_id}`, (value) => {
-                res(value);
-                pubSub.unsubscribe(subscriptionId);
-              })
-              .then((id) => (subscriptionId = id))
-              .catch((err) => rej(err));
-          });
-        })
-        .then(() =>
-          models.invitation
-            .findOne({
-              where: { email, slot_id, profile_id: id },
+      const processingGetInvitationKey = `processing_get_invitation:${slot_id}`;
+      const processingGetInvitationEventName = `processing_get_invitation_event:${slot_id}`;
+
+      const findInvitation = () =>
+        models.invitation.findOne({
+          where: { email, slot_id, profile_id: id },
+          include: [
+            { model: models.profile, as: profileAssociationNames.singular },
+            {
+              model: models.slot,
+              as: slotAssociationNames.singular,
               include: [
-                { model: models.profile, as: profileAssociationNames.singular },
                 {
-                  model: models.slot,
-                  as: slotAssociationNames.singular,
-                  include: [
-                    {
-                      model: models.session,
-                      as: sessionAssociationNames.singular,
-                    },
-                    {
-                      model: models.workshop,
-                      as: workshopAssociationNames.singular,
-                    },
-                    {
-                      model: models.workspace,
-                      as: workspaceAssociationNames.singular,
-                    },
-                  ],
+                  model: models.session,
+                  as: sessionAssociationNames.singular,
+                },
+                {
+                  model: models.workshop,
+                  as: workshopAssociationNames.singular,
+                },
+                {
+                  model: models.workspace,
+                  as: workspaceAssociationNames.singular,
                 },
               ],
-            })
-            .then((invitation) => {
-              if (
-                !invitation ||
-                !invitation.slot ||
-                !invitation.slot.isOpenForSession() ||
-                invitation.slot.session ||
-                invitation.slot.key
-              ) {
-                let millisecondsToStart = null;
-                if (invitation?.slot?.key) {
-                  const keyParts = invitation.slot.key.split("-");
-                  const startTimestamp = +keyParts[keyParts.length - 1];
-                  const currentTimestamp = getUnixTime(Date.now());
-                  millisecondsToStart =
-                    (startTimestamp - currentTimestamp) * 1000;
-                }
+            },
+          ],
+        });
 
-                pubSub.publish(
-                  `processing_slot_key:${slot_id}`,
-                  invitation?.slot?.key || null
-                );
+      const subscriptionCompetitor = findInvitation;
 
-                return { invitation, millisecondsToStart };
+      const { subscription, publish } = raceWithSubscription(
+        pubSub,
+        processingGetInvitationEventName,
+        subscriptionCompetitor,
+        (invitation) =>
+          invitation?.slot?.isOpenForSession() ? !!invitation?.slot?.key : true
+      );
+
+      return (
+        redisClient
+          .setNX(processingGetInvitationKey, "yes")
+          .then((wasWritten) => (wasWritten ? null : subscription))
+          // INFO:
+          // here always find invitation since we cannot count on the published value bellow
+          // because it won't have the "isOpenForSession" property because publish will json stringify it
+          .then(() => findInvitation())
+          .then((invitation) => {
+            if (
+              !invitation ||
+              !invitation.slot ||
+              !invitation.slot.isOpenForSession() ||
+              invitation.slot.session ||
+              invitation.slot.key
+            ) {
+              let millisecondsToStart = null;
+              if (invitation?.slot?.key) {
+                const keyParts = invitation.slot.key.split("-");
+                const startTimestamp = +keyParts[keyParts.length - 1];
+                const currentTimestamp = getUnixTime(Date.now());
+                millisecondsToStart =
+                  (startTimestamp - currentTimestamp) * 1000;
               }
 
-              const additionalMillisecondsToStart =
-                invitation.slot.type === SlotType.SPLIT
-                  ? ms(config.app.splitWaitingTime)
-                  : 0;
+              return { invitation, millisecondsToStart };
+            }
 
-              const startingUnixTimestamp = getUnixTime(
-                addMilliseconds(
-                  invitation.slot.schedule_date,
-                  additionalMillisecondsToStart
-                )
+            const additionalMillisecondsToStart =
+              invitation.slot.type === SlotType.SPLIT
+                ? ms(config.app.splitWaitingTime)
+                : 0;
+
+            const startingUnixTimestamp = getUnixTime(
+              addMilliseconds(
+                invitation.slot.schedule_date,
+                additionalMillisecondsToStart
+              )
+            );
+            const sessionStartUUID = `${v4()}-${startingUnixTimestamp}`;
+
+            const currentTimestamp = getUnixTime(Date.now());
+            const millisecondsToStart =
+              (startingUnixTimestamp - currentTimestamp) * 1000;
+
+            invitation.slot.set("key", sessionStartUUID);
+            return invitation.slot
+              .save()
+              .then((updatedSlot) => {
+                invitation.slot = updatedSlot;
+                return invitation;
+              })
+              .then((invitation) => ({
+                invitation,
+                millisecondsToStart,
+              }));
+          })
+          .then((result) => {
+            redisClient
+              .del(processingGetInvitationKey)
+              .then((removed) =>
+                removed > 0 ? publish(result.invitation) : undefined
               );
-              const sessionStartUUID = `${v4()}-${startingUnixTimestamp}`;
-
-              const currentTimestamp = getUnixTime(Date.now());
-              const millisecondsToStart =
-                (startingUnixTimestamp - currentTimestamp) * 1000;
-
-              invitation.slot.set("key", sessionStartUUID);
-              return invitation.slot
-                .save()
-                .then((updatedSlot) => {
-                  pubSub.publish(
-                    `processing_slot_key:${slot_id}`,
-                    updatedSlot.key
-                  );
-                  redisClient.del(`processing_slot:${slot_id}`);
-
-                  invitation.slot = updatedSlot;
-                  return invitation;
-                })
-                .then((invitation) => ({
-                  invitation,
-                  millisecondsToStart,
-                }));
-            })
-        );
+            return result;
+          })
+      );
     }
   ),
 };

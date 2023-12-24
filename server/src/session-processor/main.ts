@@ -3,6 +3,7 @@ import {
   generateSessionUpdateSubscriptionEvent,
   graphqlInMemorySessionStateSerializer,
 } from "../apollo/resources/session/helpers";
+import config from "../config";
 import { connectSequelize } from "../database";
 import { getSessionWithWorkshopActivitiesAndRelations } from "../helpers/get-session-with-workshop-activities-and-relations";
 import { connectRedis, pubSub } from "../redis";
@@ -21,7 +22,6 @@ import {
   generateRedisSessionClientName,
   generateRedisSessionProcessorName,
 } from "./utils";
-import * as fs from "fs";
 
 const args = process.argv.slice(2);
 const sessionId = args[1];
@@ -109,6 +109,7 @@ Promise.all([
       machineName: session.workshop.id,
       workshop: session.workshop,
       snapshot,
+      requiredActiveProfileCount: config.workshop.minimumWorkshopParticipants,
     });
     service.onDone(sessionFinished);
     return { service, workshop: session.workshop! };

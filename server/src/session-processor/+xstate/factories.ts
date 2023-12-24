@@ -22,17 +22,18 @@ import {
   createIndividualAndGroupOneValueState,
   createMachineState,
 } from "./helpers";
-import config from "../../config";
 
 export function sessionMachineFactory({
   states,
   machineName,
   timeouts,
+  requiredActiveProfileCount,
 }: {
   states: Parameters<
     typeof createMachine<SessionMachineContext, SessionMachineActions>
   >[0]["states"];
   machineName: string;
+  requiredActiveProfileCount: number;
   timeouts?: {
     workshopMinuteTimeout?: number;
     activity?: Record<
@@ -51,7 +52,7 @@ export function sessionMachineFactory({
       id: machineName,
       // predictableActionArguments: true,
       context: {
-        requiredActiveProfileCount: config.workshop.minimumWorkshopParticipants,
+        requiredActiveProfileCount,
         currentActiveProfiles: [],
         readyActiveProfiles: [],
         activityResult: {},
@@ -333,10 +334,12 @@ export function sessionMachineServiceFromWorkshopFactory({
   machineName,
   workshop,
   snapshot,
+  requiredActiveProfileCount,
 }: {
   machineName: string;
   workshop: WorkshopModelInstance;
   snapshot?: SessionMachineSnapshot | undefined | null;
+  requiredActiveProfileCount: number;
 }) {
   const activities = workshop.activities!;
   const sortedActivities = activities
@@ -471,6 +474,7 @@ export function sessionMachineServiceFromWorkshopFactory({
   const sessionMachine = sessionMachineFactory({
     machineName,
     states: machineState,
+    requiredActiveProfileCount,
   });
   return sessionMachineServiceFactory(sessionMachine, snapshot || null);
 }

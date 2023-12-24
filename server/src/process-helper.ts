@@ -5,6 +5,7 @@ import pm2 from "pm2";
 import config from "./config";
 import { connectRedis, redisClient, pubSub } from "./redis";
 import { minutesToMilliseconds } from "date-fns";
+import { raceWithSubscription } from "./utils";
 
 const app = express();
 
@@ -20,52 +21,22 @@ const processManager = {
     args?: string | string[];
     nodeArgs?: string | string[];
   }) {
-    let force: () => void;
-    const forceResolver = new Promise<any>((res) => (force = () => res(null)));
+    const subscriptionEventName = `processing_process_ready:${processName}`;
+    const processingProcessKey = `processing_process_name:${processName}`;
+    const subscriptionCompetitor = () =>
+      processManager.findProcessByName({ processName });
 
-    const processReadySubscription = Promise.race([
-      new Promise<number | null>((res, rej) => {
-        let subscriptionId: number;
-        pubSub
-          .subscribe(`processing_process_ready:${processName}`, (pid) => {
-            pubSub.unsubscribe(subscriptionId);
-            res(pid);
-          })
-          .then((id) => {
-            subscriptionId = id;
-            const _force = force;
-            force = () => {
-              try {
-                pubSub.unsubscribe(subscriptionId);
-              } catch (e) {}
-              res(null);
-              _force();
-            };
-          })
-          .catch((err) => rej(err));
-      }),
-      new Promise((res) => {
-        processManager
-          .findProcessByName({ processName })
-          .then((existingProcess) => {
-            if (existingProcess) return void res(existingProcess);
-            const _force = force;
-            force = () => {
-              res(null);
-              _force();
-            };
-          });
-      }),
-      forceResolver,
-    ]);
+    const { subscription, publish } = raceWithSubscription(
+      pubSub,
+      subscriptionEventName,
+      subscriptionCompetitor
+    );
 
     return redisClient
-      .setNX(`processing_process_name:${processName}`, "yes")
+      .setNX(processingProcessKey, "yes")
       .then((wasWritten) => {
-        if (wasWritten) {
-          return null;
-        }
-        return processReadySubscription;
+        if (wasWritten) return null;
+        return subscription;
       })
       .then((foundProcess) => {
         return foundProcess
@@ -99,13 +70,11 @@ const processManager = {
         );
       })
       .then((result) => {
-        redisClient.del(`processing_process_name:${processName}`).then(() => {
-          pubSub.publish(
-            `processing_process_ready:${processName}`,
-            process.pid
+        redisClient
+          .del(processingProcessKey)
+          .then((removed) =>
+            removed > 0 ? publish(result.process) : undefined
           );
-        });
-        force();
         return result;
       });
   },
