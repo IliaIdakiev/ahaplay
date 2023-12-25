@@ -23,14 +23,18 @@ export const sessionProfileModel = sequelize.define<
       type: DataTypes.STRING,
       allowNull: false,
     },
+    slot_id: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
   },
   {
     tableName: "session-profile",
     indexes: [
       {
         unique: true,
-        fields: ["session_key", "session_id", "profile_id"],
-        name: "unique_constraint_session_key_session_id_profile_id",
+        fields: ["session_key", "session_id", "profile_id", "slot_id"],
+        name: "unique_constraint_session_key_session_id_profile_id_slot_id",
       },
     ],
   }
