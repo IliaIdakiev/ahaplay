@@ -26,6 +26,7 @@ import { milestoneModel } from "./milestone";
 import { milestoneWorkshopModel } from "./milestone-workshop";
 import { recommendationModel } from "./recommendation";
 import { recommendationWorkshopModel } from "./recommendation-workshop";
+import { sessionProfileModel } from "./session-profile";
 
 export const models = {
   profile: profileModel,
@@ -55,4 +56,5 @@ export const models = {
   milestoneWorkshop: milestoneWorkshopModel,
   recommendation: recommendationModel,
   recommendationWorkshop: recommendationWorkshopModel,
+  sessionProfile: sessionProfileModel,
 };

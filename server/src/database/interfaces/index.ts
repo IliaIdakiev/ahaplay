@@ -26,3 +26,4 @@ export * from "./slot";
 export * from "./survey";
 export * from "./theory";
 export * from "./type";
+export * from "./session-profile";
