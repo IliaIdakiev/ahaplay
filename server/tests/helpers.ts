@@ -41,12 +41,6 @@ export const instance = axios.create({
 
 instance.interceptors.request.use(
   function (config) {
-    // console.log("Sending request", config);
-    fs.appendFile(
-      "/Users/iliaidakiev/Development/ahaplay-rework/server/output.txt",
-      `${JSON.stringify(config.data)}\n\n`,
-      () => {}
-    );
     return config;
   },
   function (error) {
