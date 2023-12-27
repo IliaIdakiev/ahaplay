@@ -122,7 +122,7 @@ export const sessionQueryResolvers = {
         const processingGetSessionKey = `processing_get_session:${session_key}`;
         const processingGetSessionEventName = `processing_get_session_event:${session_key}`;
         const currentSessionKey =
-          distributionResult.data?.sessionKey || session_key;
+          distributionResult.data?.splitSessionKey || session_key;
 
         const findSessionForSessionKey = () =>
           models.session.findOne({
