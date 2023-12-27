@@ -41,15 +41,15 @@ service nginx status
 yarn start:pm2:process-helper
 if [ "$IS_DEBUG" = "true" ]; then
   if [ "$NODE_ENV" = "test" ]; then 
-    npm install -g pm2 && yarn start:pm2:debug:test
+    npm install -g pm2 && yarn start:pm2:debug:test && yarn start:pm2:debug:test:workshop-distributor
   else 
-    npm install -g pm2 && yarn start:pm2:debug
+    npm install -g pm2 && yarn start:pm2:debug && yarn start:pm2:debug:workshop-distributor
   fi
 else
   if [ "$NODE_ENV" = "test"]; then 
-    npm install -g pm2 && yarn run build:app && yarn start:pm2:test
+    npm install -g pm2 && yarn run build:app && yarn start:pm2:test && yarn start:pm2:test:workshop-distributor
   else 
-    npm install -g pm2 && yarn run build:app && yarn start:pm2
+    npm install -g pm2 && yarn run build:app && yarn start:pm2 && yarn start:pm2:workshop-distributor
   fi
 fi
 

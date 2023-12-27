@@ -3,6 +3,7 @@ const path = require('path');
 const distFilePath = path.join(__dirname, 'dist')
 const startFileFullPath = path.join(distFilePath, 'index.js');
 const processHelperFile = path.join(distFilePath, 'process-helper.js');
+const workshopDistributorFile = path.join(distFilePath, 'workshop-distributor.js');
 const sessionProcessorDirectory = path.join(distFilePath, 'session-processor');
 const sessionProcessorMainFileLocation = path.join(sessionProcessorDirectory, 'main.js');
 const sessionProcessorTestDispatcherFile = path.join(sessionProcessorDirectory, 'test-dispatcher.js');
@@ -19,11 +20,16 @@ console.log(`%cSetting base dir to ${__dirname}`, "color: red");
 global.__basedir = __dirname;
 
 const args = process.argv.slice(2);
+const startWorkshopDistributor = args[0] === '--workshop-distributor';
 const startSessionProcessor = args[0] === '--session-processor';
 const startTestDispatcher = args[0] === '--test-dispatcher';
 const startProcessHelper = args[0] === '--process-helper';
 const sessionId = args[1];
 
+if (startWorkshopDistributor) {
+  console.log('%cStarting workshop distributor', "color: red");
+  return require(workshopDistributorFile);
+}
 if (startProcessHelper) {
   console.log('%cStarting process helper', "color: red");
   return require(processHelperFile);

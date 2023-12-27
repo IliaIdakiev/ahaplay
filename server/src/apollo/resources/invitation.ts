@@ -16,11 +16,20 @@ import { InvitationModelInstance } from "../../database/interfaces/invitation";
 import { authorize } from "../middleware/authorize";
 import { addMilliseconds, getUnixTime } from "date-fns";
 import ms from "ms";
-import { v4 } from "uuid";
+import { v1, v4 } from "uuid";
 import config from "../../config";
 import { authenticate } from "../middleware/authenticate";
 import { redisClient } from "../../redis";
 import { raceWithSubscription } from "../../utils";
+import {
+  WorkshopDistributionResult,
+  WorkshopDistributorRequestAddMessage,
+  WorkshopDistributorRequestType,
+} from "../../types/distribution-message";
+import {
+  workshopDistributorRequestChannel,
+  workshopDistributorResponseChannel,
+} from "../../constants";
 
 export const invitationTypeDefs = gql`
   type Invitation {
@@ -142,7 +151,7 @@ export const invitationQueryResolvers = {
 
       const subscriptionCompetitor = findInvitation;
 
-      const { subscription, publish } = raceWithSubscription(
+      const { subscription, publish, force } = raceWithSubscription(
         pubSub,
         processingGetInvitationEventName,
         subscriptionCompetitor,
@@ -159,6 +168,50 @@ export const invitationQueryResolvers = {
           // because it won't have the "isOpenForSession" property because publish will json stringify it
           .then(() => findInvitation())
           .then((invitation) => {
+            const distributionCall =
+              invitation?.slot?.type === SlotType.SPLIT
+                ? (
+                    invitationId: string,
+                    sessionKey: string,
+                    slotId: string
+                  ) => {
+                    const distributionMessage: WorkshopDistributorRequestAddMessage =
+                      {
+                        uuid: v1(),
+                        data: {
+                          profileId: id,
+                          sessionKey,
+                          slotId,
+                          invitationId,
+                        },
+                        type: WorkshopDistributorRequestType.ADD,
+                      };
+                    pubSub.publish(
+                      workshopDistributorRequestChannel,
+                      distributionMessage
+                    );
+                    return new Promise<WorkshopDistributionResult>(
+                      (res, rej) => {
+                        let subscriptionId: number;
+                        const handler = (
+                          message: WorkshopDistributionResult
+                        ) => {
+                          if (message.uuid !== distributionMessage.uuid) return;
+                          pubSub.unsubscribe(subscriptionId);
+                          if (message.error) return void rej(message.error);
+                          res(message);
+                        };
+                        pubSub
+                          .subscribe(
+                            workshopDistributorResponseChannel,
+                            handler
+                          )
+                          .then((id) => (subscriptionId = id));
+                      }
+                    );
+                  }
+                : () => Promise.resolve(null);
+
             if (
               !invitation ||
               !invitation.slot ||
@@ -166,16 +219,27 @@ export const invitationQueryResolvers = {
               invitation.slot.session ||
               invitation.slot.key
             ) {
-              let millisecondsToStart = null;
+              let millisecondsToStart: number | null = null;
+              let distributionCallResult:
+                | Promise<null>
+                | Promise<WorkshopDistributionResult> = Promise.resolve(null);
               if (invitation?.slot?.key) {
                 const keyParts = invitation.slot.key.split("-");
                 const startTimestamp = +keyParts[keyParts.length - 1];
                 const currentTimestamp = getUnixTime(Date.now());
                 millisecondsToStart =
                   (startTimestamp - currentTimestamp) * 1000;
+                distributionCallResult = distributionCall(
+                  invitation.id,
+                  invitation.slot.key,
+                  invitation.slot_id
+                );
               }
 
-              return { invitation, millisecondsToStart };
+              return distributionCallResult.then(() => ({
+                invitation,
+                millisecondsToStart,
+              }));
             }
 
             const additionalMillisecondsToStart =
@@ -200,11 +264,16 @@ export const invitationQueryResolvers = {
               .save()
               .then((updatedSlot) => {
                 invitation.slot = updatedSlot;
-                return invitation;
+                return distributionCall(
+                  invitation.id,
+                  invitation.slot.key,
+                  invitation.slot_id
+                ).then(() => invitation);
               })
               .then((invitation) => ({
                 invitation,
                 millisecondsToStart,
+                group: null,
               }));
           })
           .then((result) => {
@@ -214,6 +283,10 @@ export const invitationQueryResolvers = {
                 removed > 0 ? publish(result.invitation) : undefined
               );
             return result;
+          })
+          .catch((error) => {
+            force();
+            return error;
           })
       );
     }
