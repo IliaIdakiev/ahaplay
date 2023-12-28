@@ -34,7 +34,6 @@ export interface IAppConfig {
   sessionProcessorDebugPort?: string | undefined | null;
   syncSequelizeModels: boolean;
   certificateLocation: string;
-  splitWaitingTime: string;
   masterDomains: string[];
 }
 
@@ -51,6 +50,7 @@ export interface IWorkshopConfig {
   sessionOpeningTimeInMinutes: number;
   minimumWorkshopParticipants: number;
   maximumWorkshopParticipants: number;
+  splitWaitingTime: string;
 }
 
 export interface INginxConfig {
