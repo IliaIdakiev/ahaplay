@@ -34,7 +34,6 @@
   "sessionProcessorDebugPort": "9229",
   "syncSequelizeModels": true,
   "certificateLocation": "/etc/ssl/certs",
-  "splitWaitingTime": "5m",
   "masterDomains": [
     "ahaplay.com"
   ]

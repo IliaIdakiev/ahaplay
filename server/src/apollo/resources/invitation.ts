@@ -244,7 +244,7 @@ export const invitationQueryResolvers = {
 
             const additionalMillisecondsToStart =
               invitation.slot.type === SlotType.SPLIT
-                ? ms(config.app.splitWaitingTime)
+                ? ms(config.workshop.splitWaitingTime)
                 : 0;
 
             const startingUnixTimestamp = getUnixTime(

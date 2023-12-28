@@ -1,5 +1,6 @@
 {
   "sessionOpeningTimeInMinutes": 30,
   "minimumWorkshopParticipants": 3,
-  "maximumWorkshopParticipants": 3
+  "maximumWorkshopParticipants": 3,
+  "splitWaitingTime": "0m"
 }
