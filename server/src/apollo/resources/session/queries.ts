@@ -119,10 +119,10 @@ export const sessionQueryResolvers = {
       );
 
       return distributionResultPromise.then((distributionResult) => {
-        const processingGetSessionKey = `processing_get_session:${session_key}`;
-        const processingGetSessionEventName = `processing_get_session_event:${session_key}`;
         const currentSessionKey =
           distributionResult.data?.splitSessionKey || session_key;
+        const processingGetSessionKey = `processing_get_session:${currentSessionKey}`;
+        const processingGetSessionEventName = `processing_get_session_event:${currentSessionKey}`;
 
         const findSessionForSessionKey = () =>
           models.session.findOne({
@@ -173,7 +173,7 @@ export const sessionQueryResolvers = {
 
                 return models.session
                   .create({
-                    session_key: session_key,
+                    session_key: currentSessionKey,
                     status: SessionStatus.SCHEDULED,
                     slot_id: slot.id,
                     creator_id: contextValue.decodedProfileData.id,

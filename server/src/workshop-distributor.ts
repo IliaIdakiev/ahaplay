@@ -40,7 +40,7 @@ function distributionInGroupGroup(
     (v) => v.group === groupNumber
   );
   if (
-    lastGroupParticipants.length > config.workshop.maximumWorkshopParticipants
+    lastGroupParticipants.length >= config.workshop.maximumWorkshopParticipants
   )
     groupNumber++;
 

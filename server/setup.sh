@@ -39,6 +39,8 @@ service nginx status
 
 
 yarn start:pm2:process-helper
+
+echo "NODE ENV IS SET TO: $NODE_ENV"
 if [ "$IS_DEBUG" = "true" ]; then
   if [ "$NODE_ENV" = "test" ]; then 
     npm install -g pm2 && yarn start:pm2:debug:test && yarn start:pm2:debug:test:workshop-distributor
