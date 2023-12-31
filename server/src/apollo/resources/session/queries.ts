@@ -88,6 +88,9 @@ export const sessionQueryResolvers = {
         pubSub,
         decodedProfileData: { id: profileId },
       } = contextValue;
+      console.log(
+        `getSession for profile: ${profileId} and session key: ${session_key}`
+      );
 
       // NOTE:
       // We always try to get the distribution result and if it exists then it's a SPLIT session
@@ -101,7 +104,6 @@ export const sessionQueryResolvers = {
         },
         type: WorkshopDistributorRequestType.GET,
       };
-      pubSub.publish(workshopDistributorRequestChannel, distributionMessage);
 
       const distributionResultPromise = new Promise<WorkshopDistributionResult>(
         (res, rej) => {
@@ -110,11 +112,25 @@ export const sessionQueryResolvers = {
             if (message.uuid !== distributionMessage.uuid) return;
             pubSub.unsubscribe(subscriptionId);
             if (message.error) return void rej(message.error);
+            console.log(
+              `distribution result for profile: ${profileId} - ${JSON.stringify(
+                message
+              )}`
+            );
             res(message);
           };
           pubSub
             .subscribe(workshopDistributorResponseChannel, handler)
-            .then((id) => (subscriptionId = id));
+            .then((id) => {
+              subscriptionId = id;
+
+              setTimeout(() =>
+                pubSub.publish(
+                  workshopDistributorRequestChannel,
+                  distributionMessage
+                )
+              );
+            });
         }
       );
 
@@ -142,11 +158,21 @@ export const sessionQueryResolvers = {
           millisecondsToStart: number | null;
         }> = redisClient
           .setNX(processingGetSessionKey, "yes")
-          .then((wasWritten) => (wasWritten ? null : subscription))
+          .then((wasWritten) => {
+            console.log(
+              `was written result for profile: ${profileId} - ${JSON.stringify(
+                wasWritten
+              )}`
+            );
+            return wasWritten ? null : subscription;
+          })
           // INFO:
           // here always read the session again since because otherwise sometimes the created_date is null
           .then(() => findSessionForSessionKey())
           .then((session) => {
+            console.log(
+              `find session for: ${profileId} - ${JSON.stringify(session)}`
+            );
             if (session) {
               const keyParts = session.session_key.split("-");
               const startTimestamp = +keyParts[keyParts.length - 1];
@@ -159,6 +185,9 @@ export const sessionQueryResolvers = {
             return models.slot
               .findOne({ where: { key: session_key } })
               .then((slot) => {
+                console.log(
+                  `find slot for: ${profileId} - ${slot?.id || null}}`
+                );
                 if (!slot) return { session: null, millisecondsToStart: null };
 
                 const currentTimestamp = getUnixTime(Date.now());
@@ -180,13 +209,21 @@ export const sessionQueryResolvers = {
                     workshop_id: slot.workshop_id,
                     workspace_id: slot.workspace_id,
                   })
-                  .then((session) =>
-                    startSessionProcess({
+                  .then((session) => {
+                    console.log(
+                      `created session slot for: ${profileId} - ${session.id}`
+                    );
+                    return startSessionProcess({
                       sessionId: session.id,
                       pubSub: contextValue.pubSub,
-                    }).then(() => session)
-                  )
-                  .then((session) => ({ session, millisecondsToStart }));
+                    }).then(() => session);
+                  })
+                  .then((session) => {
+                    console.log(
+                      `started session processor for: ${profileId} - ${session.id}`
+                    );
+                    return { session, millisecondsToStart };
+                  });
               });
           });
 

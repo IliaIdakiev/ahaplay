@@ -168,6 +168,7 @@ export const invitationQueryResolvers = {
           // because it won't have the "isOpenForSession" property because publish will json stringify it
           .then(() => findInvitation())
           .then((invitation) => {
+            console.log(1, `invitation for profile: ${id} : ${invitation?.id}`);
             const distributionCall =
               invitation?.slot?.type === SlotType.SPLIT
                 ? (
@@ -186,9 +187,11 @@ export const invitationQueryResolvers = {
                         },
                         type: WorkshopDistributorRequestType.ADD,
                       };
-                    pubSub.publish(
-                      workshopDistributorRequestChannel,
-                      distributionMessage
+                    console.log(
+                      1,
+                      `distributionMessage ${JSON.stringify(
+                        distributionMessage
+                      )}`
                     );
                     return new Promise<WorkshopDistributionResult>(
                       (res, rej) => {
@@ -199,6 +202,12 @@ export const invitationQueryResolvers = {
                           if (message.uuid !== distributionMessage.uuid) return;
                           pubSub.unsubscribe(subscriptionId);
                           if (message.error) return void rej(message.error);
+                          console.log(
+                            1,
+                            `distribution result for profile id: ${id} : ${JSON.stringify(
+                              message
+                            )}`
+                          );
                           res(message);
                         };
                         pubSub
@@ -206,7 +215,15 @@ export const invitationQueryResolvers = {
                             workshopDistributorResponseChannel,
                             handler
                           )
-                          .then((id) => (subscriptionId = id));
+                          .then((id) => {
+                            subscriptionId = id;
+                            setTimeout(() =>
+                              pubSub.publish(
+                                workshopDistributorRequestChannel,
+                                distributionMessage
+                              )
+                            );
+                          });
                       }
                     );
                   }
@@ -224,6 +241,7 @@ export const invitationQueryResolvers = {
                 | Promise<null>
                 | Promise<WorkshopDistributionResult> = Promise.resolve(null);
               if (invitation?.slot?.key) {
+                console.log(1, `slot with key for profile: ${id}`);
                 const keyParts = invitation.slot.key.split("-");
                 const startTimestamp = +keyParts[keyParts.length - 1];
                 const currentTimestamp = getUnixTime(Date.now());
@@ -260,6 +278,10 @@ export const invitationQueryResolvers = {
               (startingUnixTimestamp - currentTimestamp) * 1000;
 
             invitation.slot.set("key", sessionStartUUID);
+            console.log(
+              1,
+              `created session key for profile: ${id} : ${sessionStartUUID}`
+            );
             return invitation.slot
               .save()
               .then((updatedSlot) => {

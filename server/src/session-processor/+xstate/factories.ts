@@ -178,7 +178,7 @@ export function sessionMachineFactory({
             )!;
             currentActivityResults = currentActivityResults
               .filter((v) => v !== currentActivityResult)
-              .concat({ ...currentActivityResult, ready: true });
+              .concat({ ...currentActivityResult, profileId, ready: true });
 
             return {
               ...context.activityResult,

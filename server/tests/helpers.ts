@@ -802,3 +802,10 @@ const sessionSubscriptionQuery =
 export const createSessionSubscription = subscriptionFactory<{
   sessionId: string;
 }>(sessionSubscriptionQuery);
+
+export function getRandomNumber(min: number, max: number) {
+  if (min >= max) {
+    throw new Error("Minimum value must be less than maximum value");
+  }
+  return Math.round(Math.random() * (max - min) + min);
+}
