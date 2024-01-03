@@ -336,6 +336,7 @@ export const profileMutationResolvers = {
       info: any
     ): Promise<{ profile: ProfileResult; token: string } | null> => {
       const domain = getEmailDomain(data.email);
+      if (!domain) throw new Error(LoginError.NOT_FOUND);
       const { email, password } = data;
       return models.profile
         .findOne({
