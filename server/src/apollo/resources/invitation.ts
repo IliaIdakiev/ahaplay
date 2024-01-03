@@ -2,10 +2,18 @@ import gql from "graphql-tag";
 import {
   ProfileWorkspaceAccess,
   SlotType,
+  activityAssociationNames,
+  answerAssociationNames,
+  assignmentAssociationNames,
+  benchmarkAssociationNames,
+  conceptAssociationNames,
+  conceptualizationAssociationNames,
   models,
   profileAssociationNames,
+  questionAssociationNames,
   sessionAssociationNames,
   slotAssociationNames,
+  theoryAssociationNames,
   workshopAssociationNames,
   workspaceAssociationNames,
 } from "../../database";
@@ -139,6 +147,42 @@ export const invitationQueryResolvers = {
                 {
                   model: models.workshop,
                   as: workshopAssociationNames.singular,
+                  include: [
+                    {
+                      model: models.activity,
+                      as: activityAssociationNames.plural,
+                      include: [
+                        {
+                          model: models.question,
+                          as: questionAssociationNames.singular,
+                        },
+                        {
+                          model: models.answer,
+                          as: answerAssociationNames.plural,
+                        },
+                        {
+                          model: models.benchmark,
+                          as: benchmarkAssociationNames.singular,
+                        },
+                        {
+                          model: models.conceptualization,
+                          as: conceptualizationAssociationNames.singular,
+                        },
+                        {
+                          model: models.concept,
+                          as: conceptAssociationNames.plural,
+                        },
+                        {
+                          model: models.theory,
+                          as: theoryAssociationNames.singular,
+                        },
+                        {
+                          model: models.assignment,
+                          as: assignmentAssociationNames.singular,
+                        },
+                      ],
+                    },
+                  ],
                 },
                 {
                   model: models.workspace,
