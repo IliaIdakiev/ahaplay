@@ -41,18 +41,20 @@ export function raceWithSubscription<
         })
         .catch((err) => rej(err));
     }),
-    new Promise((res) => {
-      asyncFn().then((value) => {
-        if (asyncFnValueCheckFn(value)) {
-          setTimeout(() => force());
-          return void res(value);
-        }
-        const _force = force;
-        force = () => {
-          res(null);
-          _force();
-        };
-      });
+    new Promise((res, rej) => {
+      asyncFn()
+        .then((value) => {
+          if (asyncFnValueCheckFn(value)) {
+            setTimeout(() => force());
+            return void res(value);
+          }
+          const _force = force;
+          force = () => {
+            res(null);
+            _force();
+          };
+        })
+        .catch((err) => rej(err));
     }),
     forceResolver,
   ];
