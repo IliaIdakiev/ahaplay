@@ -12,6 +12,7 @@ import { generateRequestContext } from "./apollo";
 import { environment } from "./env";
 import { processOperations } from "./test-database-setup";
 import { exec } from "./exec";
+import cors from "cors";
 
 const cookieSecret = config.app.cookieSecret;
 
@@ -23,7 +24,7 @@ Promise.all([connectSequelize(), connectRedis(), apolloServer.start()]).then(
   ([result]) => {
     const { sequelize } = result || {};
     console.log("Database connected, Redis connected and apollo is running.");
-
+    app.use(cors());
     app.use(bodyParser.json());
     app.use(cookieParser(cookieSecret));
     app.use(
