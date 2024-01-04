@@ -1,0 +1,6 @@
+export enum SessionStatus {
+  SCHEDULED = "SCHEDULED",
+  INSTANT = "INSTANT",
+  ONGOING = "ONGOING",
+  COMPLETED = "COMPLETED",
+}
