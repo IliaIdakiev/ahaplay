@@ -34,7 +34,7 @@ async function cleanUp(sessionId: string) {
 }
 
 describe("Session stuff", () => {
-  it("should start session for ALL slot", async () => {
+  it.only("should start session for ALL slot", async () => {
     try {
       const workshopIndex = 0;
       const setupCommands = generateSetupCommands({
@@ -161,7 +161,7 @@ describe("Session stuff", () => {
     }
   });
 
-  it.only("should start session for SPLIT slot", async () => {
+  it("should start session for SPLIT slot", async () => {
     try {
       const workshopIndex = 0;
       const numberOfProfiles = 21;
@@ -268,7 +268,6 @@ describe("Session stuff", () => {
         });
 
       await Promise.all(sessionIds.map((sessionId) => cleanUp(sessionId)));
-      debugger;
 
       // const [session1ProcessAfter] = await processOperations([
       //   {

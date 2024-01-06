@@ -4,6 +4,7 @@ import { useMatches, Navigate } from "react-router-dom";
 import { getInvite, getSession } from "../+xstate/actions/session";
 import { GlobalContext } from "../contexts/Global";
 import { SessionState } from "../+xstate/machines/session";
+import { JitsiSetup } from "../components/JitsiSetup/JitsiSetup";
 
 export default function Session(props: PropsWithChildren) {
   const matches = useMatches();
@@ -13,11 +14,12 @@ export default function Session(props: PropsWithChildren) {
   const slotMatch = matches.find((item) => item.id === "session-slot");
   const instanceMatch = matches.find((item) => item.id === "session-instance");
 
+  const slotInstance = sessionContext.context.slot;
+  const sessionInstance = sessionContext.context.session;
+
   useEffect(() => {
     if (sessionContext.context.error) return;
 
-    const slotInstance = sessionContext.context.slot;
-    const sessionInstance = sessionContext.context.session;
     if (slotMatch && !slotInstance) {
       const slotId = slotMatch.params.slotId!;
       const email = globalContext.auth.context.profile!.email;
@@ -35,6 +37,8 @@ export default function Session(props: PropsWithChildren) {
     instanceMatch,
     matches,
     sessionContext,
+    sessionInstance,
+    slotInstance,
     slotMatch,
   ]);
 
@@ -58,6 +62,7 @@ export default function Session(props: PropsWithChildren) {
   ) : (
     <div>
       <h1>Session</h1>
+      {sessionInstance && <JitsiSetup sessionId={sessionInstance.id} />}
       <div>{JSON.stringify(workshop, null, 2)}</div>
       {invitationNotFound && <div>Invitation not found</div>}
       {sessionNotFound && <div>Session not found</div>}

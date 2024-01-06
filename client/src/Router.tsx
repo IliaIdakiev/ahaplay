@@ -14,6 +14,7 @@ import Logout from "./pages/Logout";
 import { GlobalContext } from "./contexts/Global";
 import { AuthState } from "./+xstate/machines/auth";
 import { SessionContextProvider } from "./contexts/Session";
+import { JitsiContextProvider } from "./contexts/Jitsi";
 
 const authRequired = ["dashboard", "session", "logout"];
 const noAuthRequired = ["login"];
@@ -67,7 +68,9 @@ const router = createBrowserRouter([
         path: "/session",
         element: (
           <SessionContextProvider>
-            <Session />
+            <JitsiContextProvider>
+              <Session />
+            </JitsiContextProvider>
           </SessionContextProvider>
         ),
         children: [

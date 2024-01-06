@@ -13,6 +13,9 @@ export interface BenchmarkAttributes {
   reference: string;
   activity_id: string;
   conceptualization_id: string;
+
+  activity?: ActivityModelInstance;
+  conceptualization?: ConceptualizationModelInstance;
 }
 
 export interface BenchmarkCreationAttributes extends BenchmarkAttributes {}

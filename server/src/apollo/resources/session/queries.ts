@@ -7,6 +7,14 @@ import {
   profileAssociationNames,
   SessionModelInstance,
   SessionStatus,
+  activityAssociationNames,
+  answerAssociationNames,
+  assignmentAssociationNames,
+  benchmarkAssociationNames,
+  conceptAssociationNames,
+  conceptualizationAssociationNames,
+  questionAssociationNames,
+  theoryAssociationNames,
 } from "../../../database";
 import { getRequestedFields } from "../../utils";
 import { AppContext, AuthenticatedAppContext } from "../../types";
@@ -26,8 +34,12 @@ import {
   workshopDistributorResponseChannel,
 } from "../../../constants";
 
-function prepareIncludesFromInfo(info: any) {
-  const requestedFields = getRequestedFields(info);
+function prepareIncludesFromInfo(info: any, nestedField?: string | undefined) {
+  let requestedFields = getRequestedFields(info);
+  requestedFields = nestedField
+    ? requestedFields[nestedField]
+    : requestedFields;
+
   const includeWorkspace = !!requestedFields.workspace;
   const includeWorkshop = !!requestedFields.workshop;
   const includeSlot = !!requestedFields.slot;
@@ -51,6 +63,48 @@ function prepareIncludesFromInfo(info: any) {
     include.push({
       model: models.slot,
       as: slotAssociationNames.singular,
+      include: [
+        {
+          model: models.workshop,
+          as: workshopAssociationNames.singular,
+          include: [
+            {
+              model: models.activity,
+              as: activityAssociationNames.plural,
+              include: [
+                {
+                  model: models.question,
+                  as: questionAssociationNames.singular,
+                },
+                {
+                  model: models.answer,
+                  as: answerAssociationNames.plural,
+                },
+                {
+                  model: models.benchmark,
+                  as: benchmarkAssociationNames.singular,
+                },
+                {
+                  model: models.conceptualization,
+                  as: conceptualizationAssociationNames.singular,
+                },
+                {
+                  model: models.concept,
+                  as: conceptAssociationNames.plural,
+                },
+                {
+                  model: models.theory,
+                  as: theoryAssociationNames.singular,
+                },
+                {
+                  model: models.assignment,
+                  as: assignmentAssociationNames.singular,
+                },
+              ],
+            },
+          ],
+        },
+      ],
     });
   }
   if (includeProfile) {
@@ -83,6 +137,7 @@ export const sessionQueryResolvers = {
       session: SessionModelInstance | null;
       millisecondsToStart: number | null;
     }> => {
+      const include = prepareIncludesFromInfo(info, "session");
       const { session_key } = data;
       const {
         pubSub,
@@ -143,6 +198,7 @@ export const sessionQueryResolvers = {
         const findSessionForSessionKey = () =>
           models.session.findOne({
             where: { session_key: currentSessionKey },
+            include,
           });
 
         const subscriptionCompetitor = findSessionForSessionKey;

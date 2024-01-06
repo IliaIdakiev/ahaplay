@@ -1,9 +1,10 @@
-import { createMachine, fromPromise, assign } from "xstate";
+import { createMachine, fromPromise, assign, fromObservable } from "xstate";
 import * as actions from "../actions/session";
 import { getInvitation } from "../../apollo-graphql/queries/invite";
 import { Slot } from "../../apollo-graphql/types/slot";
 import { Session } from "../../apollo-graphql/types/session";
 import { getSession } from "../../apollo-graphql/queries/session";
+import { openSessionStateSubscription } from "../../apollo-graphql/subscriptions/session-state";
 
 export enum SessionState {
   Initial = "initial",
@@ -16,6 +17,7 @@ export enum SessionState {
 }
 
 export interface SessionMachineContext {
+  state: SessionState | null;
   slot: Slot | null;
   session: Session | null;
   millisecondsToStart: number | null;
@@ -23,6 +25,7 @@ export interface SessionMachineContext {
 }
 
 export const context: SessionMachineContext = {
+  state: null,
   slot: null,
   session: null,
   millisecondsToStart: null,
@@ -150,6 +153,27 @@ export const sessionMachine = createMachine({
       },
     },
     [SessionState.SessionNotFound]: {},
-    [SessionState.SessionOngoing]: {},
+    [SessionState.SessionOngoing]: {
+      invoke: {
+        src: fromObservable(({ input: { sessionId } }) => {
+          return openSessionStateSubscription({ sessionId });
+        }),
+        onDone: [
+          {
+            target: SessionState.SessionOngoing,
+            actions: assign({
+              state: ({ event }) => event.output,
+            }),
+          },
+        ],
+        onError: {
+          target: SessionState.Initial,
+          actions: assign({
+            error: ({ event }) => `${event.error}`,
+          }),
+        },
+        input: ({ context }) => ({ sessionId: context.session!.id }),
+      },
+    },
   },
 });
