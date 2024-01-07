@@ -16,7 +16,7 @@ export function JitsiList(
   const jitsiContext = useContext(JitsiContext);
   const [remoteTracks, setRemoteTracks] = useState<
     { participantId: string; tracks: any[] }[]
-  >([]);
+  >(formatRemoteTracks(jitsiContext.remoteTracks));
 
   useEffect(() => {
     function remoteTrackAddedHandler() {

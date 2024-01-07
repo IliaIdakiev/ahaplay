@@ -64,6 +64,16 @@ class Jitsi extends EventTarget {
     this.connection.connect();
   }
 
+  onConferenceJoined() {
+    const participants = this.conference.getParticipants();
+    for (const participant of participants) {
+      const participantId = participant.id;
+      const remoteTracks = participant.getTracks();
+      this.remoteTracks[participantId] = remoteTracks;
+    }
+    this.emit(JitsiEvents.REMOTE_TRACK_ADDED);
+  }
+
   onConnectionSuccess() {
     this.emit(JitsiEvents.CONNECTION_SUCCESS);
     this.conference = this.connection.initJitsiConference(
@@ -71,6 +81,10 @@ class Jitsi extends EventTarget {
       confOptions
     );
 
+    this.conference.on(
+      JitsiMeetJS.events.conference.CONFERENCE_JOINED,
+      this.onConferenceJoined.bind(this)
+    );
     this.conference.on(
       JitsiMeetJS.events.conference.TRACK_ADDED,
       this.onTrackAdded.bind(this)
