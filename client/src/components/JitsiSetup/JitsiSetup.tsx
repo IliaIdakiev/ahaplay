@@ -6,7 +6,6 @@ import {
   useEffect,
   useRef,
   useState,
-  MouseEvent,
   SyntheticEvent,
 } from "react";
 import { JitsiContext, JitsiEvents } from "../../contexts/Jitsi";
@@ -14,8 +13,13 @@ import { VideoPreview } from "./VideoPreview";
 import { NoAccessToDevices } from "./NoAccessToDevices";
 import { DeviceData } from "./types";
 
-export function JitsiSetup(props: PropsWithChildren<{ sessionId: string }>) {
-  const { sessionId } = props;
+export function JitsiSetup(
+  props: PropsWithChildren<{
+    sessionId: string;
+    setupCompletedHandler: () => void;
+  }>
+) {
+  const { sessionId, setupCompletedHandler } = props;
   const [hasGrantedAccess, setHasGrantedAccess] = useState<boolean>(false);
   const [isConnected, setIsConnected] = useState(false);
   const [selectedAudioDevice, setSelectedAudioDevice] =
@@ -128,12 +132,15 @@ export function JitsiSetup(props: PropsWithChildren<{ sessionId: string }>) {
     jitsiContext.addEventListener(JitsiEvents.READY, jitsiReadyCallback);
 
     jitsiContext.init(localVideoElementRef.current, sessionId);
+    const videoElement = localVideoElementRef.current;
+    return () => {
+      jitsiContext.detachLocalTracksVideoContainer(videoElement);
+    };
   }, [hasGrantedAccess, jitsiContext, sessionId, syncSelectedDevices]);
 
   return (
     <>
       {hasGrantedAccess && !isConnected && <div>Connecting...</div>}
-
       <VideoPreview
         width={300}
         height={300}
@@ -148,6 +155,9 @@ export function JitsiSetup(props: PropsWithChildren<{ sessionId: string }>) {
         toggleVideoHandler={toggleVideoHandler}
       />
       {!hasGrantedAccess && <NoAccessToDevices />}
+      {hasGrantedAccess && (
+        <button onClick={setupCompletedHandler}>Continue</button>
+      )}
     </>
   );
 }

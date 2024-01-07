@@ -1,15 +1,27 @@
-import { PropsWithChildren, useContext, useEffect } from "react";
+import {
+  PropsWithChildren,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import { SessionContext } from "../contexts/Session";
 import { useMatches, Navigate } from "react-router-dom";
 import { getInvite, getSession } from "../+xstate/actions/session";
 import { GlobalContext } from "../contexts/Global";
 import { SessionState } from "../+xstate/machines/session";
 import { JitsiSetup } from "../components/JitsiSetup/JitsiSetup";
+import { JitsiList } from "../components/JitsiList/JitsiList";
 
 export default function Session(props: PropsWithChildren) {
   const matches = useMatches();
   const sessionContext = useContext(SessionContext);
   const globalContext = useContext(GlobalContext);
+  const [setupCompleted, setSetupCompleted] = useState(false); // TODO move this to a machine
+
+  const setupCompletedHandler = useCallback(() => {
+    setSetupCompleted(true);
+  }, []);
 
   const slotMatch = matches.find((item) => item.id === "session-slot");
   const instanceMatch = matches.find((item) => item.id === "session-instance");
@@ -62,7 +74,14 @@ export default function Session(props: PropsWithChildren) {
   ) : (
     <div>
       <h1>Session</h1>
-      {sessionInstance && <JitsiSetup sessionId={sessionInstance.id} />}
+      {sessionInstance && !setupCompleted ? (
+        <JitsiSetup
+          sessionId={sessionInstance.id}
+          setupCompletedHandler={setupCompletedHandler}
+        />
+      ) : (
+        <JitsiList width={100} height={100} />
+      )}
       <div>{JSON.stringify(workshop, null, 2)}</div>
       {invitationNotFound && <div>Invitation not found</div>}
       {sessionNotFound && <div>Session not found</div>}

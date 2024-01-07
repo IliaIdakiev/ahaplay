@@ -21,6 +21,8 @@ export enum JitsiEvents {
   CONNECTION_SUCCESS = "CONNECTION_SUCCESS",
   CONNECTION_FAILURE = "CONNECTION_FAILURE",
   READY = "READY",
+  REMOTE_TRACK_ADDED = "REMOTE_TRACK_ADDED",
+  REMOTE_TRACK_REMOVED = "REMOTE_TRACK_REMOVED",
 }
 
 export type AvailableSources = {
@@ -33,6 +35,7 @@ class Jitsi extends EventTarget {
   connection: any = null;
   roomName = "";
   localTracks: any[] = [];
+  remoteTracks: Record<string, any[]> = {};
   conference: any;
 
   emit(event: JitsiEvents) {
@@ -118,10 +121,44 @@ class Jitsi extends EventTarget {
     this.emit(JitsiEvents.CONNECTION_FAILURE);
   }
 
+  attachVideoElementToRemoteTracks(
+    participantId: any,
+    remoteTrackVideoElement: HTMLVideoElement
+  ) {
+    const participantTracks = this.remoteTracks[participantId];
+    if (!participantTracks || participantTracks.length === 0) return;
+    for (const track of participantTracks) {
+      const previousContainer = track.containers[0];
+      if (previousContainer) track.detach(previousContainer);
+      track.attach(remoteTrackVideoElement);
+    }
+  }
+
   onTrackAdded(track: any) {
     if (track.isLocal()) {
       this.localTracks = this.localTracks.concat(track);
       track.attach(this.localTrackVideoElement);
+    } else {
+      const participant = track.getParticipantId();
+      this.remoteTracks[participant] = (
+        this.remoteTracks[participant] || []
+      ).concat(track);
+      this.emit(JitsiEvents.REMOTE_TRACK_ADDED);
+    }
+  }
+
+  detachLocalTracksVideoContainer(localTrackVideoElement?: HTMLVideoElement) {
+    for (const localTrack of this.localTracks) {
+      const container = localTrackVideoElement || localTrack.containers[0];
+      if (container) localTrack.detach(container);
+    }
+  }
+
+  attachLocalTracksVideoContainer(localTrackVideoElement: HTMLVideoElement) {
+    for (const localTrack of this.localTracks) {
+      const previousContainer = localTrack.containers[0];
+      if (previousContainer) localTrack.detach(previousContainer);
+      localTrack.attach(localTrackVideoElement);
     }
   }
 
@@ -129,6 +166,12 @@ class Jitsi extends EventTarget {
     if (track.isLocal()) {
       this.localTracks = this.localTracks.filter((t) => t !== track);
       track.detach(this.localTrackVideoElement);
+    } else {
+      const participant = track.getParticipantId();
+      this.remoteTracks[participant] = (
+        this.remoteTracks[participant] || []
+      ).filter((t) => t !== track);
+      this.emit(JitsiEvents.REMOTE_TRACK_REMOVED);
     }
   }
 
